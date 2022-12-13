@@ -1,0 +1,27 @@
+# NOTE : A Dockerfile is for DATABASE DEVELOPMENT environment
+
+FROM postgres:15.1-bullseye
+
+# Install useful tools
+RUN apt-get update && apt-get install -y \
+	curl \
+	git \
+	htop \
+	iproute2 \
+	less \
+	man-db \
+	manpages-dev \
+	net-tools \
+	procps \
+	tree \
+	vim \
+	&& echo -e "set nu\nsyntax on\nset mouse=a\nset shiftwidth=4\nset tabstop=4" > /root/.vimrc
+
+# Set timezone & Install oh-my-bash
+RUN ln -sf /usr/share/zoneinfo/Asia/Seoul /etc/localtime \
+	&& bash -c "$(curl -fsSL https://raw.githubusercontent.com/ohmybash/oh-my-bash/master/tools/install.sh)"
+
+# Init Database as a system user, postgres
+RUN gosu postgres initdb
+
+CMD [ "/bin/bash" ]
