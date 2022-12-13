@@ -1,0 +1,24 @@
+# NOTE - A docker-compose.yml for PRODUCTION
+
+version: "3.8"
+
+name: "ft_transcendence"
+
+# SECTION : SERVICES
+services:
+  # backend:
+  # frontend:
+
+# SECTION : NETWORKS
+networks:
+  development:
+    ipam:
+      config:
+        - subnet: 172.18.0.0/24
+          gateway: 172.18.0.1
+
+# SECTION : CONFIGS
+# configs:
+
+# SECTION : VOLUMES
+# volumes:
