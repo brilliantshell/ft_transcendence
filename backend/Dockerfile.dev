@@ -1,0 +1,28 @@
+# NOTE : A Dockerfile is for BACKEND DEVELOPMENT environment
+
+FROM node:18.12.1-bullseye
+
+# Install useful tools
+RUN apt-get update && apt-get install -y \
+	htop \
+	iproute2 \
+	less \
+	man-db \
+	manpages-dev \
+	net-tools \
+	tree \
+	vim \
+	&& echo -e "set nu\nsyntax on\nset mouse=a\nset shiftwidth=4\nset tabstop=4" > /root/.vimrc
+
+# Set timezone & Install oh-my-bash
+RUN ln -sf /usr/share/zoneinfo/Asia/Seoul /etc/localtime \
+	&& bash -c "$(curl -fsSL https://raw.githubusercontent.com/ohmybash/oh-my-bash/master/tools/install.sh)"
+
+# Install node packages
+RUN npm install -g \
+	typescript \
+	nodemon \
+	tldr \
+	&& tldr --update
+
+CMD [ "/bin/bash" ]
