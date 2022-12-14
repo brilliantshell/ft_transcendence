@@ -28,6 +28,10 @@
 	// Uncomment the next line to run commands after the container is created - for example installing curl.
 	// "postCreateCommand": "apt-get update && apt-get install -y curl",
 	"postStartCommand": {
+		"apt": [
+			"apt-get",
+			"update"
+		],
 		"db": [
 			"gosu",
 			"postgres",
@@ -42,11 +46,7 @@
 			"git",
 			"config",
 			"commit.template",
-			"/workspaces/.commit_template"
-		],
-		"apt": [
-			"apt-get",
-			"update"
+			".commit_template"
 		]
 	},
 	// Configure tool-specific properties.
