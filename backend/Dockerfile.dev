@@ -12,15 +12,16 @@ RUN apt-get update && apt-get install -y \
 	net-tools \
 	tree \
 	vim \
-	&& echo -e "set nu\nsyntax on\nset mouse=a\nset shiftwidth=4\nset tabstop=4" > /root/.vimrc
+	locales \
+	&& echo "set nu\nsyntax on\nset mouse=a\nset shiftwidth=4\nset tabstop=4\nset enc=utf-8" > /root/.vimrc
 
-# Set timezone & Install oh-my-bash
-RUN ln -sf /usr/share/zoneinfo/Asia/Seoul /etc/localtime \
+# Set locales, timezone & Install oh-my-bash
+RUN echo "en_US.UTF-8 UTF-8\nko_KR.UTF-8 UTF-8" >> /etc/locale.gen \
+	&& locale-gen \
+	&& ln -sf /usr/share/zoneinfo/Asia/Seoul /etc/localtime \
 	&& bash -c "$(curl -fsSL https://raw.githubusercontent.com/ohmybash/oh-my-bash/master/tools/install.sh)"
 
 # Install node packages
 RUN npm install -g \
 	typescript \
-	nodemon \
-	tldr \
-	&& tldr --update
+	nodemon

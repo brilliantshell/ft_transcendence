@@ -3,96 +3,84 @@
 // If you want to run as a non-root user in the container, see .devcontainer/docker-compose.yml.
 {
 	"name": "frontend development",
-
 	// Update the 'dockerComposeFile' list if you have more compose files or use different names.
 	// The .devcontainer/docker-compose.yml file contains any overrides you need/want to make.
 	"dockerComposeFile": [
 		"../../docker-compose.dev.yml"
 	],
-
 	// The 'service' property is the name of the service for the container that VS Code should
 	// use. Update this value and .devcontainer/docker-compose.yml to the real service name.
-	"service": "frontend_dev", 
-
-
+	"service": "frontend_dev",
 	// The optional 'workspaceFolder' property is the path VS Code should open by default when
 	// connected. This is typically a file mount in .devcontainer/docker-compose.yml
 	"workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
 	"features": {
 		"ghcr.io/devcontainers/features/docker-in-docker:2": {}
 	},
-
 	// Features to add to the dev container. More info: https://containers.dev/features.
 	// "features": {},
-
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
 	// "forwardPorts": [],
-
 	// Uncomment the next line if you want start specific services in your Docker Compose config.
 	// "runServices": [],
-
 	// Uncomment the next line if you want to keep your containers running after VS Code shuts down.
 	// "shutdownAction": "none",
-
 	// Uncomment the next line to run commands after the container is created - for example installing curl.
 	// "postCreateCommand": "apt-get update && apt-get install -y curl",
-	"postStartCommand": [ "npm", "install" ],
-
+	"postStartCommand": {
+		"npm": [
+			"npm",
+			"install"
+		],
+		"apt": [
+			"apt-get",
+			"update"
+		]
+	},
 	// Configure tool-specific properties.
 	"customizations": {
 		"vscode": {
-		  "extensions": [
-			"abusaidm.html-snippets",
-			"adpyke.codesnap",
-			"azemoh.one-monokai",
-			"coenraads.bracket-pair-colorizer",
-			"cschlosser.doxdocgen",
-			"dbaeumer.vscode-eslint",
-			"donjayamanne.githistory",
-			"eamodio.gitlens",
-			"ecmel.vscode-html-css",
-			"equinusocio.vsc-community-material-theme",
-			"equinusocio.vsc-material-theme",
-			"equinusocio.vsc-material-theme-icons",
-			"esbenp.prettier-vscode",
-			"exodiusstudios.comment-anchors",
-			"formulahendry.auto-rename-tag",
-			"github.codespaces",
-			"github.copilot",
-			"github.remotehub",
-			"github.vscode-pull-request-github",
-			"mhutchie.git-graph",
-			"ms-azuretools.vscode-docker",
-			"ms-ossdata.vscode-postgresql",
-			"ms-vscode.js-debug",
-			"ms-vscode.js-debug-companion",
-			"ms-vscode.node-debug",
-			"ms-vscode.node-debug2",
-			"ms-vscode.references-view",
-			"ms-vscode.remote-explorer",
-			"ms-vscode.remote-repositories",
-			"ms-vscode.vscode-js-profile-table",
-			"ms-vscode.vscode-typescript-next",
-			"ms-vsliveshare.vsliveshare",
-			"ms-vsliveshare.vsliveshare-audio",
-			"ms-vsliveshare.vsliveshare-pack",
-			"mtxr.sqltools",
-			"mtxr.sqltools-driver-mysql",
-			"mtxr.sqltools-driver-pg",
-			"pkief.material-icon-theme",
-			"pranaygp.vscode-css-peek",
-			"rangav.vscode-thunder-client",
-			"ritwickdey.liveserver",
-			"sidthesloth.html5-boilerplate",
-			"tht13.html-preview-vscode",
-			"tomoki1207.pdf",
-			"wix.vscode-import-cost",
-			"yzhang.markdown-all-in-one",
-			"zignd.html-css-class-completion"
-		]
+			"extensions": [
+				"abusaidm.html-snippets",
+				"adpyke.codesnap",
+				"cschlosser.doxdocgen",
+				"dbaeumer.vscode-eslint",
+				"donjayamanne.githistory",
+				"eamodio.gitlens",
+				"ecmel.vscode-html-css",
+				"esbenp.prettier-vscode",
+				"exodiusstudios.comment-anchors",
+				"formulahendry.auto-rename-tag",
+				"github.codespaces",
+				"github.copilot",
+				"github.remotehub",
+				"github.vscode-pull-request-github",
+				"mhutchie.git-graph",
+				"ms-azuretools.vscode-docker",
+				"ms-ossdata.vscode-postgresql",
+				"ms-vscode.js-debug",
+				"ms-vscode.js-debug-companion",
+				"ms-vscode.references-view",
+				"ms-vscode.remote-explorer",
+				"ms-vscode.remote-repositories",
+				"ms-vscode.vscode-js-profile-table",
+				"ms-vscode.vscode-typescript-next",
+				"ms-vsliveshare.vsliveshare",
+				"ms-vsliveshare.vsliveshare-audio",
+				"ms-vsliveshare.vsliveshare-pack",
+				"mtxr.sqltools",
+				"mtxr.sqltools-driver-pg",
+				"pranaygp.vscode-css-peek",
+				"rangav.vscode-thunder-client",
+				"ritwickdey.liveserver",
+				"sidthesloth.html5-boilerplate",
+				"tht13.html-preview-vscode",
+				"wix.vscode-import-cost",
+				"yzhang.markdown-all-in-one",
+				"zignd.html-css-class-completion"
+			]
 		}
-	  }
-
+	}
 	// Uncomment to connect as root instead. More info: https://aka.ms/dev-containers-non-root.
 	// "remoteUser": "root"
 }

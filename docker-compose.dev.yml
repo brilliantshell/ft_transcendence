@@ -7,6 +7,7 @@ name: "ft_dev"
 # SECTION : SERVICES
 services:
   backend_dev:
+    container_name: back_dev_con
     build:
       context: ./backend
       dockerfile: Dockerfile.dev
@@ -22,10 +23,11 @@ services:
     ports:
       - "3000:3000"
     volumes:
-      - ./backend/:/workspaces/backend/:cached
+      - ./:/workspaces/:cached
       - /var/run/docker.sock:/var/run/docker-host.sock
 
   frontend_dev:
+    container_name: front_dev_con
     build:
       context: ./frontend
       dockerfile: Dockerfile.dev
@@ -39,10 +41,11 @@ services:
     ports:
       - "4242:4242"
     volumes:
-      - ./frontend/:/workspaces/frontend/:cached
+      - ./:/workspaces/:cached
       - /var/run/docker.sock:/var/run/docker-host.sock
 
   database_dev:
+    container_name: db_dev_con
     build:
       context: ./database
       dockerfile: Dockerfile.dev
@@ -59,7 +62,7 @@ services:
       development:
         ipv4_address: 172.18.0.4
     volumes:
-      - ./database/:/workspaces/database/:cached
+      - ./:/workspaces/:cached
       - /var/run/docker.sock:/var/run/docker-host.sock
 
 # SECTION : NETWORKS
