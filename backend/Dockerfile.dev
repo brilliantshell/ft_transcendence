@@ -21,6 +21,18 @@ RUN echo "en_US.UTF-8 UTF-8\nko_KR.UTF-8 UTF-8" >> /etc/locale.gen \
 	&& ln -sf /usr/share/zoneinfo/Asia/Seoul /etc/localtime \
 	&& bash -c "$(curl -fsSL https://raw.githubusercontent.com/ohmybash/oh-my-bash/master/tools/install.sh)"
 
+# Install postgresql client (v15)
+RUN wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc > /tmp/postgres.key \
+	&& gpg --no-default-keyring --keyring /tmp/postgres_keyring.gpg --import /tmp/postgres.key \
+	&& gpg --no-default-keyring --keyring /tmp/postgres_keyring.gpg --export > /tmp/postgres.gpg \
+	&& mkdir -p /usr/local/share/keyrings \
+	&& mv /tmp/postgres.gpg /usr/local/share/keyrings/postgres.gpg \
+	&& echo "deb [signed-by=/usr/local/share/keyrings/postgres.gpg] http://apt.postgresql.org/pub/repos/apt/ bullseye-pgdg main 15" >> /etc/apt/sources.list.d/pgdg.list\
+	&& apt-get update \
+	&& apt-get install -y postgresql-client
+
+
+
 # Install node packages
 RUN npm install -g \
 	typescript \
