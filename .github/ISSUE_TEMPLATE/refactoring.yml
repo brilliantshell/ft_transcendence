@@ -1,0 +1,17 @@
+name: Refactoring
+description: Working Clearer Code
+title: ":recycle: "
+assignees:
+  - 
+body:
+  - type: textarea
+    id: feature
+    attributes:
+      label: What did you do?
+      description: Describe what you did
+      value: |
+        **내용**
+        - 
+
+    validations:
+      required: true
