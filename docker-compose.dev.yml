@@ -2,8 +2,6 @@
 
 version: "3.8"
 
-name: "ft_dev"
-
 # SECTION : SERVICES
 services:
   backend_dev:
@@ -51,9 +49,6 @@ services:
       dockerfile: Dockerfile.dev
     init: true
     entrypoint: [ sleep, infinity ]
-    configs:
-      - source: postgresql
-        target: /var/lib/postgresql/data/postgresql.conf
     env_file:
       - ./database/.env
     expose:
@@ -64,6 +59,7 @@ services:
     volumes:
       - ./:/workspaces/:cached
       - /var/run/docker.sock:/var/run/docker-host.sock
+      - ./database/postgresql.conf:/var/lib/postgresql/data/postgresql.conf
 
 # SECTION : NETWORKS
 networks:
@@ -72,11 +68,6 @@ networks:
       config:
         - subnet: 172.18.0.0/24
           gateway: 172.18.0.1
-
-# SECTION : CONFIGS
-configs:
-  postgresql:
-    file: ./database/postgresql.conf
 
 # SECTION : VOLUMES
 # volumes:
