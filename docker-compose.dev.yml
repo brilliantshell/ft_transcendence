@@ -48,7 +48,6 @@ services:
       context: ./database
       dockerfile: Dockerfile.dev
     init: true
-    entrypoint: [ sleep, infinity ]
     env_file:
       - ./database/.env
 
@@ -60,9 +59,7 @@ services:
     volumes:
       - ./:/workspaces/:cached
       - /var/run/docker.sock:/var/run/docker-host.sock
-      # Config files
-      - ./database/postgresql.conf:/var/lib/postgresql/data/postgresql.conf
-      - ./database/pg_hba.conf:/var/lib/postgresql/data/pg_hba.conf
+      # Database Volume
       - pgdata:/var/lib/postgresql/data/
 
 # SECTION : NETWORKS

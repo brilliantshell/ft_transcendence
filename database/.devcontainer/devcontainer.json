@@ -32,25 +32,12 @@
 			"apt-get",
 			"update"
 		],
-		"db": [
-			"gosu",
-			"postgres",
-			"pg_ctl",
-			"-D",
-			"/var/lib/postgresql/data",
-			"-l",
-			"/var/log/postgresql/postgresql.log",
-			"start"
-		],
 		"git": [
 			"git",
 			"config",
 			"commit.template",
 			".commit_template"
 		]
-		// "db-query": [
-		// 	"echo CREATE ROLE ${PGUSER} LOGIN CREATEDB PASSWORD '${PGPASSWORD}' | gosu postgres psql -U postgres"
-		// ]
 	},
 	// Configure tool-specific properties.
 	"customizations": {
