@@ -48,9 +48,9 @@ services:
       context: ./database
       dockerfile: Dockerfile.dev
     init: true
-    entrypoint: [ sleep, infinity ]
     env_file:
       - ./database/.env
+
     expose:
       - "5432"
     networks:
@@ -59,7 +59,8 @@ services:
     volumes:
       - ./:/workspaces/:cached
       - /var/run/docker.sock:/var/run/docker-host.sock
-      - ./database/postgresql.conf:/var/lib/postgresql/data/postgresql.conf
+      # Database Volume
+      - pgdata:/var/lib/postgresql/data/
 
 # SECTION : NETWORKS
 networks:
@@ -68,6 +69,14 @@ networks:
       config:
         - subnet: 172.18.0.0/24
           gateway: 172.18.0.1
+
+volumes:
+  pgdata:
+    driver: local
+    driver_opts:
+      type: none
+      device: ${PGDATA_DIR}
+      o: bind
 
 # SECTION : VOLUMES
 # volumes:

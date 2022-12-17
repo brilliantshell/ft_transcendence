@@ -32,16 +32,6 @@
 			"apt-get",
 			"update"
 		],
-		"db": [
-			"gosu",
-			"postgres",
-			"pg_ctl",
-			"-D",
-			"/var/lib/postgresql/data",
-			"-l",
-			"/var/log/postgresql/postgresql.log",
-			"start"
-		],
 		"git": [
 			"git",
 			"config",
