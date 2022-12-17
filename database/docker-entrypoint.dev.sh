@@ -3,20 +3,20 @@
 PGDATA=${PGDATA:-/var/lib/postgresql/data}
 PGLOG=/var/log/postgresql/postgresql.log
 PGDATABASE=${PGDATABASE:dev}
+CONFIG_FILE=/workspaces/database/postgresql.conf
+
+set -e
 
 setup_db() {
 	# Check if database is initialized
 	if [ -s "$PGDATA/PG_VERSION" ]; then
 		return 0
 	fi
+
 	gosu postgres pg_ctl init
-	
-	# Copy configuration files
-	cp /tmp/pg_hba.conf ${PGDATA}/pg_hba.conf
-	cp /tmp/postgresql.conf ${PGDATA}/postgresql.conf
 
 	# Start PostgreSQL
-	gosu postgres pg_ctl start
+	gosu postgres pg_ctl -l ${PGLOG} start -s -o "-c config_file=${CONFIG_FILE}"
 
 	# Create role(User) who can create database
 	gosu postgres psql -U postgres postgres -c "CREATE ROLE ${PGUSER} NOSUPERUSER NOCREATEROLE LOGIN CREATEDB PASSWORD '${PGPASSWORD}'"
@@ -31,6 +31,6 @@ setup_db() {
 setup_db
 
 # Start PostgreSQL
-gosu postgres pg_ctl -l ${PGLOG} start
+gosu postgres pg_ctl -l ${PGLOG} start -s -o "-c config_file=${CONFIG_FILE}" 
 
 exec "$@"

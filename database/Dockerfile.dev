@@ -26,12 +26,6 @@ RUN echo "en_US.UTF-8 UTF-8\nko_KR.UTF-8 UTF-8" >> /etc/locale.gen \
 
 COPY ./docker-entrypoint.dev.sh /tmp/entrypoint.sh
 
-RUN chmod +x /tmp/entrypoint.sh
-
-COPY pg_hba.conf /tmp/pg_hba.conf
-
-COPY postgresql.conf /tmp/postgresql.conf
-
 ENTRYPOINT [ "/tmp/entrypoint.sh" ]
 
 CMD [ "sleep", "infinity" ]
