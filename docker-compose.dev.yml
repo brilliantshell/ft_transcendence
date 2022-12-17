@@ -9,12 +9,12 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile.dev
-    init: true
     entrypoint: [ sleep, infinity ]
     env_file:
       - ./backend/.env
     expose:
       - "3000"
+    init: true
     networks:
       development:
         ipv4_address: 172.18.0.2
@@ -29,10 +29,10 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile.dev
-    init: true
     entrypoint: [ sleep, infinity ]
     env_file:
       - ./frontend/.env
+    init: true
     networks:
       development:
         ipv4_address: 172.18.0.3
@@ -47,12 +47,11 @@ services:
     build:
       context: ./database
       dockerfile: Dockerfile.dev
-    init: true
     env_file:
       - ./database/.env
-
     expose:
       - "5432"
+    init: true
     networks:
       development:
         ipv4_address: 172.18.0.4
@@ -61,6 +60,39 @@ services:
       - /var/run/docker.sock:/var/run/docker-host.sock
       # Database Volume
       - pgdata:/var/lib/postgresql/data/
+  
+  # NOTE : PostgreSQL GUI tools
+  pgadmin_dev:
+    container_name: pgadmin_dev_con
+    env_file:
+      - ./.env
+    image: dpage/pgadmin4
+    init: true
+    networks:
+      development:
+        ipv4_address: 172.18.0.5
+    ports:
+      - "5050:5050"
+  
+  pgweb:
+    container_name: pgweb_dev_con
+    depends_on:
+      database_dev:
+        condition: service_healthy
+    entrypoint:
+      - /usr/bin/pgweb
+      - --bind=172.18.0.6
+      - --host=${PGHOST}
+      - --ssl=disable
+      - --user=${PGUSER}
+      - --pass=${PGPASSWORD}
+    image: sosedoff/pgweb
+    init: true
+    networks:
+      development:
+        ipv4_address: 172.18.0.6
+    ports:
+      - "8081:8081"
 
 # SECTION : NETWORKS
 networks:
