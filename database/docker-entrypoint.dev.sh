@@ -3,7 +3,7 @@
 PGDATA=${PGDATA:-/var/lib/postgresql/data}
 PGLOG=/var/log/postgresql/postgresql.log
 PGDATABASE=${PGDATABASE:dev}
-CONFIG_FILE=/workspaces/database/postgresql.conf
+CONFIG_FILE=/workspaces/database/configs/postgresql.conf
 
 set -e
 
@@ -32,5 +32,9 @@ setup_db
 
 # Start PostgreSQL
 gosu postgres pg_ctl -l ${PGLOG} start -s -o "-c config_file=${CONFIG_FILE}" 
+
+# Create tables if they do not exist
+psql -f /tmp/sql/init_db.sql > /dev/null 2>&1
+# psql -f /tmp/sql/test_data.sql > /dev/null 2>&1
 
 exec "$@"
