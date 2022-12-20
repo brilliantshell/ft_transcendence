@@ -53,7 +53,7 @@ for j in ${!ENV_KEYS[@]}; do
 done
 
 [ ${#ENV_ERROR_ARR[@]} -gt 0 ] && 
-		echo -e "${YELLOW}WARNING: ${ENV_FILE#${PROJECT_ROOT}/} and ${ENV_SAMPLE_FILE#${PROJECT_ROOT}/} do not match!\nPlease add follows in ${ENV_SAMPLE_FILE#${PROJECT_ROOT}/}${RESET}" >&2 && 
+		echo -e "${YELLOW}WARNING: ${ENV_FILE#${PROJECT_ROOT}/} and ${ENV_SAMPLE_FILE#${PROJECT_ROOT}/} do not match!\nPlease add following keys in ${ENV_SAMPLE_FILE#${PROJECT_ROOT}/}${RESET}" >&2 && 
 		printf "%s\n" "${ENV_ERROR_ARR[@]}" >&2 &&
 		SUCCESS=false
 
@@ -65,7 +65,7 @@ for j in ${!ENV_SAMPLE_KEYS[@]}; do
 done
 
 [ ${#ENV_SAMPLE_ERROR_ARR[@]} -gt 0 ] && 
-		echo -e "${RED}ERROR: ${ENV_FILE#${PROJECT_ROOT}/} and ${ENV_SAMPLE_FILE#${PROJECT_ROOT}/} do not match!\nPlease add follows in ${ENV_FILE#${PROJECT_ROOT}/}${RESET}" >&2 && 
+		echo -e "${RED}ERROR: ${ENV_FILE#${PROJECT_ROOT}/} and ${ENV_SAMPLE_FILE#${PROJECT_ROOT}/} do not match!\nPlease add following keys in ${ENV_FILE#${PROJECT_ROOT}/}${RESET}" >&2 && 
 		printf "%s\n" "${ENV_SAMPLE_ERROR_ARR[@]}" >&2 &&
 		SUCCESS=false
 
