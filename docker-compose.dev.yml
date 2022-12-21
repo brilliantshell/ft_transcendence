@@ -10,8 +10,11 @@ services:
       context: ./backend
       dockerfile: Dockerfile.dev
     entrypoint: [ sleep, infinity ]
-    env_file:
-      - ./backend/.env
+    environment:
+      - PGDATABASE=${PGDATABASE}
+      - PGPASSWORD=${PGPASSWORD}
+      - PGUSER=${PGUSER}
+      - PGHOST=${PGHOST}
     expose:
       - "3000"
     init: true
@@ -30,8 +33,6 @@ services:
       context: ./frontend
       dockerfile: Dockerfile.dev
     entrypoint: [ sleep, infinity ]
-    env_file:
-      - ./frontend/.env
     init: true
     networks:
       development:
@@ -47,8 +48,10 @@ services:
     build:
       context: ./database
       dockerfile: Dockerfile.dev
-    env_file:
-      - ./database/.env
+    environment:
+      - PGDATABASE=${PGDATABASE}
+      - PGPASSWORD=${PGPASSWORD}
+      - PGUSER=${PGUSER}
     expose:
       - "5432"
     init: true
@@ -64,8 +67,10 @@ services:
   # NOTE : PostgreSQL GUI tools
   pgadmin_dev:
     container_name: pgadmin_dev_con
-    env_file:
-      - ./.env
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=${PGADMIN_DEFAULT_EMAIL}
+      - PGADMIN_DEFAULT_PASSWORD=${PGADMIN_DEFAULT_PASSWORD}
+      - PGADMIN_LISTEN_PORT=${PGADMIN_LISTEN_PORT}
     image: dpage/pgadmin4
     init: true
     networks:
