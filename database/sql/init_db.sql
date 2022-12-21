@@ -21,7 +21,10 @@ CREATE TABLE IF NOT EXISTS users (
 	auth_email varchar(320),
 	ladder int NOT NULL DEFAULT 0,
 	win_cnt int NOT NULL DEFAULT 0,
-	loss_cnt int NOT NULL DEFAULT 0
+	loss_cnt int NOT NULL DEFAULT 0,
+	CONSTRAINT check_ladder_error CHECK (ladder >= 0),
+	CONSTRAINT check_win_cnt CHECK (win_cnt >= 0),
+	CONSTRAINT check_loss_cnt CHECK (loss_cnt >= 0)
 );
 -- SECTION : Blocked users
 CREATE TABLE IF NOT EXISTS blocked_users (
@@ -33,6 +36,7 @@ CREATE TABLE IF NOT EXISTS blocked_users (
 CREATE TABLE IF NOT EXISTS friends (
 	user_one_id int REFERENCES users(user_id),
 	user_two_id int REFERENCES users(user_id),
+	is_accepted bool NOT NULL DEFAULT false,
 	PRIMARY KEY(user_one_id, user_two_id)
 );
 -- SECTION: Match history
@@ -43,7 +47,9 @@ CREATE TABLE IF NOT EXISTS match_history (
 	user_one_score int NOT NULL DEFAULT 0,
 	user_two_score int NOT NULL DEFAULT 0,
 	is_rank boolean NOT NULL DEFAULT false,
-	end_at timestamp NOT NULL DEFAULT current_timestamp
+	end_at timestamp NOT NULL DEFAULT current_timestamp,
+	CONSTRAINT check_user_one_score CHECK (user_one_score >= 0),
+	CONSTRAINT check_user_two_score CHECK (user_two_score >= 0)
 );
 -- SECTION : Channels
 CREATE TABLE IF NOT EXISTS channels (
@@ -53,7 +59,8 @@ CREATE TABLE IF NOT EXISTS channels (
 	is_dm boolean NOT NULL,
 	member_cnt int NOT NULL,
 	access_mode channel_access_mode NOT NULL,
-	passwd varchar(16)
+	passwd bytea,
+	CONSTRAINT check_member_cnt CHECK (member_cnt > 0)
 );
 -- SECTION : Channel members
 CREATE TABLE IF NOT EXISTS channel_members (

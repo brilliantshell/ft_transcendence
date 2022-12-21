@@ -15,6 +15,7 @@ services:
       - PGPASSWORD=${PGPASSWORD}
       - PGUSER=${PGUSER}
       - PGHOST=${PGHOST}
+      - PGPORT=${PGPORT}
     expose:
       - "3000"
     init: true
@@ -52,6 +53,7 @@ services:
       - PGDATABASE=${PGDATABASE}
       - PGPASSWORD=${PGPASSWORD}
       - PGUSER=${PGUSER}
+      - PGPORT=${PGPORT}
     expose:
       - "5432"
     init: true

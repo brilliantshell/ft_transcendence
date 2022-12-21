@@ -26,8 +26,6 @@ RUN echo "en_US.UTF-8 UTF-8\nko_KR.UTF-8 UTF-8" >> /etc/locale.gen \
 
 COPY ./docker-entrypoint.dev.sh /tmp/entrypoint.sh
 
-COPY ./sql /tmp/sql
-
 ENTRYPOINT [ "/tmp/entrypoint.sh" ]
 
 CMD [ "sleep", "infinity" ]
