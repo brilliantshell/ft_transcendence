@@ -17,7 +17,6 @@ CREATE TABLE IF NOT EXISTS users (
 	user_id int PRIMARY KEY,
 	nickname varchar(16) NOT NULL UNIQUE,
 	profile_image varchar(256) NOT NULL,
-	activity user_activity NOT NULL DEFAULT 'offline',
 	auth_email varchar(320),
 	ladder int NOT NULL DEFAULT 0,
 	win_cnt int NOT NULL DEFAULT 0,
@@ -34,16 +33,16 @@ CREATE TABLE IF NOT EXISTS blocked_users (
 );
 -- SECTION: Friends
 CREATE TABLE IF NOT EXISTS friends (
-	user_one_id int REFERENCES users(user_id),
-	user_two_id int REFERENCES users(user_id),
+	sender_id int REFERENCES users(user_id),
+	receiver_id int REFERENCES users(user_id),
 	is_accepted bool NOT NULL DEFAULT false,
-	PRIMARY KEY(user_one_id, user_two_id)
+	PRIMARY KEY(sender_id, receiver_id)
 );
 -- SECTION: Match history
 CREATE TABLE IF NOT EXISTS match_history (
 	match_id SERIAL PRIMARY KEY,
-	user_one int REFERENCES users(user_id),
-	user_two int REFERENCES users(user_id),
+	user_one_id int REFERENCES users(user_id),
+	user_two_id int REFERENCES users(user_id),
 	user_one_score int NOT NULL DEFAULT 0,
 	user_two_score int NOT NULL DEFAULT 0,
 	is_rank boolean NOT NULL DEFAULT false,
@@ -60,6 +59,7 @@ CREATE TABLE IF NOT EXISTS channels (
 	member_cnt int NOT NULL,
 	access_mode channel_access_mode NOT NULL,
 	passwd bytea,
+	modified_at timestamp NOT NULL DEFAULT current_timestamp,
 	CONSTRAINT check_member_cnt CHECK (member_cnt > 0)
 );
 -- SECTION : Channel members
@@ -68,13 +68,14 @@ CREATE TABLE IF NOT EXISTS channel_members (
 	member_id int REFERENCES users(user_id),
 	is_admin bool NOT NULL DEFAULT false,
 	mute_end_time timestamp NOT NULL DEFAULT '1970-01-01 00:00:00',
+	viewed_at timestamp NOT NULL DEFAULT current_timestamp,
 	PRIMARY KEY(channel_id, member_id)
 );
 -- SECTION : Banned members
 CREATE TABLE IF NOT EXISTS banned_members (
 	channel_id int REFERENCES channels(channel_id),
 	member_id int REFERENCES users(user_id),
-	ban_end_time timestamp NOT NULL DEFAULT '1970-01-01 00:00:00',
+	end_time timestamp NOT NULL DEFAULT '1970-01-01 00:00:00',
 	PRIMARY KEY(channel_id, member_id)
 );
 -- SECTION : Messages
