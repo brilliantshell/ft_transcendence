@@ -54,8 +54,8 @@ CREATE TABLE IF NOT EXISTS match_history (
 CREATE TABLE IF NOT EXISTS channels (
 	channel_id SERIAL PRIMARY KEY,
 	owner_id int REFERENCES users(user_id),
+	dm_peer_id int REFERENCES users(user_id),
 	channel_name varchar(128) NOT NULL,
-	is_dm boolean NOT NULL,
 	member_cnt int NOT NULL,
 	access_mode channel_access_mode NOT NULL,
 	passwd bytea,
