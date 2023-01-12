@@ -2,14 +2,14 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ApiConfigService } from './ApiConfig.service';
 import { ConfigService } from '@nestjs/config';
 
-class mockConfigService {
+class mockApiConfigService {
   get(arg: string) {
     return arg;
   }
 }
 
-describe('ConfigurationService', () => {
-  let service: ApiConfigService;
+describe('ApiConfigService', () => {
+  let apiConfigService: ApiConfigService;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -17,20 +17,20 @@ describe('ConfigurationService', () => {
         ApiConfigService,
         {
           provide: ConfigService,
-          useClass: mockConfigService,
+          useClass: mockApiConfigService,
         },
       ],
     }).compile();
 
-    service = module.get<ApiConfigService>(ApiConfigService);
+    apiConfigService = module.get<ApiConfigService>(ApiConfigService);
   });
 
   it('should be defined', () => {
-    expect(service).toBeDefined();
+    expect(apiConfigService).toBeDefined();
   });
 
   it('get postgres config', () => {
-    expect(service.postgresConfig).toMatchObject({
+    expect(apiConfigService.postgresConfig).toMatchObject({
       type: 'postgres',
       host: 'DB_HOST',
       port: 'DB_PORT',
