@@ -1,6 +1,7 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { ApiConfigService } from './ApiConfig.service';
 import { ConfigService } from '@nestjs/config';
+import { Test, TestingModule } from '@nestjs/testing';
+
+import { ApiConfigService } from './api-config.service';
 
 class mockApiConfigService {
   get(arg: string) {
