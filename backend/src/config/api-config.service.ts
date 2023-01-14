@@ -1,5 +1,5 @@
-import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { Injectable } from '@nestjs/common';
 import { TypeOrmModuleOptions } from '@nestjs/typeorm';
 
 @Injectable()
@@ -14,7 +14,7 @@ export class ApiConfigService {
       username: this.configService.get('DB_USER'),
       password: this.configService.get('DB_PASSWORD'),
       database: this.configService.get('DB_NAME'),
-      entities: [__dirname + '/../../**/*.entity{.ts,.js}'],
+      autoLoadEntities: true,
       synchronize: true,
     };
   }
