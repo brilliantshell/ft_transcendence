@@ -2,14 +2,14 @@ import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
+import { BlockedUsers } from '../entity/blocked-users.entity';
+import { Friends } from '../entity/friends.entity';
 import {
   PeerInfo,
   Relationship,
   RelationshipAction,
   UserId,
 } from '../util/type';
-import { BlockedUsers } from '../entity/blocked-users.entity';
-import { Friends } from '../entity/friends.entity';
 import { Users } from '../entity/users.entity';
 
 @Injectable()
