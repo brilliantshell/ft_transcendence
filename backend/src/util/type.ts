@@ -1,19 +1,13 @@
 export type UserId = number;
 
 export type ChannelId = number;
-export type Relationship =
-  | 'friend'
-  | 'blocker'
-  | 'blocked'
-  | 'pendingSender'
-  | 'pendingReceiver'
-  | null;
+
+export type Friendship = 'friend' | 'pendingSender' | 'pendingReceiver';
+
+export type BlockRelationship = 'blocker' | 'blocked';
+
+export type Relationship = Friendship | BlockRelationship;
 
 export type RelationshipAction = 'friendRequest' | 'block';
 
 export type IsBlocked = boolean;
-
-export interface PeerInfo {
-  relationship: Relationship;
-  dmId: ChannelId | null;
-}
