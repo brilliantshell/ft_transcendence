@@ -10,7 +10,7 @@ import {
 
 import { Users } from './users.entity';
 
-enum AccessMode {
+export enum AccessMode {
   PUBLIC = 'public',
   PROTECTED = 'protected',
   PRIVATE = 'private',
@@ -21,6 +21,31 @@ enum AccessMode {
 export class Channels {
   @PrimaryGeneratedColumn({ primaryKeyConstraintName: 'channels_pkey' })
   channel_id: number;
+
+  @Column({ type: 'integer', nullable: false })
+  owner_id: number;
+
+  @Column({ type: 'integer', nullable: true })
+  dm_peer_id: number | null;
+
+  @Column({ type: 'varchar', length: 128, nullable: false })
+  channel_name: string;
+
+  @Column({ type: 'integer', nullable: false })
+  member_cnt: number;
+
+  @Column({
+    type: 'enum',
+    enum: AccessMode,
+    nullable: false,
+  })
+  access_mode: AccessMode;
+
+  @Column({ type: 'bytea', nullable: true })
+  passwd: string | null;
+
+  @UpdateDateColumn({ type: 'timestamptz' })
+  modified_at: Date;
 
   @ManyToOne(() => Users)
   @JoinColumn({
@@ -35,23 +60,4 @@ export class Channels {
     foreignKeyConstraintName: 'channels_dm_peer_id_fkey',
   })
   dm_peer: Users;
-
-  @Column({ type: 'varchar', length: 128, nullable: false })
-  channel_name: string;
-
-  @Column({ type: 'integer', nullable: false })
-  member_cnt: number;
-
-  @Column({
-    type: 'enum',
-    enum: ['public', 'protected ', 'private'],
-    nullable: false,
-  })
-  access_mode: AccessMode;
-
-  @Column({ type: 'bytea', nullable: true })
-  passwd: string[];
-
-  @UpdateDateColumn({ type: 'timestamptz' })
-  modified_at: Date;
 }
