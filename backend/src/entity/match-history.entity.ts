@@ -16,6 +16,12 @@ export class MatchHistory {
   @PrimaryGeneratedColumn({ primaryKeyConstraintName: 'match_history_pkey' })
   match_id: number;
 
+  @Column({ type: 'integer', nullable: false })
+  user_one_id: number;
+
+  @Column({ type: 'integer', nullable: false })
+  user_two_id: number;
+
   @Column({ type: 'integer', default: 0, nullable: false })
   user_one_score: number;
 

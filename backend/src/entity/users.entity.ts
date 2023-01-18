@@ -4,13 +4,13 @@ import { Check, Column, Entity, PrimaryColumn, Unique } from 'typeorm';
 @Check(`"ladder" >= 0`)
 @Check(`"win_cnt" >= 0`)
 @Check(`"loss_cnt" >= 0`)
-@Unique(['username', 'auth_email'])
+@Unique(['nickname', 'auth_email'])
 export class Users {
   @PrimaryColumn({ type: 'integer', primaryKeyConstraintName: 'users_pkey' })
   user_id: number;
 
   @Column({ type: 'varchar', length: 16, nullable: false })
-  username: string;
+  nickname: string;
 
   @Column({
     type: 'varchar',
