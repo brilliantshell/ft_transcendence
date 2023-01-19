@@ -48,5 +48,5 @@ export class ChannelMembers {
     name: 'channel_id',
     foreignKeyConstraintName: 'channel_members_channel_id_fkey',
   })
-  channel: Users;
+  channel: Channels;
 }

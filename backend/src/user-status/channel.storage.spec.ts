@@ -13,6 +13,7 @@ import {
   destroyDataSources,
 } from '../../test/db-resource-manager';
 import { Users } from '../entity/users.entity';
+import { UserId, UserRole } from '../util/type';
 import {
   generateBannedMembers,
   generateChannelMembers,
@@ -67,6 +68,16 @@ describe('ChannelStorage', () => {
 
     bannedMembersEntities = generateBannedMembers(channelMembersEntities);
     await bannedMembersRepository.save(bannedMembersEntities);
+
+    channelEntities.forEach(async ({ channel_id }, idx) => {
+      const latestMessage = messagesEntities
+        .filter((message) => message.channel_id === channel_id)
+        .sort((a, b) => b.created_at.toMillis() - a.created_at.toMillis())[0];
+      await channelsRepository.update(channel_id, {
+        modified_at: latestMessage.created_at,
+      });
+      channelEntities[idx].modified_at = latestMessage.created_at;
+    });
   });
 
   beforeEach(async () => {
@@ -77,6 +88,7 @@ describe('ChannelStorage', () => {
           ...TYPEORM_SHARED_CONFIG,
           autoLoadEntities: true,
           database: TEST_DB,
+          logger: 'advanced-console',
         }),
         TypeOrmModule.forFeature(ENTITIES),
       ],
@@ -92,5 +104,83 @@ describe('ChannelStorage', () => {
 
   it('should be defined', () => {
     expect(storage).toBeDefined();
+  });
+
+  it('should cache channel info at app bootstrap', async () => {
+    await storage.initChannels();
+    const cachedChannels = storage.getChannels();
+    expect(cachedChannels.size).toBe(channelEntities.length);
+    const orderedChannels = channelEntities.sort(
+      (a, b) => a.channel_id - b.channel_id,
+    );
+    let idx = 0;
+    cachedChannels.forEach((channelInfo, channelId) => {
+      expect(channelId).toEqual(orderedChannels[idx].channel_id);
+      expect(channelInfo.accessMode).toEqual(orderedChannels[idx].access_mode);
+      expect(channelInfo.modifiedAt).toEqual(orderedChannels[idx].modified_at);
+      const members = channelMembersEntities.filter(
+        ({ channel_id }) => channel_id === channelId,
+      );
+      const membersMap = new Map<UserId, UserRole>();
+      membersMap.set(orderedChannels[idx].owner_id, 'owner');
+      members.forEach(({ member_id, is_admin }) => {
+        if (member_id === orderedChannels[idx].owner_id) {
+          return;
+        }
+        membersMap.set(member_id, is_admin ? 'admin' : 'normal');
+      });
+      expect(channelInfo.userRoleMap).toEqual(membersMap);
+      ++idx;
+    });
+  });
+
+  it(`should cache a user's status in a channel in which the user is`, async () => {
+    const { user_id } = userEntities[0];
+    await storage.loadUser(user_id);
+    const cachedUser = storage.getUser(user_id);
+
+    const memberships = await channelMembersRepository.find({
+      relations: ['channel'],
+      where: {
+        member_id: user_id,
+      },
+      select: {
+        channel_id: true,
+        viewed_at: true as any,
+        mute_end_time: true as any,
+        channel: { modified_at: true as any },
+      },
+    });
+
+    memberships.forEach(async (membership) => {
+      const { channel_id, channel, viewed_at, mute_end_time } = membership;
+      const { modified_at } = channel;
+      const { muteEndTime, unseenCount } = cachedUser.get(channel_id);
+      expect(muteEndTime).toEqual(mute_end_time);
+      if (viewed_at >= modified_at) {
+        expect(unseenCount).toEqual(0);
+        return;
+      }
+      expect(unseenCount).toEqual(
+        messagesEntities.filter((message) => {
+          if (message.channel_id !== channel_id) {
+            return false;
+          }
+          return message.created_at.toMillis() > viewed_at.toMillis()
+            ? true
+            : false;
+        }).length,
+      );
+    });
+
+    expect(cachedUser.size).toEqual(
+      new Set(
+        channelMembersEntities
+          .map(({ channel_id, member_id }) =>
+            member_id === user_id ? channel_id : null,
+          )
+          .filter((channelId) => channelId !== null),
+      ).size,
+    );
   });
 });

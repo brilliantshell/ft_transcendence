@@ -170,10 +170,7 @@ const createRandomMessage = (senderId: UserId, channelId: ChannelId) => {
 export const generateMessages = (members: ChannelMembers[]) => {
   const messages: Messages[] = [];
   members.forEach((member) => {
-    if (faker.datatype.boolean()) {
-      return;
-    }
-    for (let i = 0; i < faker.datatype.number({ min: 1, max: 100 }); ++i) {
+    for (let i = 0; i < faker.datatype.number({ min: 1, max: 10 }); ++i) {
       messages.push(createRandomMessage(member.member_id, member.channel_id));
     }
   });
