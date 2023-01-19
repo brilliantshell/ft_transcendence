@@ -1,13 +1,14 @@
 import {
   Column,
-  CreateDateColumn,
   Entity,
   JoinColumn,
   ManyToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
+import { DateTime } from 'luxon';
 
 import { Channels } from './channels.entity';
+import { DateTimeTransformer } from './date-time.transformer';
 import { Users } from './users.entity';
 
 @Entity()
@@ -24,8 +25,11 @@ export class Messages {
   @Column({ type: 'varchar', length: 4096, nullable: false })
   contents: string;
 
-  @CreateDateColumn({ type: 'timestamptz' })
-  created_at: Date;
+  @Column({
+    type: 'timestamptz',
+    transformer: new DateTimeTransformer(),
+  })
+  created_at: DateTime;
 
   @ManyToOne(() => Channels)
   @JoinColumn({

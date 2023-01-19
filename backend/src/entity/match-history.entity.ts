@@ -6,7 +6,9 @@ import {
   ManyToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
+import { DateTime } from 'luxon';
 
+import { DateTimeTransformer } from './date-time.transformer';
 import { Users } from './users.entity';
 
 @Entity()
@@ -33,10 +35,10 @@ export class MatchHistory {
 
   @Column({
     type: 'timestamptz',
-    default: () => 'CURRENT_TIMESTAMP',
     nullable: false,
+    transformer: new DateTimeTransformer(),
   })
-  end_at: Date;
+  end_at: DateTime;
 
   @ManyToOne(() => Users)
   @JoinColumn({
