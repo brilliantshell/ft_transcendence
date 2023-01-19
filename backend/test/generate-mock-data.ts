@@ -1,9 +1,14 @@
-import { faker } from '@faker-js/faker';
 import { bufferCount, of } from 'rxjs';
+import { faker } from '@faker-js/faker';
 
 import { AccessMode, Channels } from '../src/entity/channels.entity';
+import { BannedMembers } from '../src/entity/banned-members.entity';
 import { BlockedUsers } from '../src/entity/blocked-users.entity';
+import { ChannelId, UserId } from '../src/util/type';
+import { ChannelMembers } from '../src/entity/channel-members.entity';
+import { DateTimeTransformer } from '../src/entity/date-time.transformer';
 import { Friends } from '../src/entity/friends.entity';
+import { Messages } from '../src/entity/messages.entity';
 import { Users } from '../src/entity/users.entity';
 
 // SECTION : Users
@@ -69,7 +74,7 @@ const createRandomChannel = (users: Users[]): Channels => {
     channel.access_mode === AccessMode.PROTECTED
       ? faker.internet.password()
       : null;
-  channel.modified_at = faker.date.past();
+  channel.modified_at = new DateTimeTransformer().from(faker.date.past());
   channel.owner_id = faker.helpers.arrayElement(users).user_id;
   channel.dm_peer_id = null;
   channel.member_cnt = 1;
@@ -92,8 +97,104 @@ export const generateChannels = (users: Users[]): Channels[] => {
       channel.member_cnt = 2;
       pastDms.push([channel.owner_id, channel.dm_peer_id]);
       pastDms.push([channel.dm_peer_id, channel.owner_id]);
+    } else {
+      channel.member_cnt = faker.datatype.number({ min: 2, max: 10 });
     }
     channels.push(channel);
   });
   return channels;
+};
+
+// SECTION : ChannelMembers
+
+export const createChannelMember = (
+  userId: UserId,
+  channelId: ChannelId,
+  isAdmin = false,
+) => {
+  const transformer = new DateTimeTransformer();
+  const channelMember = new ChannelMembers();
+  channelMember.member_id = userId;
+  channelMember.channel_id = channelId;
+  channelMember.is_admin = isAdmin ? true : faker.datatype.boolean();
+  channelMember.viewed_at = transformer.from(faker.date.past());
+  channelMember.mute_end_time = isAdmin
+    ? transformer.from(faker.date.past())
+    : faker.datatype.boolean()
+    ? transformer.from(faker.date.future())
+    : transformer.from(faker.date.recent());
+  return channelMember;
+};
+
+export const generateChannelMembers = (
+  users: Users[],
+  channels: Channels[],
+) => {
+  const channelMembers: ChannelMembers[] = [];
+  channels.forEach((channel) => {
+    channelMembers.push(
+      createChannelMember(channel.owner_id, channel.channel_id, true),
+    );
+    if (channel.dm_peer_id) {
+      return channelMembers.push(
+        createChannelMember(channel.dm_peer_id, channel.channel_id),
+      );
+    }
+    const currentMembers: ChannelMembers[] = [];
+    for (let i = 0; i < channel.member_cnt - 1; ++i) {
+      let id = faker.helpers.arrayElement(users).user_id;
+      while (
+        id === channel.owner_id ||
+        currentMembers.some((v) => v.member_id === id)
+      ) {
+        id = faker.helpers.arrayElement(users).user_id;
+      }
+      currentMembers.push(createChannelMember(id, channel.channel_id));
+    }
+    channelMembers.push(...currentMembers);
+  });
+
+  return channelMembers;
+};
+
+// SECTION : Messages
+const createRandomMessage = (senderId: UserId, channelId: ChannelId) => {
+  const message = new Messages();
+  message.sender_id = senderId;
+  message.channel_id = channelId;
+  message.contents = faker.lorem.word({ length: { min: 1, max: 4096 } });
+  message.created_at = new DateTimeTransformer().from(faker.date.past());
+  return message;
+};
+
+export const generateMessages = (members: ChannelMembers[]) => {
+  const messages: Messages[] = [];
+  members.forEach((member) => {
+    if (faker.datatype.boolean()) {
+      return;
+    }
+    for (let i = 0; i < faker.datatype.number({ min: 1, max: 100 }); ++i) {
+      messages.push(createRandomMessage(member.member_id, member.channel_id));
+    }
+  });
+  return messages;
+};
+
+// SECTION : Banned Members
+export const generateBannedMembers = (members: ChannelMembers[]) => {
+  const bannedMembers: BannedMembers[] = [];
+  members.forEach((member) => {
+    if (faker.datatype.boolean()) {
+      return;
+    }
+    if (faker.datatype.boolean()) {
+      return;
+    }
+    const bannedMember = new BannedMembers();
+    bannedMember.member_id = member.member_id;
+    bannedMember.channel_id = member.channel_id;
+    bannedMember.end_time = new DateTimeTransformer().from(faker.date.soon());
+    bannedMembers.push(bannedMember);
+  });
+  return bannedMembers;
 };

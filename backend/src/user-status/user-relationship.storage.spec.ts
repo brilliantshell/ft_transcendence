@@ -1,6 +1,7 @@
+import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { DataSource, IsNull, Not, Repository } from 'typeorm';
 import { Test, TestingModule } from '@nestjs/testing';
-import { TypeOrmModule, TypeOrmModuleOptions } from '@nestjs/typeorm';
-import { DataSource, Not, IsNull, Repository } from 'typeorm';
+import { TypeOrmModule } from '@nestjs/typeorm';
 
 import {
   BlockedUsers,
@@ -8,30 +9,27 @@ import {
 } from '../entity/blocked-users.entity';
 import { Channels } from '../entity/channels.entity';
 import { Friends } from '../entity/friends.entity';
+import { Relationship, UserId } from '../util/type';
+import { UserRelationshipStorage } from './user-relationship.storage';
+import { Users } from '../entity/users.entity';
+import {
+  createDataSources,
+  destroyDataSources,
+  TYPEORM_SHARED_CONFIG,
+} from '../../test/db-resource-manager';
 import {
   generateBlockedUsers,
   generateChannels,
   generateFriends,
   generateUsers,
 } from '../../test/generate-mock-data';
-import { Relationship, UserId } from '../util/type';
-import { UserRelationshipStorage } from './user-relationship.storage';
-import { Users } from '../entity/users.entity';
-import { BadRequestException, NotFoundException } from '@nestjs/common';
 
-const typeOrmConfig: TypeOrmModuleOptions = {
-  type: 'postgres',
-  host: 'localhost',
-  port: 5432,
-  username: 'test_user',
-  password: 'test_password',
-  database: 'test_db',
-  autoLoadEntities: true,
-  synchronize: true,
-};
+const TEST_DB = 'test_db_user_relationship';
+const ENTITIES = [BlockedUsers, Friends, Users, Channels];
 
 describe('UserRelationshipService', () => {
   let userRelationshipStorage: UserRelationshipStorage;
+  let initDataSource: DataSource;
   let dataSource: DataSource;
   let target: UserId;
   let usersPool: Users[][];
@@ -44,16 +42,9 @@ describe('UserRelationshipService', () => {
   let channelRepository: Repository<Channels>;
 
   beforeAll(async () => {
-    dataSource = await new DataSource({
-      type: 'postgres',
-      host: 'localhost',
-      port: 5432,
-      username: 'test_user',
-      password: 'test_password',
-      database: 'test_db',
-      entities: [BlockedUsers, Friends, Users, Channels],
-      synchronize: true,
-    }).initialize();
+    const dataSources = await createDataSources(TEST_DB, ENTITIES);
+    initDataSource = dataSources.initDataSource;
+    dataSource = dataSources.dataSource;
     usersPool = [
       generateUsers(200),
       generateUsers(200),
@@ -78,8 +69,13 @@ describe('UserRelationshipService', () => {
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       imports: [
-        TypeOrmModule.forRoot(typeOrmConfig),
-        TypeOrmModule.forFeature([BlockedUsers, Friends, Users, Channels]),
+        TypeOrmModule.forRoot({
+          type: 'postgres',
+          ...TYPEORM_SHARED_CONFIG,
+          autoLoadEntities: true,
+          database: TEST_DB,
+        }),
+        TypeOrmModule.forFeature(ENTITIES),
       ],
       providers: [UserRelationshipStorage],
     }).compile();
@@ -91,10 +87,9 @@ describe('UserRelationshipService', () => {
     target = users[Math.floor(Math.random() * users.length)].user_id;
   });
 
-  afterAll(async () => {
-    await usersRepository.query('TRUNCATE TABLE users CASCADE');
-    await dataSource.destroy();
-  });
+  afterAll(
+    async () => await destroyDataSources(TEST_DB, dataSource, initDataSource),
+  );
 
   it('should be defined', () => {
     expect(userRelationshipStorage).toBeDefined();
