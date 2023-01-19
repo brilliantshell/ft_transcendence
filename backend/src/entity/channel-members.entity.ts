@@ -1,7 +1,9 @@
-import { Entity, PrimaryColumn, ManyToOne, JoinColumn, Column } from 'typeorm';
+import { Column, Entity, JoinColumn, ManyToOne, PrimaryColumn } from 'typeorm';
+import { DateTime } from 'luxon';
 
-import { Users } from './users.entity';
 import { Channels } from './channels.entity';
+import { DateTimeTransformer } from './date-time.transformer';
+import { Users } from './users.entity';
 
 @Entity()
 export class ChannelMembers {
@@ -22,17 +24,17 @@ export class ChannelMembers {
 
   @Column({
     type: 'timestamptz',
-    default: '-infinity',
     nullable: false,
+    transformer: new DateTimeTransformer(),
   })
-  mute_end_time: Date;
+  mute_end_time: DateTime | 'epoch';
 
   @Column({
     type: 'timestamptz',
-    default: () => 'CURRENT_TIMESTAMP',
     nullable: false,
+    transformer: new DateTimeTransformer(),
   })
-  viewed_at: Date;
+  viewed_at: DateTime;
 
   @ManyToOne(() => Users)
   @JoinColumn({

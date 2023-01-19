@@ -5,9 +5,10 @@ import {
   JoinColumn,
   ManyToOne,
   PrimaryGeneratedColumn,
-  UpdateDateColumn,
 } from 'typeorm';
+import { DateTime } from 'luxon';
 
+import { DateTimeTransformer } from './date-time.transformer';
 import { Users } from './users.entity';
 
 export enum AccessMode {
@@ -44,8 +45,11 @@ export class Channels {
   @Column({ type: 'bytea', nullable: true })
   passwd: string | null;
 
-  @UpdateDateColumn({ type: 'timestamptz' })
-  modified_at: Date;
+  @Column({
+    type: 'timestamptz',
+    transformer: new DateTimeTransformer(),
+  })
+  modified_at: DateTime;
 
   @ManyToOne(() => Users)
   @JoinColumn({

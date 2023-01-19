@@ -1,6 +1,8 @@
 import { Column, Entity, JoinColumn, ManyToOne, PrimaryColumn } from 'typeorm';
+import { DateTime } from 'luxon';
 
 import { Channels } from './channels.entity';
+import { DateTimeTransformer } from './date-time.transformer';
 import { Users } from './users.entity';
 
 @Entity()
@@ -19,10 +21,10 @@ export class BannedMembers {
 
   @Column({
     type: 'timestamptz',
-    default: '-infinity',
     nullable: false,
+    transformer: new DateTimeTransformer(),
   })
-  end_time: Date;
+  end_time: DateTime;
 
   @ManyToOne(() => Channels)
   @JoinColumn({
