@@ -64,13 +64,13 @@ export const generateBlockedUsers = (users: Users[]): BlockedUsers[] => {
 // SECTION : Channels
 const createRandomChannel = (users: Users[]): Channels => {
   const channel = new Channels();
-  channel.channel_name = faker.name.firstName();
+  channel.name = faker.name.firstName();
   channel.access_mode = faker.helpers.arrayElement<AccessMode>([
     AccessMode.PRIVATE,
     AccessMode.PROTECTED,
     AccessMode.PUBLIC,
   ]);
-  channel.passwd =
+  channel.password =
     channel.access_mode === AccessMode.PROTECTED
       ? faker.internet.password()
       : null;

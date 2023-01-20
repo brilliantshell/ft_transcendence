@@ -31,7 +31,7 @@ export class Messages {
   })
   created_at: DateTime;
 
-  @ManyToOne(() => Channels)
+  @ManyToOne(() => Channels, { onDelete: 'CASCADE' })
   @JoinColumn({
     name: 'channel_id',
     foreignKeyConstraintName: 'messages_channel_id_fkey',

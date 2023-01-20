@@ -30,9 +30,9 @@ export class Channels {
   dm_peer_id: number | null;
 
   @Column({ type: 'varchar', length: 128, nullable: false })
-  channel_name: string;
+  name: string;
 
-  @Column({ type: 'integer', nullable: false })
+  @Column({ type: 'integer', default: 1, nullable: false })
   member_cnt: number;
 
   @Column({
@@ -43,7 +43,7 @@ export class Channels {
   access_mode: AccessMode;
 
   @Column({ type: 'bytea', nullable: true })
-  passwd: string | null;
+  password: string | null;
 
   @Column({
     type: 'timestamptz',

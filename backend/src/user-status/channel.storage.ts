@@ -1,23 +1,25 @@
+import { DataSource, MoreThan, Repository } from 'typeorm';
+import { DateTime } from 'luxon';
 import {
   Injectable,
   InternalServerErrorException,
   Logger,
 } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
+import { InjectDataSource } from '@nestjs/typeorm';
 
+import { AccessMode, Channels } from '../entity/channels.entity';
 import { BannedMembers } from '../entity/banned-members.entity';
-import { ChannelMembers } from '../entity/channel-members.entity';
-import { Channels } from '../entity/channels.entity';
-import { Messages } from '../entity/messages.entity';
-import { Users } from '../entity/users.entity';
 import {
   ChannelId,
   ChannelInfo,
   UserChannelStatus,
   UserId,
   UserRole,
-} from 'src/util/type';
-import { In, MoreThan, Repository } from 'typeorm';
+} from '../util/type';
+import { ChannelMembers } from '../entity/channel-members.entity';
+import { Messages } from '../entity/messages.entity';
+import { Users } from '../entity/users.entity';
+import { UserRelationshipStorage } from './user-relationship.storage';
 
 /**
  * 
@@ -66,20 +68,26 @@ export class ChannelStorage {
     Map<ChannelId, UserChannelStatus>
   >();
 
+  private bannedMembersRepository: Repository<BannedMembers>;
+  private channelMembersRepository: Repository<ChannelMembers>;
+  private channelsRepository: Repository<Channels>;
+  private messagesRepository: Repository<Messages>;
+  private usersRepository: Repository<Users>;
   private logger: Logger = new Logger(ChannelStorage.name);
 
   constructor(
-    @InjectRepository(BannedMembers)
-    private bannedMembersRepository: Repository<BannedMembers>,
-    @InjectRepository(ChannelMembers)
-    private channelMembersRepository: Repository<ChannelMembers>,
-    @InjectRepository(Channels)
-    private channelsRepository: Repository<Channels>,
-    @InjectRepository(Messages)
-    private messagesRepository: Repository<Messages>,
-    @InjectRepository(Users)
-    private usersRepository: Repository<Users>,
-  ) {}
+    @InjectDataSource()
+    private dataSource: DataSource,
+    private userRelationshipStorage: UserRelationshipStorage,
+  ) {
+    this.bannedMembersRepository =
+      this.dataSource.manager.getRepository(BannedMembers);
+    this.channelMembersRepository =
+      this.dataSource.manager.getRepository(ChannelMembers);
+    this.channelsRepository = this.dataSource.manager.getRepository(Channels);
+    this.messagesRepository = this.dataSource.manager.getRepository(Messages);
+    this.usersRepository = this.dataSource.manager.getRepository(Users);
+  }
 
   /*****************************************************************************
    *                                                                           *
@@ -134,6 +142,7 @@ export class ChannelStorage {
   /**
    * @description 유저가 로그인 시 유저가 속한 채팅방과 유저 간 관계를 캐싱
    *
+   * @param userId 로그인한 유저의 id
    */
   async loadUser(userId: UserId) {
     this.users.set(userId, new Map<ChannelId, UserChannelStatus>());
@@ -150,22 +159,19 @@ export class ChannelStorage {
           channel: { modified_at: true as any },
         },
       });
+      const userMap = this.users.get(userId);
       await Promise.all(
-        memberships.map(async ({ channel_id, viewed_at, mute_end_time }) => {
-          return await this.messagesRepository
-            .createQueryBuilder('message')
-            .where(
-              'message.channel_id = :channel_id AND message.created_at > :viewed_at',
-              { channel_id, viewed_at },
-            )
-            .getCount()
-            .then((count) => {
-              this.users.get(userId).set(channel_id, {
-                unseenCount: count,
-                muteEndTime: mute_end_time,
-              });
-            });
-        }),
+        memberships.map(
+          async ({ channel_id, mute_end_time, viewed_at }) =>
+            await this.messagesRepository
+              .countBy({ channel_id, created_at: MoreThan(viewed_at) })
+              .then((unseenCount) =>
+                userMap.set(channel_id, {
+                  unseenCount,
+                  muteEndTime: mute_end_time,
+                }),
+              ),
+        ),
       );
     } catch (e) {
       this.logger.error(e);
@@ -175,9 +181,29 @@ export class ChannelStorage {
     }
   }
 
+  /**
+   * @description 유저가 서비스를 떠날 시 캐시 삭제
+   *
+   * @param userId 떠난 유저의 id
+   */
+  unloadUser(userId: UserId) {
+    this.users.delete(userId);
+  }
+
+  /**
+   * @description 유저-채팅방 캐시 맵 반환
+   *
+   * @param userId 유저의 id
+   */
   getUser(userId: UserId) {
     return this.users.get(userId);
   }
+
+  getChannel(channelId: ChannelId) {
+    return this.channels.get(channelId);
+  }
+
+  // getUserRole(channelId: ChannelId, userId: UserId): UserRole | null {}
 
   /**
    * @description
@@ -185,5 +211,161 @@ export class ChannelStorage {
    */
   getChannels() {
     return this.channels;
+  }
+
+  async addChannel(data: {
+    accessMode: AccessMode;
+    owner: UserId;
+    name?: string;
+    dmPeerId?: UserId;
+    password?: string;
+  }): Promise<ChannelId> {
+    const { accessMode, name, owner, dmPeerId, password } = data;
+    let newChannel: Channels;
+    try {
+      await this.dataSource.manager.transaction(async (manager) => {
+        if (dmPeerId) {
+          const test = await manager
+            .createQueryBuilder()
+            .insert()
+            .into(Channels)
+            .values({
+              access_mode: accessMode,
+              member_cnt: 2,
+              modified_at: DateTime.now(),
+              // FIXME : owner_nickname, dm_peer_nickname 적용시키기
+              name: dmPeerId
+                ? () =>
+                    "(SELECT string_agg(nickname, ', ') FROM users \
+                    WHERE user_id = :owner OR user_id = :dmPeerId)"
+                : name,
+              owner_id: owner,
+              dm_peer_id: dmPeerId,
+            })
+            .setParameter('owner', owner)
+            .setParameter('dmPeerId', dmPeerId)
+            .returning(['channel_id', 'modified_at', 'access_mode'])
+            .execute();
+          console.log(test);
+          newChannel = test.generatedMaps[0] as Channels;
+          await manager.insert(ChannelMembers, [
+            {
+              channel_id: newChannel.channel_id,
+              is_admin: true,
+              member_id: owner,
+              mute_end_time: 'epoch',
+              viewed_at: DateTime.now(),
+            },
+            {
+              channel_id: newChannel.channel_id,
+              is_admin: false,
+              member_id: dmPeerId,
+              mute_end_time: 'epoch',
+              viewed_at: DateTime.now(),
+            },
+          ]);
+
+          this.channels.set(newChannel.channel_id, {
+            modifiedAt: DateTime.local().setZone().set(newChannel.modified_at),
+            userRoleMap: new Map<UserId, UserRole>().set(owner, 'owner'),
+            accessMode: newChannel.access_mode,
+          });
+          this.users.get(owner)?.set(newChannel.channel_id, {
+            unseenCount: 0,
+            muteEndTime: DateTime.fromMillis(0),
+          });
+        } else {
+          newChannel = await manager.save(Channels, {
+            access_mode: accessMode,
+            modified_at: DateTime.now(),
+            name,
+            owner_id: owner,
+            dm_peer_id: null,
+            password: password ? password : null,
+          });
+          await manager.insert(ChannelMembers, {
+            channel_id: newChannel.channel_id,
+            is_admin: true,
+            member_id: owner,
+            mute_end_time: 'epoch',
+            viewed_at: DateTime.now(),
+          });
+          this.channels.set(newChannel.channel_id, {
+            modifiedAt: newChannel.modified_at,
+            userRoleMap: new Map<UserId, UserRole>().set(owner, 'owner'),
+            accessMode: newChannel.access_mode,
+          });
+          this.users.get(owner)?.set(newChannel.channel_id, {
+            unseenCount: 0,
+            muteEndTime: DateTime.fromMillis(0),
+          });
+        }
+      });
+    } catch (e) {
+      this.logger.error(e);
+      throw new InternalServerErrorException(`Failed to add channel`);
+    }
+    return newChannel.channel_id;
+  }
+
+  async addUserToChannel(channelId: ChannelId, userId: UserId) {
+    try {
+      await this.dataSource.manager.transaction(async (manager) => {
+        await manager.save(ChannelMembers, {
+          channel_id: channelId,
+          member_id: userId,
+          mute_end_time: 'epoch',
+          viewed_at: DateTime.now(),
+        });
+        await manager.update(
+          Channels,
+          { channel_id: channelId },
+          { modified_at: DateTime.now(), member_cnt: () => 'member_cnt + 1' },
+        );
+      });
+    } catch (e) {
+      this.logger.error(e);
+      throw new InternalServerErrorException(
+        `Failed to add user(${userId}) to channel(${channelId})`,
+      );
+    }
+    this.channels.get(channelId).userRoleMap.set(userId, 'normal');
+    this.users.get(userId)?.set(channelId, {
+      unseenCount: 0,
+      muteEndTime: DateTime.fromMillis(0),
+    });
+  }
+
+  async deleteUserFromChannel(channelId: ChannelId, userId: UserId) {
+    try {
+      const channelUsers = this.channels.get(channelId).userRoleMap;
+      if (channelUsers.get(userId) === 'owner') {
+        await this.channelsRepository.delete({ channel_id: channelId });
+        const members = channelUsers.keys();
+        for (const member of members) {
+          this.users.get(member)?.delete(channelId);
+        }
+        this.channels.delete(channelId);
+      } else {
+        await this.dataSource.manager.transaction(async (manager) => {
+          await manager.delete(ChannelMembers, {
+            channel_id: channelId,
+            member_id: userId,
+          });
+          await manager.update(
+            Channels,
+            { channel_id: channelId },
+            { modified_at: DateTime.now(), member_cnt: () => 'member_cnt - 1' },
+          );
+        });
+        this.users.get(userId)?.delete(channelId);
+        channelUsers.delete(userId);
+      }
+    } catch (e) {
+      this.logger.error(e);
+      throw new InternalServerErrorException(
+        `Failed to delete user(${userId}) from channel(${channelId})`,
+      );
+    }
   }
 }

@@ -26,7 +26,7 @@ export class BannedMembers {
   })
   end_time: DateTime;
 
-  @ManyToOne(() => Channels)
+  @ManyToOne(() => Channels, { onDelete: 'CASCADE' })
   @JoinColumn({
     name: 'channel_id',
     foreignKeyConstraintName: 'banned_members_channel_id_fkey',

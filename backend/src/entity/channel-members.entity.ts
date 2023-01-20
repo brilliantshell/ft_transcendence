@@ -43,7 +43,7 @@ export class ChannelMembers {
   })
   member: Users;
 
-  @ManyToOne(() => Channels)
+  @ManyToOne(() => Channels, { onDelete: 'CASCADE' })
   @JoinColumn({
     name: 'channel_id',
     foreignKeyConstraintName: 'channel_members_channel_id_fkey',
