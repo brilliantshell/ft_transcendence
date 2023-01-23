@@ -1,6 +1,8 @@
 import { DataSource, MoreThan, Repository } from 'typeorm';
 import { DateTime } from 'luxon';
 import {
+  BadRequestException,
+  ForbiddenException,
   Injectable,
   InternalServerErrorException,
   Logger,
@@ -26,7 +28,7 @@ import { UserRelationshipStorage } from './user-relationship.storage';
  * 
  type UserId = number;
 type ChannelId = number;
-type UserRole = "owner" | "admin" | "normal"
+type UserRole = "owner" | "admin" | "member"
 
 interface ChannelInfo {
 	modifiedAt: timestamp;
@@ -36,7 +38,7 @@ interface ChannelInfo {
 
 interface UserChannelStatus {
 	unseenCount: number;
-	muteEndTime: timestamp;
+	muteEndAt: timestamp;
 }
 
 class ChannelStorage {
@@ -46,10 +48,10 @@ class ChannelStorage {
 	initChannels();
 	loadUser(userId: UserId);
 	unloadUser(userId: UserId);
-	getUserRole(channelId: ChannelId, userId: UserId): UserRole | null;
 	deleteUserFromChannel(channelId: ChannelId, userId, UserId);
 	addChannel(ownerId: UserId, dmPeerId?: UserId): channelId;
 	addUserToChannel(channelId: ChannelId, userId: UserId);
+	getUserRole(channelId: ChannelId, userId: UserId): UserRole | null;
 	updateUserRole(channelId: ChannelId, userId: UserId, role: UserRole);
 	updateChannelModifiedAt(channelId: ChannelId, userId: userId);	
 	updateMuteStatus(channelId: ChannelId, userId: userId, endTime: TIMESTAMP);
@@ -111,15 +113,15 @@ export class ChannelStorage implements OnModuleInit {
         relations: ['channel'],
         select: {
           channel: {
-            access_mode: true,
-            modified_at: true as any,
-            owner_id: true,
+            accessMode: true,
+            modifiedAt: true as any,
+            ownerId: true,
           },
-          channel_id: true,
-          is_admin: true,
-          member_id: true,
+          channelId: true,
+          isAdmin: true,
+          memberId: true,
         },
-        order: { channel_id: 'ASC' },
+        order: { channelId: 'ASC' },
       });
     } catch (e) {
       this.logger.error(e);
@@ -127,19 +129,19 @@ export class ChannelStorage implements OnModuleInit {
     }
     let curUserRoleMap: Map<UserId, UserRole>;
     joinedMembers.forEach((member) => {
-      const { channel_id, channel, member_id, is_admin } = member;
-      const { access_mode, modified_at, owner_id } = channel;
-      if (!this.channels.has(channel_id)) {
-        this.channels.set(channel_id, {
-          modifiedAt: modified_at,
+      const { channelId, channel, memberId, isAdmin } = member;
+      const { accessMode, modifiedAt, ownerId } = channel;
+      if (!this.channels.has(channelId)) {
+        this.channels.set(channelId, {
+          modifiedAt,
           userRoleMap: new Map<UserId, UserRole>(),
-          accessMode: access_mode,
+          accessMode,
         });
-        curUserRoleMap = this.channels.get(channel_id).userRoleMap;
+        curUserRoleMap = this.channels.get(channelId).userRoleMap;
       }
       curUserRoleMap.set(
-        member_id,
-        owner_id === member_id ? 'owner' : is_admin ? 'admin' : 'normal',
+        memberId,
+        ownerId === memberId ? 'owner' : isAdmin ? 'admin' : 'member',
       );
     });
   }
@@ -153,32 +155,30 @@ export class ChannelStorage implements OnModuleInit {
     this.users.set(userId, new Map<ChannelId, UserChannelStatus>());
     try {
       const memberships = await this.channelMembersRepository.find({
-        relations: ['channel'],
         where: {
-          member_id: userId,
+          memberId: userId,
         },
         select: {
-          channel_id: true,
-          viewed_at: true as any,
-          mute_end_time: true as any,
-          channel: { modified_at: true as any },
+          channelId: true,
+          viewedAt: true as any,
+          muteEndAt: true as any,
         },
       });
       const userMap = this.users.get(userId);
       await Promise.all(
-        memberships.map(
-          async ({ channel_id, mute_end_time, viewed_at }) =>
-            await this.messagesRepository
-              .countBy({ channel_id, created_at: MoreThan(viewed_at) })
-              .then((unseenCount) =>
-                userMap.set(channel_id, {
-                  unseenCount,
-                  muteEndTime: mute_end_time,
-                }),
-              ),
+        memberships.map(({ channelId, muteEndAt, viewedAt }) =>
+          this.messagesRepository
+            .countBy({
+              channelId,
+              createdAt: MoreThan(viewedAt),
+            })
+            .then((unseenCount) =>
+              userMap.set(channelId, { unseenCount, muteEndAt }),
+            ),
         ),
       );
     } catch (e) {
+      console.error(e);
       this.logger.error(e);
       throw new InternalServerErrorException(
         `Failed to load user-channel info of the user, ${userId}`,
@@ -218,60 +218,75 @@ export class ChannelStorage implements OnModuleInit {
     return this.channels;
   }
 
+  /**
+   * @description DM 채널 생성
+   *
+   * @param owner DM을 생성한 유저의 id
+   * @param peer DM을 생성한 유저의 상대방 id
+   * @returns 생성된 DM 채널의 id
+   */
   async addDm(owner: UserId, peer: UserId) {
     let newChannel: Channels;
     let dmCreatedAt: DateTime;
     try {
-      const subQuery = () =>
-        "(SELECT string_agg(nickname, ', ' ORDER BY \
-        ARRAY_POSITION(ARRAY[:owner::int, :peer::int], user_id)) \
-        FROM users WHERE user_id IN (:owner, :peer))";
       await this.dataSource.manager.transaction(async (manager) => {
         const insertResult = await manager
           .createQueryBuilder()
           .insert()
           .into(Channels)
           .values({
-            access_mode: 'private' as AccessMode,
-            member_cnt: 2,
-            modified_at: DateTime.now(),
-            name: subQuery,
-            owner_id: owner,
-            dm_peer_id: peer,
+            accessMode: 'private' as AccessMode,
+            memberCount: 2,
+            modifiedAt: DateTime.now(),
+            name: () =>
+              "(SELECT string_agg(nickname, ', ' ORDER BY \
+            ARRAY_POSITION(ARRAY[:owner::int, :peer::int], user_id)) \
+            FROM users WHERE user_id IN (:owner, :peer))",
+            ownerId: owner,
+            dmPeerId: peer,
           })
           .setParameters({ owner, peer })
-          .returning(['channel_id', 'modified_at'])
+          .returning(['channelId', 'modifiedAt'])
           .execute();
         newChannel = insertResult.generatedMaps[0] as Channels;
-        const { channel_id, modified_at } = newChannel;
-        dmCreatedAt = DateTime.fromJSDate(modified_at as unknown as Date);
+        const { channelId, modifiedAt } = newChannel;
+        dmCreatedAt = DateTime.fromJSDate(modifiedAt as unknown as Date);
         await manager.insert(ChannelMembers, [
-          this.generateMemberInfo(channel_id, owner, false, dmCreatedAt),
-          this.generateMemberInfo(channel_id, peer, false, dmCreatedAt),
+          this.generateMemberInfo(channelId, owner, false, dmCreatedAt),
+          this.generateMemberInfo(channelId, peer, false, dmCreatedAt),
         ]);
       });
-      this.channels.set(newChannel.channel_id, {
+      this.channels.set(newChannel.channelId, {
         modifiedAt: dmCreatedAt,
         userRoleMap: new Map<UserId, UserRole>()
           .set(owner, 'owner')
-          .set(peer, 'normal'),
+          .set(peer, 'member'),
         accessMode: 'private',
       });
-      this.users.get(owner).set(newChannel.channel_id, {
+      this.users.get(owner).set(newChannel.channelId, {
         unseenCount: 0,
-        muteEndTime: DateTime.fromMillis(0),
+        muteEndAt: DateTime.fromMillis(0),
       });
-      this.users.get(peer)?.set(newChannel.channel_id, {
+      this.users.get(peer)?.set(newChannel.channelId, {
         unseenCount: 0,
-        muteEndTime: DateTime.fromMillis(0),
+        muteEndAt: DateTime.fromMillis(0),
       });
-      return newChannel.channel_id;
+      return newChannel.channelId;
     } catch (e) {
       this.logger.error(e);
       throw new InternalServerErrorException(`Failed to add DM channel`);
     }
   }
 
+  /**
+   * @description 채팅방 생성
+   *
+   * @param accessMode 채팅방 접근 권한
+   * @param owner 채팅방 생성자
+   * @param name 채팅방 이름
+   * @param password 채팅방 비밀번호
+   * @returns 생성된 채팅방의 id
+   */
   async addChannel(
     accessMode: AccessMode,
     owner: UserId,
@@ -282,28 +297,28 @@ export class ChannelStorage implements OnModuleInit {
       let newChannel: Channels;
       await this.dataSource.manager.transaction(async (manager) => {
         newChannel = await manager.save(Channels, {
-          access_mode: accessMode,
-          modified_at: DateTime.now(),
+          accessMode,
+          modifiedAt: DateTime.now(),
           name,
-          owner_id: owner,
+          ownerId: owner,
           password,
         });
-        const { channel_id, modified_at } = newChannel;
+        const { channelId, modifiedAt } = newChannel;
         await manager.insert(
           ChannelMembers,
-          this.generateMemberInfo(channel_id, owner, true, modified_at),
+          this.generateMemberInfo(channelId, owner, true, modifiedAt),
         );
       });
-      this.channels.set(newChannel.channel_id, {
-        modifiedAt: newChannel.modified_at,
+      this.channels.set(newChannel.channelId, {
+        modifiedAt: newChannel.modifiedAt,
         userRoleMap: new Map<UserId, UserRole>().set(owner, 'owner'),
-        accessMode: newChannel.access_mode,
+        accessMode: newChannel.accessMode,
       });
-      this.users.get(owner).set(newChannel.channel_id, {
+      this.users.get(owner).set(newChannel.channelId, {
         unseenCount: 0,
-        muteEndTime: DateTime.fromMillis(0),
+        muteEndAt: DateTime.fromMillis(0),
       });
-      return newChannel.channel_id;
+      return newChannel.channelId;
     } catch (e) {
       console.error(e);
       this.logger.error(e);
@@ -311,39 +326,53 @@ export class ChannelStorage implements OnModuleInit {
     }
   }
 
+  /**
+   * @description 채팅방에 유저 추가
+   *
+   * @param channelId 채팅방 id
+   * @param userId 유저 id
+   */
   async addUserToChannel(channelId: ChannelId, userId: UserId) {
     try {
       await this.dataSource.manager.transaction(async (manager) => {
         await manager.save(ChannelMembers, {
-          channel_id: channelId,
-          member_id: userId,
-          mute_end_time: 'epoch',
-          viewed_at: DateTime.now(),
+          channelId,
+          memberId: userId,
+          muteEndAt: 'epoch',
+          viewedAt: DateTime.now(),
         });
         await manager.update(
           Channels,
-          { channel_id: channelId },
-          { modified_at: DateTime.now(), member_cnt: () => 'member_cnt + 1' },
+          { channelId },
+          { modifiedAt: DateTime.now(), memberCount: () => 'member_count + 1' },
         );
       });
     } catch (e) {
+      console.error(e);
       this.logger.error(e);
       throw new InternalServerErrorException(
         `Failed to add user(${userId}) to channel(${channelId})`,
       );
     }
-    this.channels.get(channelId).userRoleMap.set(userId, 'normal');
+    this.channels.get(channelId).userRoleMap.set(userId, 'member');
     this.users.get(userId)?.set(channelId, {
       unseenCount: 0,
-      muteEndTime: DateTime.fromMillis(0),
+      muteEndAt: DateTime.fromMillis(0),
     });
   }
 
+  /**
+   * @description 채팅방에서 유저 삭제
+   *
+   * @param channelId 채팅방 id
+   * @param userId 유저 id
+   *
+   */
   async deleteUserFromChannel(channelId: ChannelId, userId: UserId) {
     try {
       const channelUsers = this.channels.get(channelId).userRoleMap;
       if (channelUsers.get(userId) === 'owner') {
-        await this.channelsRepository.delete({ channel_id: channelId });
+        await this.channelsRepository.delete({ channelId });
         const members = channelUsers.keys();
         for (const member of members) {
           this.users.get(member)?.delete(channelId);
@@ -352,13 +381,16 @@ export class ChannelStorage implements OnModuleInit {
       } else {
         await this.dataSource.manager.transaction(async (manager) => {
           await manager.delete(ChannelMembers, {
-            channel_id: channelId,
-            member_id: userId,
+            channelId,
+            memberId: userId,
           });
           await manager.update(
             Channels,
-            { channel_id: channelId },
-            { modified_at: DateTime.now(), member_cnt: () => 'member_cnt - 1' },
+            { channelId },
+            {
+              modifiedAt: DateTime.now(),
+              memberCount: () => 'member_count - 1',
+            },
           );
         });
         this.users.get(userId)?.delete(channelId);
@@ -372,18 +404,162 @@ export class ChannelStorage implements OnModuleInit {
     }
   }
 
-  generateMemberInfo(
+  /**
+   * @description 채팅방에서 유저의 role 확인
+   *
+   * @param channelId 채팅방 id
+   * @param userId 유저 id
+   * @returns 유저의 role
+   */
+  getUserRole(channelId: ChannelId, userId: UserId) {
+    return this.channels.get(channelId)?.userRoleMap.get(userId) ?? null;
+  }
+
+  /**
+   * @description 채팅방에서 유저의 role 변경
+   *
+   * @param channelId 채팅방 id
+   * @param memberId 유저 id
+   * @param role 변경할 role
+   */
+  async updateUserRole(
+    channelId: ChannelId,
+    adminId: UserId,
+    memberId: UserId,
+    role: UserRole,
+  ) {
+    try {
+      this.checkRole(
+        channelId,
+        adminId,
+        memberId,
+        `User(${adminId}) is not allowed to update user(${memberId})'s role`,
+      );
+      await this.channelMembersRepository.update(
+        { channelId, memberId },
+        { isAdmin: role === 'admin' },
+      );
+    } catch (e) {
+      this.logger.error(e);
+      if (e instanceof ForbiddenException) {
+        throw e;
+      }
+      throw new InternalServerErrorException(
+        `Failed to update user(${memberId})'s role in channel(${channelId})`,
+      );
+    }
+    this.channels.get(channelId).userRoleMap.set(memberId, role);
+  }
+
+  /**
+   * @description 채팅방이 마지막으로 변경된 시간 (메시지 송신 시간) 업데이트
+   *
+   * @param channelId 채팅방 id
+   * @param userId 유저 id
+   * @param modifiedAt 변경된 시간
+   */
+  async updateChannelModifiedAt(channelId: ChannelId, modifiedAt: DateTime) {
+    try {
+      await this.channelsRepository.update(channelId, { modifiedAt });
+      this.channels.get(channelId).modifiedAt = modifiedAt;
+    } catch (e) {
+      this.logger.error(e);
+      throw new InternalServerErrorException(
+        `Failed to update channel(${channelId})'s modifiedAt`,
+      );
+    }
+  }
+
+  /**
+   * @description 채팅방에서 유저의 mute 상태 업데이트
+   *
+   * @param channelId 채팅방 id
+   * @param adminId 유저 id
+   * @param memberId 유저 id
+   * @param endTime mute 상태 해제 시간
+   */
+  async updateMuteStatus(
+    channelId: ChannelId,
+    adminId: UserId,
+    memberId: UserId,
+    endTime: DateTime,
+  ) {
+    try {
+      this.checkRole(
+        channelId,
+        adminId,
+        memberId,
+        `User(${adminId}) is not allowed to update user(${memberId})'s mute status`,
+      );
+      if (endTime < DateTime.now()) {
+        throw new BadRequestException(
+          `Mute end time(${endTime.toISO()}) must be after now`,
+        );
+      }
+      await this.channelMembersRepository.update(
+        { channelId, memberId },
+        { muteEndAt: endTime },
+      );
+      const userChannelStatus = this.getUser(memberId)?.get(channelId);
+      if (userChannelStatus) {
+        userChannelStatus.muteEndAt = endTime;
+      }
+    } catch (e) {
+      this.logger.error(e);
+      if (e instanceof ForbiddenException || e instanceof BadRequestException) {
+        throw e;
+      }
+      throw new InternalServerErrorException(
+        `Failed to update mute status of user(${memberId}) in channel(${channelId})`,
+      );
+    }
+  }
+
+  /**
+   * @description
+   */
+  // async updateUnseenCount() {}
+
+  /*****************************************************************************
+   *                                                                           *
+   * SECTION : Private methods                                                 *
+   *                                                                           *
+   ****************************************************************************/
+
+  /**
+   * @description 채팅방 멤버 정보 생성
+   *
+   * @param channelId 채팅방 id
+   * @param memberId 멤버 id
+   * @param isAdmin 관리자 여부
+   * @param viewedAt 채팅방 생성 시간
+   * @returns 채팅방 멤버 정보
+   */
+  private generateMemberInfo(
     channelId: ChannelId,
     memberId: UserId,
     isAdmin: boolean,
-    createdAt: DateTime,
+    viewedAt: DateTime,
   ) {
-    return {
-      channel_id: channelId,
-      is_admin: isAdmin,
-      mute_end_time: 'epoch',
-      viewed_at: createdAt,
-      member_id: memberId,
-    };
+    return { channelId, isAdmin, muteEndAt: 'epoch', viewedAt, memberId };
+  }
+
+  private checkRole(
+    channelId: ChannelId,
+    adminId: UserId,
+    memberId: UserId,
+    errorMessage: string,
+  ) {
+    const userRoles = { member: 0, admin: 1, owner: 2 };
+    const adminRole = this.getUserRole(channelId, adminId);
+    const memberRole = this.getUserRole(channelId, memberId);
+    if (
+      !adminRole ||
+      !memberRole ||
+      adminRole === 'member' ||
+      userRoles[adminRole] <= userRoles[memberRole]
+    ) {
+      throw new ForbiddenException(errorMessage);
+    }
   }
 }
