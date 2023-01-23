@@ -7,15 +7,17 @@ import { Users } from './users.entity';
 export class Achievers {
   @PrimaryColumn({
     type: 'integer',
+    name: 'user_id',
     primaryKeyConstraintName: 'achievers_pkey',
   })
-  user_id: number;
+  userId: number;
 
   @PrimaryColumn({
     type: 'integer',
+    name: 'achievement_id',
     primaryKeyConstraintName: 'achievers_pkey',
   })
-  achievement_id: number;
+  achievementId: number;
 
   @ManyToOne(() => Users)
   @JoinColumn({

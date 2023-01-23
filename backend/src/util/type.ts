@@ -14,7 +14,7 @@ export type RelationshipAction = 'friendRequest' | 'block';
 
 export type IsBlocked = boolean;
 
-export type UserRole = 'owner' | 'admin' | 'normal';
+export type UserRole = 'owner' | 'admin' | 'member';
 
 export interface ChannelInfo {
   modifiedAt: DateTime;
@@ -24,5 +24,5 @@ export interface ChannelInfo {
 
 export interface UserChannelStatus {
   unseenCount: number;
-  muteEndTime: DateTime | 'epoch';
+  muteEndAt: DateTime | 'epoch';
 }

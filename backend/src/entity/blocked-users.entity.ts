@@ -3,23 +3,25 @@ import { Entity, JoinColumn, ManyToOne, PrimaryColumn } from 'typeorm';
 import { Users } from './users.entity';
 
 export interface BlockedUsersInterface {
-  blocker_id: number;
-  blocked_id: number;
+  blockerId: number;
+  blockedId: number;
 }
 
 @Entity()
 export class BlockedUsers implements BlockedUsersInterface {
   @PrimaryColumn({
     type: 'integer',
+    name: 'blocker_id',
     primaryKeyConstraintName: 'blocked_users_pkey',
   })
-  blocker_id: number;
+  blockerId: number;
 
   @PrimaryColumn({
     type: 'integer',
+    name: 'blocked_id',
     primaryKeyConstraintName: 'blocked_users_pkey',
   })
-  blocked_id: number;
+  blockedId: number;
 
   @ManyToOne(() => Users)
   @JoinColumn({

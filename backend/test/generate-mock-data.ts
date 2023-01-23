@@ -14,13 +14,13 @@ import { Users } from '../src/entity/users.entity';
 // SECTION : Users
 const createRandomUser = (): Users => {
   const user = new Users();
-  user.auth_email = faker.helpers.unique(faker.internet.email);
+  user.authEmail = faker.helpers.unique(faker.internet.email);
   user.ladder = faker.datatype.number(100);
-  user.loss_cnt = faker.datatype.number(100);
+  user.lossCount = faker.datatype.number(100);
   user.nickname = faker.helpers.unique(faker.name.firstName);
-  user.profile_image = faker.image.imageUrl();
-  user.win_cnt = faker.datatype.number(100);
-  user.user_id = faker.helpers.unique(faker.datatype.number, [
+  user.profileImage = faker.image.imageUrl();
+  user.winCount = faker.datatype.number(100);
+  user.userId = faker.helpers.unique(faker.datatype.number, [
     { min: 10000, max: 99999 },
   ]);
   return user;
@@ -39,9 +39,9 @@ export const generateFriends = (users: Users[]): Friends[] => {
   const ob = of(...users);
   ob.pipe(bufferCount(2)).subscribe((v) => {
     const f = new Friends();
-    f.sender_id = v[0].user_id;
-    f.receiver_id = v[1].user_id;
-    f.is_accepted = faker.datatype.boolean();
+    f.senderId = v[0].userId;
+    f.receiverId = v[1].userId;
+    f.isAccepted = faker.datatype.boolean();
     friend.push(f);
   });
   return friend;
@@ -54,8 +54,8 @@ export const generateBlockedUsers = (users: Users[]): BlockedUsers[] => {
   const ob = of(...users);
   ob.pipe(bufferCount(2)).subscribe((v) => {
     const b = new BlockedUsers();
-    b.blocker_id = v[0].user_id;
-    b.blocked_id = v[1].user_id;
+    b.blockerId = v[0].userId;
+    b.blockedId = v[1].userId;
     blockedUser.push(b);
   });
   return blockedUser;
@@ -65,19 +65,19 @@ export const generateBlockedUsers = (users: Users[]): BlockedUsers[] => {
 const createRandomChannel = (users: Users[]): Channels => {
   const channel = new Channels();
   channel.name = faker.name.firstName();
-  channel.access_mode = faker.helpers.arrayElement<AccessMode>([
+  channel.accessMode = faker.helpers.arrayElement<AccessMode>([
     AccessMode.PRIVATE,
     AccessMode.PROTECTED,
     AccessMode.PUBLIC,
   ]);
   channel.password =
-    channel.access_mode === AccessMode.PROTECTED
+    channel.accessMode === AccessMode.PROTECTED
       ? faker.internet.password()
       : null;
-  channel.modified_at = new DateTimeTransformer().from(faker.date.past());
-  channel.owner_id = faker.helpers.arrayElement(users).user_id;
-  channel.dm_peer_id = null;
-  channel.member_cnt = 1;
+  channel.modifiedAt = new DateTimeTransformer().from(faker.date.past());
+  channel.ownerId = faker.helpers.arrayElement(users).userId;
+  channel.dmPeerId = null;
+  channel.memberCount = 1;
   return channel;
 };
 
@@ -87,18 +87,18 @@ export const generateChannels = (users: Users[]): Channels[] => {
   users.forEach((user) => {
     const channel = createRandomChannel(users);
     if (
-      channel.access_mode === AccessMode.PRIVATE &&
+      channel.accessMode === AccessMode.PRIVATE &&
       faker.datatype.boolean() &&
-      channel.owner_id !== user.user_id &&
-      !pastDms.includes([channel.owner_id, user.user_id]) &&
-      !pastDms.includes([user.user_id, channel.owner_id])
+      channel.ownerId !== user.userId &&
+      !pastDms.includes([channel.ownerId, user.userId]) &&
+      !pastDms.includes([user.userId, channel.ownerId])
     ) {
-      channel.dm_peer_id = user.user_id;
-      channel.member_cnt = 2;
-      pastDms.push([channel.owner_id, channel.dm_peer_id]);
-      pastDms.push([channel.dm_peer_id, channel.owner_id]);
+      channel.dmPeerId = user.userId;
+      channel.memberCount = 2;
+      pastDms.push([channel.ownerId, channel.dmPeerId]);
+      pastDms.push([channel.dmPeerId, channel.ownerId]);
     } else {
-      channel.member_cnt = faker.datatype.number({ min: 2, max: 10 });
+      channel.memberCount = faker.datatype.number({ min: 2, max: 10 });
     }
     channels.push(channel);
   });
@@ -114,11 +114,11 @@ export const createChannelMember = (
 ) => {
   const transformer = new DateTimeTransformer();
   const channelMember = new ChannelMembers();
-  channelMember.member_id = userId;
-  channelMember.channel_id = channelId;
-  channelMember.is_admin = isAdmin ? true : faker.datatype.boolean();
-  channelMember.viewed_at = transformer.from(faker.date.past());
-  channelMember.mute_end_time = isAdmin
+  channelMember.memberId = userId;
+  channelMember.channelId = channelId;
+  channelMember.isAdmin = isAdmin ? true : faker.datatype.boolean();
+  channelMember.viewedAt = transformer.from(faker.date.past());
+  channelMember.muteEndAt = isAdmin
     ? transformer.from(faker.date.past())
     : faker.datatype.boolean()
     ? transformer.from(faker.date.future())
@@ -133,23 +133,23 @@ export const generateChannelMembers = (
   const channelMembers: ChannelMembers[] = [];
   channels.forEach((channel) => {
     channelMembers.push(
-      createChannelMember(channel.owner_id, channel.channel_id, true),
+      createChannelMember(channel.ownerId, channel.channelId, true),
     );
-    if (channel.dm_peer_id) {
+    if (channel.dmPeerId) {
       return channelMembers.push(
-        createChannelMember(channel.dm_peer_id, channel.channel_id),
+        createChannelMember(channel.dmPeerId, channel.channelId),
       );
     }
     const currentMembers: ChannelMembers[] = [];
-    for (let i = 0; i < channel.member_cnt - 1; ++i) {
-      let id = faker.helpers.arrayElement(users).user_id;
+    for (let i = 0; i < channel.memberCount - 1; ++i) {
+      let id = faker.helpers.arrayElement(users).userId;
       while (
-        id === channel.owner_id ||
-        currentMembers.some((v) => v.member_id === id)
+        id === channel.ownerId ||
+        currentMembers.some((v) => v.memberId === id)
       ) {
-        id = faker.helpers.arrayElement(users).user_id;
+        id = faker.helpers.arrayElement(users).userId;
       }
-      currentMembers.push(createChannelMember(id, channel.channel_id));
+      currentMembers.push(createChannelMember(id, channel.channelId));
     }
     channelMembers.push(...currentMembers);
   });
@@ -160,10 +160,10 @@ export const generateChannelMembers = (
 // SECTION : Messages
 const createRandomMessage = (senderId: UserId, channelId: ChannelId) => {
   const message = new Messages();
-  message.sender_id = senderId;
-  message.channel_id = channelId;
+  message.senderId = senderId;
+  message.channelId = channelId;
   message.contents = faker.lorem.word({ length: { min: 1, max: 4096 } });
-  message.created_at = new DateTimeTransformer().from(faker.date.past());
+  message.createdAt = new DateTimeTransformer().from(faker.date.past());
   return message;
 };
 
@@ -171,7 +171,7 @@ export const generateMessages = (members: ChannelMembers[]) => {
   const messages: Messages[] = [];
   members.forEach((member) => {
     for (let i = 0; i < faker.datatype.number({ min: 1, max: 10 }); ++i) {
-      messages.push(createRandomMessage(member.member_id, member.channel_id));
+      messages.push(createRandomMessage(member.memberId, member.channelId));
     }
   });
   return messages;
@@ -188,9 +188,9 @@ export const generateBannedMembers = (members: ChannelMembers[]) => {
       return;
     }
     const bannedMember = new BannedMembers();
-    bannedMember.member_id = member.member_id;
-    bannedMember.channel_id = member.channel_id;
-    bannedMember.end_time = new DateTimeTransformer().from(faker.date.soon());
+    bannedMember.memberId = member.memberId;
+    bannedMember.channelId = member.channelId;
+    bannedMember.endTime = new DateTimeTransformer().from(faker.date.soon());
     bannedMembers.push(bannedMember);
   });
   return bannedMembers;

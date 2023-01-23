@@ -9,22 +9,25 @@ import { Users } from './users.entity';
 export class BannedMembers {
   @PrimaryColumn({
     type: 'integer',
+    name: 'channel_id',
     primaryKeyConstraintName: 'banned_members_pkey',
   })
-  channel_id: number;
+  channelId: number;
 
   @PrimaryColumn({
     type: 'integer',
+    name: 'member_id',
     primaryKeyConstraintName: 'banned_members_pkey',
   })
-  member_id: number;
+  memberId: number;
 
   @Column({
     type: 'timestamptz',
+    name: 'end_time',
     nullable: false,
     transformer: new DateTimeTransformer(),
   })
-  end_time: DateTime;
+  endTime: DateTime;
 
   @ManyToOne(() => Channels, { onDelete: 'CASCADE' })
   @JoinColumn({

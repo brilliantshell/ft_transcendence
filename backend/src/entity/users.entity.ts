@@ -2,12 +2,16 @@ import { Check, Column, Entity, PrimaryColumn, Unique } from 'typeorm';
 
 @Entity()
 @Check(`"ladder" >= 0`)
-@Check(`"win_cnt" >= 0`)
-@Check(`"loss_cnt" >= 0`)
-@Unique(['nickname', 'auth_email'])
+@Check(`"win_count" >= 0`)
+@Check(`"loss_count" >= 0`)
+@Unique(['nickname', 'authEmail'])
 export class Users {
-  @PrimaryColumn({ type: 'integer', primaryKeyConstraintName: 'users_pkey' })
-  user_id: number;
+  @PrimaryColumn({
+    type: 'integer',
+    name: 'user_id',
+    primaryKeyConstraintName: 'users_pkey',
+  })
+  userId: number;
 
   @Column({ type: 'varchar', length: 16, nullable: false })
   nickname: string;
@@ -16,19 +20,20 @@ export class Users {
     type: 'varchar',
     default: 'default.png',
     length: 256,
+    name: 'profile_image',
     nullable: false,
   })
-  profile_image: string;
+  profileImage: string;
 
-  @Column({ type: 'varchar', length: 320 })
-  auth_email: string;
+  @Column({ type: 'varchar', length: 320, name: 'auth_email' })
+  authEmail: string;
 
   @Column({ type: 'integer', default: 0, nullable: false })
   ladder: number;
 
-  @Column({ type: 'integer', default: 0, nullable: false })
-  win_cnt: number;
+  @Column({ type: 'integer', default: 0, name: 'win_count', nullable: false })
+  winCount: number;
 
-  @Column({ type: 'integer', default: 0, nullable: false })
-  loss_cnt: number;
+  @Column({ type: 'integer', default: 0, name: 'loss_count', nullable: false })
+  lossCount: number;
 }
