@@ -4,6 +4,7 @@ import {
   Injectable,
   InternalServerErrorException,
   Logger,
+  OnModuleInit,
 } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
 
@@ -58,7 +59,7 @@ class ChannelStorage {
  */
 
 @Injectable()
-export class ChannelStorage {
+export class ChannelStorage implements OnModuleInit {
   private channels: Map<ChannelId, ChannelInfo> = new Map<
     ChannelId,
     ChannelInfo
@@ -87,6 +88,10 @@ export class ChannelStorage {
     this.channelsRepository = this.dataSource.manager.getRepository(Channels);
     this.messagesRepository = this.dataSource.manager.getRepository(Messages);
     this.usersRepository = this.dataSource.manager.getRepository(Users);
+  }
+
+  async onModuleInit() {
+    await this.initChannels();
   }
 
   /*****************************************************************************
@@ -213,99 +218,97 @@ export class ChannelStorage {
     return this.channels;
   }
 
-  async addChannel(data: {
-    accessMode: AccessMode;
-    owner: UserId;
-    name?: string;
-    dmPeerId?: UserId;
-    password?: string;
-  }): Promise<ChannelId> {
-    const { accessMode, name, owner, dmPeerId, password } = data;
+  async addDm(owner: UserId, peer: UserId) {
     let newChannel: Channels;
+    let dmCreatedAt: DateTime;
     try {
+      const subQuery = () =>
+        "(SELECT string_agg(nickname, ', ' ORDER BY \
+        ARRAY_POSITION(ARRAY[:owner::int, :peer::int], user_id)) \
+        FROM users WHERE user_id IN (:owner, :peer))";
       await this.dataSource.manager.transaction(async (manager) => {
-        if (dmPeerId) {
-          const test = await manager
-            .createQueryBuilder()
-            .insert()
-            .into(Channels)
-            .values({
-              access_mode: accessMode,
-              member_cnt: 2,
-              modified_at: DateTime.now(),
-              // FIXME : owner_nickname, dm_peer_nickname 적용시키기
-              name: dmPeerId
-                ? () =>
-                    "(SELECT string_agg(nickname, ', ') FROM users \
-                    WHERE user_id = :owner OR user_id = :dmPeerId)"
-                : name,
-              owner_id: owner,
-              dm_peer_id: dmPeerId,
-            })
-            .setParameter('owner', owner)
-            .setParameter('dmPeerId', dmPeerId)
-            .returning(['channel_id', 'modified_at', 'access_mode'])
-            .execute();
-          console.log(test);
-          newChannel = test.generatedMaps[0] as Channels;
-          await manager.insert(ChannelMembers, [
-            {
-              channel_id: newChannel.channel_id,
-              is_admin: true,
-              member_id: owner,
-              mute_end_time: 'epoch',
-              viewed_at: DateTime.now(),
-            },
-            {
-              channel_id: newChannel.channel_id,
-              is_admin: false,
-              member_id: dmPeerId,
-              mute_end_time: 'epoch',
-              viewed_at: DateTime.now(),
-            },
-          ]);
-
-          this.channels.set(newChannel.channel_id, {
-            modifiedAt: DateTime.local().setZone().set(newChannel.modified_at),
-            userRoleMap: new Map<UserId, UserRole>().set(owner, 'owner'),
-            accessMode: newChannel.access_mode,
-          });
-          this.users.get(owner)?.set(newChannel.channel_id, {
-            unseenCount: 0,
-            muteEndTime: DateTime.fromMillis(0),
-          });
-        } else {
-          newChannel = await manager.save(Channels, {
-            access_mode: accessMode,
+        const insertResult = await manager
+          .createQueryBuilder()
+          .insert()
+          .into(Channels)
+          .values({
+            access_mode: 'private' as AccessMode,
+            member_cnt: 2,
             modified_at: DateTime.now(),
-            name,
+            name: subQuery,
             owner_id: owner,
-            dm_peer_id: null,
-            password: password ? password : null,
-          });
-          await manager.insert(ChannelMembers, {
-            channel_id: newChannel.channel_id,
-            is_admin: true,
-            member_id: owner,
-            mute_end_time: 'epoch',
-            viewed_at: DateTime.now(),
-          });
-          this.channels.set(newChannel.channel_id, {
-            modifiedAt: newChannel.modified_at,
-            userRoleMap: new Map<UserId, UserRole>().set(owner, 'owner'),
-            accessMode: newChannel.access_mode,
-          });
-          this.users.get(owner)?.set(newChannel.channel_id, {
-            unseenCount: 0,
-            muteEndTime: DateTime.fromMillis(0),
-          });
-        }
+            dm_peer_id: peer,
+          })
+          .setParameters({ owner, peer })
+          .returning(['channel_id', 'modified_at'])
+          .execute();
+        newChannel = insertResult.generatedMaps[0] as Channels;
+        const { channel_id, modified_at } = newChannel;
+        dmCreatedAt = DateTime.fromJSDate(modified_at as unknown as Date);
+        await manager.insert(ChannelMembers, [
+          this.generateMemberInfo(channel_id, owner, false, dmCreatedAt),
+          this.generateMemberInfo(channel_id, peer, false, dmCreatedAt),
+        ]);
       });
+      this.channels.set(newChannel.channel_id, {
+        modifiedAt: dmCreatedAt,
+        userRoleMap: new Map<UserId, UserRole>()
+          .set(owner, 'owner')
+          .set(peer, 'normal'),
+        accessMode: 'private',
+      });
+      this.users.get(owner).set(newChannel.channel_id, {
+        unseenCount: 0,
+        muteEndTime: DateTime.fromMillis(0),
+      });
+      this.users.get(peer)?.set(newChannel.channel_id, {
+        unseenCount: 0,
+        muteEndTime: DateTime.fromMillis(0),
+      });
+      return newChannel.channel_id;
     } catch (e) {
+      this.logger.error(e);
+      throw new InternalServerErrorException(`Failed to add DM channel`);
+    }
+  }
+
+  async addChannel(
+    accessMode: AccessMode,
+    owner: UserId,
+    name: string,
+    password = null,
+  ): Promise<ChannelId> {
+    try {
+      let newChannel: Channels;
+      await this.dataSource.manager.transaction(async (manager) => {
+        newChannel = await manager.save(Channels, {
+          access_mode: accessMode,
+          modified_at: DateTime.now(),
+          name,
+          owner_id: owner,
+          password,
+        });
+        const { channel_id, modified_at } = newChannel;
+        await manager.insert(
+          ChannelMembers,
+          this.generateMemberInfo(channel_id, owner, true, modified_at),
+        );
+      });
+      this.channels.set(newChannel.channel_id, {
+        modifiedAt: newChannel.modified_at,
+        userRoleMap: new Map<UserId, UserRole>().set(owner, 'owner'),
+        accessMode: newChannel.access_mode,
+      });
+      this.users.get(owner).set(newChannel.channel_id, {
+        unseenCount: 0,
+        muteEndTime: DateTime.fromMillis(0),
+      });
+      return newChannel.channel_id;
+    } catch (e) {
+      console.error(e);
       this.logger.error(e);
       throw new InternalServerErrorException(`Failed to add channel`);
     }
-    return newChannel.channel_id;
   }
 
   async addUserToChannel(channelId: ChannelId, userId: UserId) {
@@ -367,5 +370,20 @@ export class ChannelStorage {
         `Failed to delete user(${userId}) from channel(${channelId})`,
       );
     }
+  }
+
+  generateMemberInfo(
+    channelId: ChannelId,
+    memberId: UserId,
+    isAdmin: boolean,
+    createdAt: DateTime,
+  ) {
+    return {
+      channel_id: channelId,
+      is_admin: isAdmin,
+      mute_end_time: 'epoch',
+      viewed_at: createdAt,
+      member_id: memberId,
+    };
   }
 }

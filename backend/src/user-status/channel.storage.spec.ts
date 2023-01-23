@@ -108,6 +108,7 @@ describe('ChannelStorage', () => {
       providers: [ChannelStorage, UserRelationshipStorage],
     }).compile();
 
+    await module.init();
     storage = module.get<ChannelStorage>(ChannelStorage);
     userRelationshipStorage = module.get<UserRelationshipStorage>(
       UserRelationshipStorage,
@@ -123,7 +124,6 @@ describe('ChannelStorage', () => {
   });
 
   it('should cache channel info at app bootstrap', async () => {
-    await storage.initChannels();
     const cachedChannels = storage.getChannels();
     expect(cachedChannels.size).toBe(channelEntities.length);
     const orderedChannels = channelEntities.sort(
@@ -218,7 +218,6 @@ describe('ChannelStorage', () => {
   });
 
   it('should add a new member to an existing channel', async () => {
-    await storage.initChannels();
     const { user_id } = userEntities[2];
     await storage.loadUser(user_id);
     const { channel_id } = channelMembersEntities.filter(
@@ -284,12 +283,12 @@ describe('ChannelStorage', () => {
   it('should add a new channel to cache (NOT DM)', async () => {
     const { user_id } = userEntities[42];
     await storage.loadUser(user_id);
-    const newChannelId = await storage.addChannel({
-      accessMode: AccessMode.PROTECTED,
-      name: 'new channel',
-      owner: user_id,
-      password: 'password',
-    });
+    const newChannelId = await storage.addChannel(
+      AccessMode.PROTECTED,
+      user_id,
+      'new channel',
+      'password',
+    );
     const channelInfo = storage.getChannel(newChannelId);
     expect(channelInfo).toBeDefined();
 
@@ -325,7 +324,6 @@ describe('ChannelStorage', () => {
   });
 
   it('should add a new channel to cache (DM)', async () => {
-    await storage.initChannels();
     const { user_id, nickname } = userEntities[43];
     const nonDm = channelEntities.filter(
       (channel) =>
@@ -337,11 +335,7 @@ describe('ChannelStorage', () => {
     const peerId =
       nonDm.owner_id === user_id ? nonDm.dm_peer_id : nonDm.owner_id;
     await storage.loadUser(user_id);
-    const newChannelId = await storage.addChannel({
-      accessMode: AccessMode.PRIVATE,
-      owner: user_id,
-      dmPeerId: peerId,
-    });
+    const newChannelId = await storage.addDm(user_id, peerId);
     const channelInfo = storage.getChannel(newChannelId);
     expect(channelInfo).toBeDefined();
 
@@ -362,13 +356,14 @@ describe('ChannelStorage', () => {
     });
     expect(members.length).toBe(2);
     expect(members[0].member_id).toBe(user_id);
-    expect(members[0].is_admin).toBeTruthy();
+    expect(members[0].is_admin).toBeFalsy();
     expect(members[0].mute_end_time).toEqual(DateTime.fromMillis(0));
 
     expect(channelInfo.accessMode).toBe(channelData.access_mode);
     expect(channelInfo.userRoleMap).toEqual(
-      new Map<UserId, UserRole>().set(user_id, 'owner'),
+      new Map<UserId, UserRole>().set(user_id, 'owner').set(peerId, 'normal'),
     );
+    expect(channelInfo.modifiedAt).toEqual(channelData.modified_at);
     expect(channelInfo.modifiedAt).toEqual(channelData.modified_at);
 
     expect(storage.getUser(user_id).has(newChannelId)).toBeTruthy();
@@ -383,7 +378,6 @@ describe('ChannelStorage', () => {
   });
 
   it('should delete a channel when the owner of the channel leaves the channel', async () => {
-    await storage.initChannels();
     const { owner_id, channel_id } = channelEntities.find((channel) => {
       return channel.member_cnt > 3;
     });

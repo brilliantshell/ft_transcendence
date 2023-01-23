@@ -26,7 +26,7 @@ export class Channels {
   @Column({ type: 'integer', nullable: false })
   owner_id: number;
 
-  @Column({ type: 'integer', nullable: true })
+  @Column({ type: 'integer', default: null, nullable: true })
   dm_peer_id: number | null;
 
   @Column({ type: 'varchar', length: 128, nullable: false })
