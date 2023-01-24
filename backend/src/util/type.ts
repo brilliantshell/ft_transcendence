@@ -26,3 +26,12 @@ export interface UserChannelStatus {
   unseenCount: number;
   muteEndAt: DateTime | 'epoch';
 }
+
+export type Activity =
+  | 'chats'
+  | `chatRooms-${ChannelId}`
+  | 'playingGame'
+  | 'profile'
+  | 'ranks'
+  | 'watchingGame'
+  | 'watingRoom';

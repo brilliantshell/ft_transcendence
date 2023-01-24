@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
+import { ActivityManager } from './activity.manager';
 import { BannedMembers } from '../entity/banned-members.entity';
 import { BlockedUsers } from '../entity/blocked-users.entity';
 import { ChannelMembers } from '../entity/channel-members.entity';
@@ -23,6 +24,6 @@ import { UserRelationshipStorage } from './user-relationship.storage';
       Users,
     ]),
   ],
-  providers: [UserRelationshipStorage, ChannelStorage],
+  providers: [UserRelationshipStorage, ChannelStorage, ActivityManager],
 })
 export class UserStatusModule {}
