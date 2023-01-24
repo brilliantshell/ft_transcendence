@@ -4,6 +4,7 @@ import {
   InternalServerErrorException,
   Logger,
   NotFoundException,
+  OnModuleInit,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { IsNull, Not, Repository } from 'typeorm';
@@ -21,7 +22,7 @@ const FRIENDSHIP_TYPES: Relationship[] = [
 const BLOCK_TYPES: Relationship[] = ['blocker', 'blocked'];
 
 @Injectable()
-export class UserRelationshipStorage {
+export class UserRelationshipStorage implements OnModuleInit {
   private dms: Map<ChannelId, boolean> = new Map<ChannelId, boolean>();
   private users: Map<UserId, Map<UserId, Relationship>> = new Map<
     UserId,
@@ -45,6 +46,14 @@ export class UserRelationshipStorage {
    ****************************************************************************/
 
   /**
+   * @description dependency resolution 시 init() 호출
+   *
+   */
+  async onModuleInit() {
+    await this.init();
+  }
+
+  /**
    * @description App bootstrap 시 DM 채널들의 readonly 여부 캐싱
    *
    */
@@ -52,22 +61,22 @@ export class UserRelationshipStorage {
     try {
       const dmChannels = await this.channelsRepository.find({
         select: {
-          channel_id: true,
-          dm_peer_id: true,
-          owner_id: true,
+          channelId: true,
+          dmPeerId: true,
+          ownerId: true,
         },
         where: {
-          dm_peer_id: Not(IsNull()),
+          dmPeerId: Not(IsNull()),
         },
       });
       const blocks = await this.blockedUsersRepository.find();
-      dmChannels.forEach(({ channel_id, owner_id, dm_peer_id }) => {
+      dmChannels.forEach(({ channelId, ownerId, dmPeerId }) => {
         const possibleBlocks = [
-          { blocker_id: owner_id, blocked_id: dm_peer_id },
-          { blocker_id: dm_peer_id, blocked_id: owner_id },
+          { blockerId: ownerId, blockedId: dmPeerId },
+          { blockerId: dmPeerId, blockedId: ownerId },
         ];
         this.dms.set(
-          channel_id,
+          channelId,
           blocks.includes(possibleBlocks[0] as BlockedUsers) ||
             blocks.includes(possibleBlocks[1] as BlockedUsers),
         );
@@ -88,26 +97,24 @@ export class UserRelationshipStorage {
     const relationshipMap = this.users.get(userId);
 
     const friends = await this.friendsRepository.findBy([
-      { sender_id: userId },
-      { receiver_id: userId },
+      { senderId: userId },
+      { receiverId: userId },
     ]);
-    friends.forEach(({ sender_id, receiver_id, is_accepted }) => {
+    friends.forEach(({ senderId, receiverId, isAccepted }) => {
       const [peerId, pendingStatus]: [UserId, Relationship] =
-        sender_id === userId
-          ? [receiver_id, 'pendingSender']
-          : [sender_id, 'pendingReceiver'];
-      relationshipMap.set(peerId, is_accepted ? 'friend' : pendingStatus);
+        senderId === userId
+          ? [receiverId, 'pendingSender']
+          : [senderId, 'pendingReceiver'];
+      relationshipMap.set(peerId, isAccepted ? 'friend' : pendingStatus);
     });
 
     const blocks = await this.blockedUsersRepository.findBy([
-      { blocker_id: userId },
-      { blocked_id: userId },
+      { blockerId: userId },
+      { blockedId: userId },
     ]);
-    blocks.forEach(({ blocker_id, blocked_id }) => {
+    blocks.forEach(({ blockerId, blockedId }) => {
       const [counterpartId, status]: [UserId, Relationship] =
-        blocker_id === userId
-          ? [blocked_id, 'blocker']
-          : [blocker_id, 'blocked'];
+        blockerId === userId ? [blockedId, 'blocker'] : [blockerId, 'blocked'];
       relationshipMap.set(counterpartId, status);
     });
   }
@@ -173,10 +180,7 @@ export class UserRelationshipStorage {
    */
   async blockUser(blockerId: UserId, blockedId: UserId) {
     try {
-      await this.blockedUsersRepository.save({
-        blocker_id: blockerId,
-        blocked_id: blockedId,
-      });
+      await this.blockedUsersRepository.save({ blockerId, blockedId });
       await this.setDmReadonly(blockerId, blockedId);
 
       FRIENDSHIP_TYPES.includes(this.users.get(blockerId).get(blockedId)) &&
@@ -236,10 +240,7 @@ export class UserRelationshipStorage {
       throw new BadRequestException('Invalid relationship');
     }
     try {
-      await this.friendsRepository.save({
-        sender_id: senderId,
-        receiver_id: receiverId,
-      });
+      await this.friendsRepository.save({ senderId, receiverId });
     } catch (e) {
       this.logger.error(e);
       throw new InternalServerErrorException('Failed to send a friend request');
@@ -260,11 +261,8 @@ export class UserRelationshipStorage {
     }
     try {
       const { affected } = await this.friendsRepository.update(
-        {
-          sender_id: senderId,
-          receiver_id: receiverId,
-        },
-        { is_accepted: true },
+        { senderId, receiverId },
+        { isAccepted: true },
       );
       if (affected === 0) {
         throw new NotFoundException('There is no such friend request');
@@ -324,15 +322,18 @@ export class UserRelationshipStorage {
    * @param readonly 읽기 전용 여부
    */
   private async setDmReadonly(from: UserId, to: UserId, readonly = true) {
-    const dm = await this.channelsRepository.find({
-      select: { channel_id: true },
-      where: [
-        { owner_id: from, dm_peer_id: to },
-        { owner_id: to, dm_peer_id: from },
-      ],
-    });
-    if (dm.length === 1) {
-      this.dms.set(dm[0].channel_id, readonly);
+    let dm: Channels;
+    try {
+      dm = await this.channelsRepository.findOneBy([
+        { ownerId: from, dmPeerId: to },
+        { ownerId: to, dmPeerId: from },
+      ]);
+    } catch (e) {
+      this.logger.error(e);
+      throw new InternalServerErrorException('Failed to set DM readonly');
+    }
+    if (dm) {
+      this.dms.set(dm.channelId, readonly);
     }
   }
 

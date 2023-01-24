@@ -4,14 +4,27 @@ import { Users } from './users.entity';
 
 @Entity()
 export class Friends {
-  @PrimaryColumn({ type: 'integer', primaryKeyConstraintName: 'friends_pkey' })
-  sender_id: number;
+  @PrimaryColumn({
+    type: 'integer',
+    name: 'sender_id',
+    primaryKeyConstraintName: 'friends_pkey',
+  })
+  senderId: number;
 
-  @PrimaryColumn({ type: 'integer', primaryKeyConstraintName: 'friends_pkey' })
-  receiver_id: number;
+  @PrimaryColumn({
+    type: 'integer',
+    name: 'receiver_id',
+    primaryKeyConstraintName: 'friends_pkey',
+  })
+  receiverId: number;
 
-  @Column({ type: 'boolean', default: false, nullable: false })
-  is_accepted: boolean;
+  @Column({
+    type: 'boolean',
+    default: false,
+    name: 'is_accepted',
+    nullable: false,
+  })
+  isAccepted: boolean;
 
   @ManyToOne(() => Users)
   @JoinColumn({

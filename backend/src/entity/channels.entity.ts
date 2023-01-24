@@ -18,38 +18,53 @@ export enum AccessMode {
 }
 
 @Entity()
-@Check(`"member_cnt" >= 0`)
+@Check(`"member_count" >= 0`)
 export class Channels {
-  @PrimaryGeneratedColumn({ primaryKeyConstraintName: 'channels_pkey' })
-  channel_id: number;
+  @PrimaryGeneratedColumn({
+    name: 'channel_id',
+    primaryKeyConstraintName: 'channels_pkey',
+  })
+  channelId: number;
 
-  @Column({ type: 'integer', nullable: false })
-  owner_id: number;
+  @Column({ type: 'integer', name: 'owner_id', nullable: false })
+  ownerId: number;
 
-  @Column({ type: 'integer', nullable: true })
-  dm_peer_id: number | null;
+  @Column({
+    type: 'integer',
+    default: null,
+    name: 'dm_peer_id',
+    nullable: true,
+  })
+  dmPeerId: number | null;
 
   @Column({ type: 'varchar', length: 128, nullable: false })
-  channel_name: string;
+  name: string;
 
-  @Column({ type: 'integer', nullable: false })
-  member_cnt: number;
+  @Column({
+    type: 'integer',
+    default: 1,
+    name: 'member_count',
+    nullable: false,
+  })
+  memberCount: number;
 
   @Column({
     type: 'enum',
     enum: AccessMode,
+    name: 'access_mode',
     nullable: false,
   })
-  access_mode: AccessMode;
+  accessMode: AccessMode;
 
   @Column({ type: 'bytea', nullable: true })
-  passwd: string | null;
+  password: string | null;
 
   @Column({
     type: 'timestamptz',
+    name: 'modified_at',
     transformer: new DateTimeTransformer(),
   })
-  modified_at: DateTime;
+  modifiedAt: DateTime;
 
   @ManyToOne(() => Users)
   @JoinColumn({
@@ -63,5 +78,5 @@ export class Channels {
     name: 'dm_peer_id',
     foreignKeyConstraintName: 'channels_dm_peer_id_fkey',
   })
-  dm_peer: Users;
+  dmPeer: Users;
 }

@@ -13,25 +13,29 @@ import { Users } from './users.entity';
 
 @Entity()
 export class Messages {
-  @PrimaryGeneratedColumn({ primaryKeyConstraintName: 'messages_pkey' })
-  message_id: number;
+  @PrimaryGeneratedColumn({
+    primaryKeyConstraintName: 'messages_pkey',
+    name: 'message_id',
+  })
+  messageId: number;
 
-  @Column({ type: 'integer', nullable: false })
-  channel_id: number;
+  @Column({ type: 'integer', name: 'channel_id', nullable: false })
+  channelId: number;
 
-  @Column({ type: 'integer', nullable: false })
-  sender_id: number;
+  @Column({ type: 'integer', name: 'sender_id', nullable: false })
+  senderId: number;
 
   @Column({ type: 'varchar', length: 4096, nullable: false })
   contents: string;
 
   @Column({
     type: 'timestamptz',
+    name: 'created_at',
     transformer: new DateTimeTransformer(),
   })
-  created_at: DateTime;
+  createdAt: DateTime;
 
-  @ManyToOne(() => Channels)
+  @ManyToOne(() => Channels, { onDelete: 'CASCADE' })
   @JoinColumn({
     name: 'channel_id',
     foreignKeyConstraintName: 'messages_channel_id_fkey',

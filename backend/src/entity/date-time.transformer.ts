@@ -1,8 +1,18 @@
 import { DateTime } from 'luxon';
-import { ValueTransformer } from 'typeorm';
+import { FindOperator, ValueTransformer } from 'typeorm';
 
 export class DateTimeTransformer implements ValueTransformer {
   to(data: DateTime | 'epoch'): Date | 'epoch' {
+    if (data instanceof FindOperator) {
+      return new FindOperator<DateTime>(
+        data.type,
+        data.value.toJSDate(),
+        data.useParameter,
+        data.multipleParameters,
+        data.getSql,
+        data.objectLiteralParameters,
+      ) as any;
+    }
     return data === 'epoch' ? 'epoch' : data.toJSDate();
   }
 

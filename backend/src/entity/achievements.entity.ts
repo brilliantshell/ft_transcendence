@@ -5,8 +5,9 @@ import { Column, Entity, PrimaryGeneratedColumn, Unique } from 'typeorm';
 export class Achievements {
   @PrimaryGeneratedColumn({
     primaryKeyConstraintName: 'achievements_pkey',
+    name: 'achievement_id',
   })
-  achievement_id: number;
+  achievementId: number;
 
   @Column({ type: 'varchar', length: 32, nullable: false })
   title: string;
@@ -14,6 +15,6 @@ export class Achievements {
   @Column({ type: 'varchar', length: 256, nullable: false })
   about: string;
 
-  @Column({ type: 'varchar', length: 256, nullable: false })
-  image_path: string;
+  @Column({ type: 'varchar', length: 256, name: 'image_path', nullable: false })
+  imagePath: string;
 }

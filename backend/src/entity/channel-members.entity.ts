@@ -9,32 +9,41 @@ import { Users } from './users.entity';
 export class ChannelMembers {
   @PrimaryColumn({
     type: 'integer',
+    name: 'member_id',
     primaryKeyConstraintName: 'channel_members_pkey',
   })
-  member_id: number;
+  memberId: number;
 
   @PrimaryColumn({
     type: 'integer',
+    name: 'channel_id',
     primaryKeyConstraintName: 'channel_members_pkey',
   })
-  channel_id: number;
+  channelId: number;
 
-  @Column({ type: 'boolean', default: false, nullable: false })
-  is_admin: boolean;
+  @Column({
+    type: 'boolean',
+    default: false,
+    name: 'is_admin',
+    nullable: false,
+  })
+  isAdmin: boolean;
 
   @Column({
     type: 'timestamptz',
+    name: 'mute_end_at',
     nullable: false,
     transformer: new DateTimeTransformer(),
   })
-  mute_end_time: DateTime | 'epoch';
+  muteEndAt: DateTime | 'epoch';
 
   @Column({
     type: 'timestamptz',
+    name: 'viewed_at',
     nullable: false,
     transformer: new DateTimeTransformer(),
   })
-  viewed_at: DateTime;
+  viewedAt: DateTime;
 
   @ManyToOne(() => Users)
   @JoinColumn({
@@ -43,10 +52,10 @@ export class ChannelMembers {
   })
   member: Users;
 
-  @ManyToOne(() => Channels)
+  @ManyToOne(() => Channels, { onDelete: 'CASCADE' })
   @JoinColumn({
     name: 'channel_id',
     foreignKeyConstraintName: 'channel_members_channel_id_fkey',
   })
-  channel: Users;
+  channel: Channels;
 }

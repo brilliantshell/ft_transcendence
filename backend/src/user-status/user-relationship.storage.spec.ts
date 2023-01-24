@@ -83,8 +83,9 @@ describe('UserRelationshipService', () => {
     userRelationshipStorage = module.get<UserRelationshipStorage>(
       UserRelationshipStorage,
     );
-    const users = await usersRepository.find({ select: { user_id: true } });
-    target = users[Math.floor(Math.random() * users.length)].user_id;
+    await module.init();
+    const users = await usersRepository.find({ select: { userId: true } });
+    target = users[Math.floor(Math.random() * users.length)].userId;
   });
 
   afterAll(
@@ -96,22 +97,20 @@ describe('UserRelationshipService', () => {
   });
 
   it('should save DM data at init', async () => {
-    await userRelationshipStorage.init();
-
     const dms = await channelRepository.find({
-      select: { channel_id: true, owner_id: true, dm_peer_id: true },
-      where: { dm_peer_id: Not(IsNull()) },
+      select: { channelId: true, ownerId: true, dmPeerId: true },
+      where: { dmPeerId: Not(IsNull()) },
     });
 
-    dms.forEach(({ channel_id, owner_id, dm_peer_id }) => {
-      expect(userRelationshipStorage.isBlockedDm(channel_id)).toBe(
+    dms.forEach(({ channelId, ownerId, dmPeerId }) => {
+      expect(userRelationshipStorage.isBlockedDm(channelId)).toBe(
         blockEntities.includes({
-          blocker_id: owner_id,
-          blocked_id: dm_peer_id,
+          blockerId: ownerId,
+          blockedId: dmPeerId,
         }) ||
           blockEntities.includes({
-            blocker_id: dm_peer_id,
-            blocked_id: owner_id,
+            blockerId: dmPeerId,
+            blockedId: ownerId,
           }),
       );
     });
@@ -122,35 +121,35 @@ describe('UserRelationshipService', () => {
     const relationshipMap: Map<UserId, Relationship> =
       userRelationshipStorage.getRelationshipMap(target);
     expect(relationshipMap).toBeDefined();
-    relationshipMap.forEach(async (value, key) => {
+    for (const [key, value] of relationshipMap) {
       if (target === key) {
         return;
       }
       if (['friend', 'pendingSender', 'pendingReceiver'].includes(value)) {
         const friendship = await friendsRepository.findBy([
-          { sender_id: target, receiver_id: key },
-          { sender_id: key, receiver_id: target },
+          { senderId: target, receiverId: key },
+          { senderId: key, receiverId: target },
         ]);
         expect(friendship.length).toBe(1);
         const [friends] = friendship;
         if (value === 'friend') {
-          return expect(friends.is_accepted).toBe(true);
+          return expect(friends.isAccepted).toBe(true);
         }
-        expect(friends.is_accepted).toBe(false);
+        expect(friends.isAccepted).toBe(false);
         return expect(
-          value === 'pendingSender' ? friends.sender_id : friends.receiver_id,
+          value === 'pendingSender' ? friends.senderId : friends.receiverId,
         ).toBe(target);
       }
 
       const blockRelationship = await blockedUsersRepository.findBy([
-        { blocker_id: target, blocked_id: key },
-        { blocker_id: key, blocked_id: target },
+        { blockerId: target, blockedId: key },
+        { blockerId: key, blockedId: target },
       ]);
       expect(blockRelationship.length).toBe(1);
-      expect(blockRelationship[0].blocker_id).toBe(
+      expect(blockRelationship[0].blockerId).toBe(
         value === 'blocker' ? target : key,
       );
-    });
+    }
   });
 
   it('should unload relationships of a user as the user becomes offline', async () => {
@@ -160,10 +159,7 @@ describe('UserRelationshipService', () => {
   });
 
   it('should throw error when delete on nonexistent friendship was attempted', async () => {
-    const [userOne, userTwo] = [
-      usersPool[3][0].user_id,
-      usersPool[3][1].user_id,
-    ];
+    const [userOne, userTwo] = [usersPool[3][0].userId, usersPool[3][1].userId];
     await userRelationshipStorage.load(userOne);
     const previousSize =
       userRelationshipStorage.getRelationshipMap(userOne).size;
@@ -177,10 +173,7 @@ describe('UserRelationshipService', () => {
   });
 
   it('should add a pending friendship (both loaded)', async () => {
-    const [sender, receiver] = [
-      usersPool[3][0].user_id,
-      usersPool[3][1].user_id,
-    ];
+    const [sender, receiver] = [usersPool[3][0].userId, usersPool[3][1].userId];
     await userRelationshipStorage.load(sender);
     await userRelationshipStorage.load(receiver);
 
@@ -193,11 +186,11 @@ describe('UserRelationshipService', () => {
     );
 
     const newPendingFriendship = await friendsRepository.findBy({
-      sender_id: sender,
-      receiver_id: receiver,
+      senderId: sender,
+      receiverId: receiver,
     });
     expect(newPendingFriendship.length).toEqual(1);
-    expect(newPendingFriendship[0].is_accepted).toEqual(false);
+    expect(newPendingFriendship[0].isAccepted).toEqual(false);
 
     const senderRelationshipCount =
       userRelationshipStorage.getRelationshipMap(sender).size;
@@ -216,10 +209,7 @@ describe('UserRelationshipService', () => {
   });
 
   it('should add a pending friendship (only sender is loaded)', async () => {
-    const [sender, receiver] = [
-      usersPool[3][0].user_id,
-      usersPool[3][1].user_id,
-    ];
+    const [sender, receiver] = [usersPool[3][0].userId, usersPool[3][1].userId];
     await userRelationshipStorage.load(sender);
 
     await userRelationshipStorage.sendFriendRequest(sender, receiver);
@@ -231,11 +221,11 @@ describe('UserRelationshipService', () => {
     ).toBeNull();
 
     const newPendingFriendship = await friendsRepository.findBy({
-      sender_id: sender,
-      receiver_id: receiver,
+      senderId: sender,
+      receiverId: receiver,
     });
     expect(newPendingFriendship.length).toEqual(1);
-    expect(newPendingFriendship[0].is_accepted).toEqual(false);
+    expect(newPendingFriendship[0].isAccepted).toEqual(false);
 
     await userRelationshipStorage.load(receiver);
     expect(userRelationshipStorage.getRelationship(receiver, sender)).toBe(
@@ -259,137 +249,133 @@ describe('UserRelationshipService', () => {
   });
 
   it('should accept a friend request (both loaded & receiver accepts)', async () => {
-    const { sender_id, receiver_id } = friendEntities.find(
-      ({ is_accepted }) => is_accepted === false,
+    const { senderId, receiverId } = friendEntities.find(
+      ({ isAccepted }) => isAccepted === false,
     );
-    await userRelationshipStorage.load(sender_id);
-    await userRelationshipStorage.load(receiver_id);
-    await userRelationshipStorage.acceptFriendRequest(receiver_id, sender_id);
+    await userRelationshipStorage.load(senderId);
+    await userRelationshipStorage.load(receiverId);
+    await userRelationshipStorage.acceptFriendRequest(receiverId, senderId);
 
-    expect(
-      userRelationshipStorage.getRelationship(receiver_id, sender_id),
-    ).toBe('friend');
-    expect(
-      userRelationshipStorage.getRelationship(sender_id, receiver_id),
-    ).toBe('friend');
+    expect(userRelationshipStorage.getRelationship(receiverId, senderId)).toBe(
+      'friend',
+    );
+    expect(userRelationshipStorage.getRelationship(senderId, receiverId)).toBe(
+      'friend',
+    );
 
     expect(
       (
         await friendsRepository.findBy({
-          sender_id,
-          receiver_id,
-          is_accepted: true,
+          senderId,
+          receiverId,
+          isAccepted: true,
         })
       ).length,
     ).toBe(1);
   });
 
   it('should accept a friend request (only receiver is loaded & receiver accepts)', async () => {
-    const { sender_id, receiver_id } = friendEntities.find(
-      ({ is_accepted }) => is_accepted === false,
+    const { senderId, receiverId } = friendEntities.find(
+      ({ isAccepted }) => isAccepted === false,
     );
-    await userRelationshipStorage.load(receiver_id);
-    await userRelationshipStorage.acceptFriendRequest(receiver_id, sender_id);
+    await userRelationshipStorage.load(receiverId);
+    await userRelationshipStorage.acceptFriendRequest(receiverId, senderId);
 
+    expect(userRelationshipStorage.getRelationship(receiverId, senderId)).toBe(
+      'friend',
+    );
     expect(
-      userRelationshipStorage.getRelationship(receiver_id, sender_id),
-    ).toBe('friend');
-    expect(
-      userRelationshipStorage.getRelationship(sender_id, receiver_id),
+      userRelationshipStorage.getRelationship(senderId, receiverId),
     ).toBeNull();
 
     expect(
       (
         await friendsRepository.findBy({
-          sender_id,
-          receiver_id,
-          is_accepted: true,
+          senderId,
+          receiverId,
+          isAccepted: true,
         })
       ).length,
     ).toBe(1);
   });
 
   it('should throw error when a sender tries to accept his own request (sender loaded)', async () => {
-    const { sender_id, receiver_id } = (
+    const { senderId, receiverId } = (
       await friendsRepository.findBy({
-        is_accepted: false,
+        isAccepted: false,
       })
     )[0];
-    await userRelationshipStorage.load(sender_id);
+    await userRelationshipStorage.load(senderId);
     expect(
       async () =>
-        await userRelationshipStorage.acceptFriendRequest(
-          sender_id,
-          receiver_id,
-        ),
+        await userRelationshipStorage.acceptFriendRequest(senderId, receiverId),
     ).rejects.toThrowError(NotFoundException);
 
     expect(
-      userRelationshipStorage.getRelationship(receiver_id, sender_id),
+      userRelationshipStorage.getRelationship(receiverId, senderId),
     ).toBeNull();
-    expect(
-      userRelationshipStorage.getRelationship(sender_id, receiver_id),
-    ).toBe('pendingSender');
+    expect(userRelationshipStorage.getRelationship(senderId, receiverId)).toBe(
+      'pendingSender',
+    );
 
     expect(
       (
         await friendsRepository.findBy({
-          sender_id,
-          receiver_id,
-          is_accepted: false,
+          senderId,
+          receiverId,
+          isAccepted: false,
         })
       ).length,
     ).toBe(1);
   });
 
   it('should block a user (both loaded)', async () => {
-    await userRelationshipStorage.init();
-    const { channel_id, owner_id, dm_peer_id } = channelEntities.find(
-      ({ dm_peer_id }) => dm_peer_id !== null,
+    const { channelId, ownerId, dmPeerId } = channelEntities.find(
+      ({ dmPeerId }) => dmPeerId !== null,
     );
-    await userRelationshipStorage.load(owner_id);
-    await userRelationshipStorage.load(dm_peer_id);
-    await userRelationshipStorage.blockUser(owner_id, dm_peer_id);
-    expect(userRelationshipStorage.getRelationship(owner_id, dm_peer_id)).toBe(
+    await userRelationshipStorage.load(ownerId);
+    await userRelationshipStorage.load(dmPeerId);
+    await userRelationshipStorage.blockUser(ownerId, dmPeerId);
+    expect(userRelationshipStorage.getRelationship(ownerId, dmPeerId)).toBe(
       'blocker',
     );
-    expect(userRelationshipStorage.getRelationship(dm_peer_id, owner_id)).toBe(
+    expect(userRelationshipStorage.getRelationship(dmPeerId, ownerId)).toBe(
       'blocked',
     );
-    expect(userRelationshipStorage.isBlockedDm(channel_id)).toBeTruthy();
+    expect(userRelationshipStorage.isBlockedDm(channelId)).toBeTruthy();
 
     expect(
       (
         await blockedUsersRepository.findBy({
-          blocker_id: owner_id,
-          blocked_id: dm_peer_id,
+          blockerId: ownerId,
+          blockedId: dmPeerId,
         })
       ).length,
     ).toBe(1);
 
-    await userRelationshipStorage.unblockUser(owner_id, dm_peer_id);
+    await userRelationshipStorage.unblockUser(ownerId, dmPeerId);
     expect(
-      userRelationshipStorage.getRelationship(owner_id, dm_peer_id),
+      userRelationshipStorage.getRelationship(ownerId, dmPeerId),
     ).toBeNull();
     expect(
-      userRelationshipStorage.getRelationship(dm_peer_id, owner_id),
+      userRelationshipStorage.getRelationship(dmPeerId, ownerId),
     ).toBeNull();
     expect(
       (
         await blockedUsersRepository.findBy({
-          blocker_id: owner_id,
-          blocked_id: dm_peer_id,
+          blockerId: ownerId,
+          blockedId: dmPeerId,
         })
       ).length,
     ).toBe(0);
 
-    expect(userRelationshipStorage.isBlockedDm(channel_id)).toBeFalsy();
+    expect(userRelationshipStorage.isBlockedDm(channelId)).toBeFalsy();
   });
 
   it('should block a user (only blocker is loaded)', async () => {
     const [blockerId, blockedId] = [
-      usersPool[3][0].user_id,
-      usersPool[3][1].user_id,
+      usersPool[3][0].userId,
+      usersPool[3][1].userId,
     ];
     await userRelationshipStorage.load(blockerId);
     await userRelationshipStorage.blockUser(blockerId, blockedId);
@@ -403,8 +389,8 @@ describe('UserRelationshipService', () => {
     expect(
       (
         await blockedUsersRepository.findBy({
-          blocker_id: blockerId,
-          blocked_id: blockedId,
+          blockerId: blockerId,
+          blockedId: blockedId,
         })
       ).length,
     ).toBe(1);
@@ -416,17 +402,17 @@ describe('UserRelationshipService', () => {
     expect(
       (
         await blockedUsersRepository.findBy({
-          blocker_id: blockerId,
-          blocked_id: blockedId,
+          blockerId: blockerId,
+          blockedId: blockedId,
         })
       ).length,
     ).toBe(0);
   });
 
   it('should block a friend and make sure they are no longer friends', async () => {
-    const { sender_id, receiver_id } = friendEntities[0];
-    const blockerId = receiver_id;
-    const blockedId = sender_id;
+    const { senderId, receiverId } = friendEntities[0];
+    const blockerId = receiverId;
+    const blockedId = senderId;
 
     await userRelationshipStorage.load(blockerId);
 
@@ -439,7 +425,7 @@ describe('UserRelationshipService', () => {
     ).toBeNull();
 
     expect(
-      (await friendsRepository.findBy({ sender_id, receiver_id })).length,
+      (await friendsRepository.findBy({ senderId, receiverId })).length,
     ).toBe(0);
     await userRelationshipStorage.unblockUser(blockerId, blockedId);
     expect(
@@ -448,36 +434,33 @@ describe('UserRelationshipService', () => {
     expect(
       (
         await blockedUsersRepository.findBy({
-          blocker_id: blockerId,
-          blocked_id: blockedId,
+          blockerId: blockerId,
+          blockedId: blockedId,
         })
       ).length,
     ).toBe(0);
   });
 
   it('should throw error when a user who is not a blocker tries to unblock', async () => {
-    const { blocker_id, blocked_id } = blockEntities[0];
-    await userRelationshipStorage.load(blocked_id);
+    const { blockerId, blockedId } = blockEntities[0];
+    await userRelationshipStorage.load(blockedId);
     expect(
       async () =>
-        await userRelationshipStorage.unblockUser(blocked_id, blocker_id),
+        await userRelationshipStorage.unblockUser(blockedId, blockerId),
     ).rejects.toThrowError(BadRequestException);
   });
 
   it('should throw error when a blocked user tries to set friendship', async () => {
-    const { blocker_id, blocked_id } = blockEntities[0];
-    await userRelationshipStorage.load(blocker_id);
-    await userRelationshipStorage.load(blocked_id);
+    const { blockerId, blockedId } = blockEntities[0];
+    await userRelationshipStorage.load(blockerId);
+    await userRelationshipStorage.load(blockedId);
     expect(
       async () =>
-        await userRelationshipStorage.sendFriendRequest(blocker_id, blocked_id),
+        await userRelationshipStorage.sendFriendRequest(blockerId, blockedId),
     ).rejects.toThrowError(BadRequestException);
     expect(
       async () =>
-        await userRelationshipStorage.acceptFriendRequest(
-          blocked_id,
-          blocker_id,
-        ),
+        await userRelationshipStorage.acceptFriendRequest(blockedId, blockerId),
     ).rejects.toThrowError(BadRequestException);
   });
 });
