@@ -4,6 +4,7 @@ import {
   InternalServerErrorException,
   Logger,
   NotFoundException,
+  OnModuleInit,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { IsNull, Not, Repository } from 'typeorm';
@@ -21,7 +22,7 @@ const FRIENDSHIP_TYPES: Relationship[] = [
 const BLOCK_TYPES: Relationship[] = ['blocker', 'blocked'];
 
 @Injectable()
-export class UserRelationshipStorage {
+export class UserRelationshipStorage implements OnModuleInit {
   private dms: Map<ChannelId, boolean> = new Map<ChannelId, boolean>();
   private users: Map<UserId, Map<UserId, Relationship>> = new Map<
     UserId,
@@ -43,6 +44,14 @@ export class UserRelationshipStorage {
    * SECTION : Public methods                                                  *
    *                                                                           *
    ****************************************************************************/
+
+  /**
+   * @description dependency resolution 시 init() 호출
+   *
+   */
+  async onModuleInit() {
+    await this.init();
+  }
 
   /**
    * @description App bootstrap 시 DM 채널들의 readonly 여부 캐싱
@@ -313,15 +322,18 @@ export class UserRelationshipStorage {
    * @param readonly 읽기 전용 여부
    */
   private async setDmReadonly(from: UserId, to: UserId, readonly = true) {
-    const dm = await this.channelsRepository.find({
-      select: { channelId: true },
-      where: [
+    let dm: Channels;
+    try {
+      dm = await this.channelsRepository.findOneBy([
         { ownerId: from, dmPeerId: to },
         { ownerId: to, dmPeerId: from },
-      ],
-    });
-    if (dm.length === 1) {
-      this.dms.set(dm[0].channelId, readonly);
+      ]);
+    } catch (e) {
+      this.logger.error(e);
+      throw new InternalServerErrorException('Failed to set DM readonly');
+    }
+    if (dm) {
+      this.dms.set(dm.channelId, readonly);
     }
   }
 

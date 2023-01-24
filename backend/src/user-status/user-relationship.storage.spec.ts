@@ -83,6 +83,7 @@ describe('UserRelationshipService', () => {
     userRelationshipStorage = module.get<UserRelationshipStorage>(
       UserRelationshipStorage,
     );
+    await module.init();
     const users = await usersRepository.find({ select: { userId: true } });
     target = users[Math.floor(Math.random() * users.length)].userId;
   });
@@ -96,8 +97,6 @@ describe('UserRelationshipService', () => {
   });
 
   it('should save DM data at init', async () => {
-    await userRelationshipStorage.init();
-
     const dms = await channelRepository.find({
       select: { channelId: true, ownerId: true, dmPeerId: true },
       where: { dmPeerId: Not(IsNull()) },
@@ -331,7 +330,6 @@ describe('UserRelationshipService', () => {
   });
 
   it('should block a user (both loaded)', async () => {
-    await userRelationshipStorage.init();
     const { channelId, ownerId, dmPeerId } = channelEntities.find(
       ({ dmPeerId }) => dmPeerId !== null,
     );
