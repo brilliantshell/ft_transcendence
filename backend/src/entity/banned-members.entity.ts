@@ -23,11 +23,11 @@ export class BannedMembers {
 
   @Column({
     type: 'timestamptz',
-    name: 'end_time',
+    name: 'end_at',
     nullable: false,
     transformer: new DateTimeTransformer(),
   })
-  endTime: DateTime;
+  endAt: DateTime;
 
   @ManyToOne(() => Channels, { onDelete: 'CASCADE' })
   @JoinColumn({

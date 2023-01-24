@@ -190,7 +190,7 @@ export const generateBannedMembers = (members: ChannelMembers[]) => {
     const bannedMember = new BannedMembers();
     bannedMember.memberId = member.memberId;
     bannedMember.channelId = member.channelId;
-    bannedMember.endTime = new DateTimeTransformer().from(faker.date.soon());
+    bannedMember.endAt = new DateTimeTransformer().from(faker.date.soon());
     bannedMembers.push(bannedMember);
   });
   return bannedMembers;
