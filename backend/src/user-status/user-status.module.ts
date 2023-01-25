@@ -11,6 +11,7 @@ import { Friends } from '../entity/friends.entity';
 import { Messages } from '../entity/messages.entity';
 import { Users } from '../entity/users.entity';
 import { UserRelationshipStorage } from './user-relationship.storage';
+import { ActivityGateway } from './activity.gateway';
 
 @Module({
   imports: [
@@ -24,6 +25,12 @@ import { UserRelationshipStorage } from './user-relationship.storage';
       Users,
     ]),
   ],
-  providers: [UserRelationshipStorage, ChannelStorage, ActivityManager],
+  providers: [
+    ActivityGateway,
+    ActivityManager,
+    ChannelStorage,
+    UserRelationshipStorage,
+  ],
+  exports: [ActivityManager, ChannelStorage, UserRelationshipStorage],
 })
 export class UserStatusModule {}

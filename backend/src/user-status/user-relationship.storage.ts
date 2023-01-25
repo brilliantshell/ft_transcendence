@@ -69,7 +69,8 @@ export class UserRelationshipStorage implements OnModuleInit {
           dmPeerId: Not(IsNull()),
         },
       });
-      const blocks = await this.blockedUsersRepository.find();
+      const blocks: Partial<BlockedUsers>[] =
+        await this.blockedUsersRepository.find();
       dmChannels.forEach(({ channelId, ownerId, dmPeerId }) => {
         const possibleBlocks = [
           { blockerId: ownerId, blockedId: dmPeerId },
@@ -77,8 +78,8 @@ export class UserRelationshipStorage implements OnModuleInit {
         ];
         this.dms.set(
           channelId,
-          blocks.includes(possibleBlocks[0] as BlockedUsers) ||
-            blocks.includes(possibleBlocks[1] as BlockedUsers),
+          blocks.includes(possibleBlocks[0]) ||
+            blocks.includes(possibleBlocks[1]),
         );
       });
     } catch (e) {
