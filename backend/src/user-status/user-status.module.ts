@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
+import { ActivityGateway } from './activity.gateway';
 import { ActivityManager } from './activity.manager';
 import { BannedMembers } from '../entity/banned-members.entity';
 import { BlockedUsers } from '../entity/blocked-users.entity';
@@ -9,9 +10,9 @@ import { ChannelStorage } from './channel.storage';
 import { Channels } from '../entity/channels.entity';
 import { Friends } from '../entity/friends.entity';
 import { Messages } from '../entity/messages.entity';
-import { Users } from '../entity/users.entity';
 import { UserRelationshipStorage } from './user-relationship.storage';
-import { ActivityGateway } from './activity.gateway';
+import { UserSocketStorage } from './user-socket.storage';
+import { Users } from '../entity/users.entity';
 
 @Module({
   imports: [
@@ -30,7 +31,13 @@ import { ActivityGateway } from './activity.gateway';
     ActivityManager,
     ChannelStorage,
     UserRelationshipStorage,
+    UserSocketStorage,
   ],
-  exports: [ActivityManager, ChannelStorage, UserRelationshipStorage],
+  exports: [
+    ActivityManager,
+    ChannelStorage,
+    UserRelationshipStorage,
+    UserSocketStorage,
+  ],
 })
 export class UserStatusModule {}
