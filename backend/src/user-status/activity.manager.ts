@@ -1,20 +1,20 @@
 import { Injectable } from '@nestjs/common';
 
-import { Activity, UserId } from '../util/type';
+import { CurrentUi, UserId } from '../util/type';
 
 @Injectable()
 export class ActivityManager {
-  private userAcitivity: Map<UserId, Activity> = new Map();
+  private userActivity: Map<UserId, CurrentUi> = new Map();
 
   getActivity(userId: UserId) {
-    return this.userAcitivity.get(userId) ?? null;
+    return this.userActivity.get(userId) ?? null;
   }
 
-  setActivity(userId: UserId, activity: Activity) {
-    this.userAcitivity.set(userId, activity);
+  setActivity(userId: UserId, activity: CurrentUi) {
+    this.userActivity.set(userId, activity);
   }
 
   deleteActivity(userId: UserId) {
-    this.userAcitivity.delete(userId);
+    this.userActivity.delete(userId);
   }
 }

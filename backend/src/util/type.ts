@@ -27,11 +27,11 @@ export interface UserChannelStatus {
   muteEndAt: DateTime | 'epoch';
 }
 
-export type Activity =
+export type CurrentUi =
   | 'chats'
   | `chatRooms-${ChannelId}`
   | 'playingGame'
   | 'profile'
   | 'ranks'
   | 'watchingGame'
-  | 'watingRoom';
+  | 'waitingRoom';
