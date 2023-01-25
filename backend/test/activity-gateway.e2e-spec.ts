@@ -3,8 +3,9 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { io, Socket } from 'socket.io-client';
 
 import { ActivityManager } from '../src/user-status/activity.manager';
-import { AppModule } from './../src/app.module';
-import { UserStatusModule } from './../src/user-status/user-status.module';
+import { AppModule } from '../src/app.module';
+import { UserSocketStorage } from '../src/user-status/user-socket.storage';
+import { UserStatusModule } from '../src/user-status/user-status.module';
 
 describe('UserStatusModule (e2e)', () => {
   let app: INestApplication;
@@ -14,13 +15,17 @@ describe('UserStatusModule (e2e)', () => {
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
-      providers: [ActivityManager],
+      providers: [ActivityManager, UserSocketStorage],
     }).compile();
 
     app = moduleFixture.createNestApplication();
     await app.init();
     await app.listen(4243);
-    clientSocket = io('http://localhost:4243');
+    clientSocket = io('http://localhost:4243', {
+      extraHeaders: {
+        'x-user-id': '20000',
+      },
+    });
   });
 
   beforeEach(() => {
@@ -78,5 +83,11 @@ describe('UserStatusModule (e2e)', () => {
       expect(manager.getActivity(9999)).toBeNull();
       done();
     }, 1000);
+  });
+
+  it('should contain <UserId, SocketId> & <SocketId, UserID> in UserSocketStorage', () => {
+    const storage = app.select(UserStatusModule).get(UserSocketStorage);
+    expect(storage.sockets.get(clientSocket.id)).toEqual(20000);
+    expect(storage.clients.get(20000)).toEqual(clientSocket.id);
   });
 });

@@ -16,6 +16,8 @@ export type IsBlocked = boolean;
 
 export type UserRole = 'owner' | 'admin' | 'member';
 
+export type SocketId = string;
+
 export interface ChannelInfo {
   modifiedAt: DateTime;
   userRoleMap: Map<UserId, UserRole>;
