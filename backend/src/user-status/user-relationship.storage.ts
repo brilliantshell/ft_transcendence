@@ -96,11 +96,23 @@ export class UserRelationshipStorage implements OnModuleInit {
   async load(userId: UserId) {
     this.users.set(userId, new Map<UserId, Relationship>());
     const relationshipMap = this.users.get(userId);
-
-    const friends = await this.friendsRepository.findBy([
-      { senderId: userId },
-      { receiverId: userId },
-    ]);
+    let friends: Friends[];
+    let blocks: BlockedUsers[];
+    try {
+      friends = await this.friendsRepository.findBy([
+        { senderId: userId },
+        { receiverId: userId },
+      ]);
+      blocks = await this.blockedUsersRepository.findBy([
+        { blockerId: userId },
+        { blockedId: userId },
+      ]);
+    } catch (e) {
+      this.logger.error(e);
+      throw new InternalServerErrorException(
+        'Failed to load user relationships',
+      );
+    }
     friends.forEach(({ senderId, receiverId, isAccepted }) => {
       const [peerId, pendingStatus]: [UserId, Relationship] =
         senderId === userId
@@ -108,11 +120,6 @@ export class UserRelationshipStorage implements OnModuleInit {
           : [senderId, 'pendingReceiver'];
       relationshipMap.set(peerId, isAccepted ? 'friend' : pendingStatus);
     });
-
-    const blocks = await this.blockedUsersRepository.findBy([
-      { blockerId: userId },
-      { blockedId: userId },
-    ]);
     blocks.forEach(({ blockerId, blockedId }) => {
       const [counterpartId, status]: [UserId, Relationship] =
         blockerId === userId ? [blockedId, 'blocker'] : [blockerId, 'blocked'];
