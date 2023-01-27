@@ -26,63 +26,58 @@ describe('UserStatusModule (e2e)', () => {
         'x-user-id': '20000',
       },
     });
+    await new Promise((resolve) =>
+      clientSocket.on('connect', () => resolve('done')),
+    );
   });
 
   beforeEach(() => {
     manager = app.select(UserStatusModule).get(ActivityManager);
   });
 
-  afterAll((done) => {
-    setTimeout(async () => {
-      await app.close();
-      clientSocket.close();
-      done();
-    }, 4000);
+  afterAll(async () => {
+    await app.close();
+    clientSocket.close();
   });
 
-  it('should pass information about in which UI a user is', (done) => {
+  it('should pass information about in which UI a user is', async () => {
     clientSocket.emit('currentUi', { userId: '20000', ui: 'profile' });
     clientSocket.emit('currentUi', { userId: '121212', ui: 'ranks' });
     clientSocket.emit('currentUi', { userId: '10000', ui: 'chatRooms-4242' });
     clientSocket.emit('currentUi', { userId: '199999', ui: 'waitingRoom' });
     clientSocket.emit('currentUi', { userId: '42424', ui: 'playingGame' });
-    setTimeout(() => {
-      expect(manager.getActivity(20000)).toEqual('profile');
-      manager.deleteActivity(20000);
-      expect(manager.getActivity(121212)).toEqual('ranks');
-      manager.deleteActivity(121212);
-      expect(manager.getActivity(10000)).toEqual('chatRooms-4242');
-      manager.deleteActivity(10000);
-      expect(manager.getActivity(199999)).toEqual('waitingRoom');
-      manager.deleteActivity(199999);
-      expect(manager.getActivity(42424)).toEqual('playingGame');
-      manager.deleteActivity(42424);
-      done();
-    }, 1000);
+    await new Promise((resolve) => setTimeout(() => resolve('done'), 1000));
+    expect(manager.getActivity(20000)).toEqual('profile');
+    manager.deleteActivity(20000);
+    expect(manager.getActivity(121212)).toEqual('ranks');
+    manager.deleteActivity(121212);
+    expect(manager.getActivity(10000)).toEqual('chatRooms-4242');
+    manager.deleteActivity(10000);
+    expect(manager.getActivity(199999)).toEqual('waitingRoom');
+    manager.deleteActivity(199999);
+    expect(manager.getActivity(42424)).toEqual('playingGame');
+    manager.deleteActivity(42424);
   });
 
-  it('should throw BAD REQUEST when the given current UI is unknown', (done) => {
+  it('should throw BAD REQUEST when the given current UI is unknown', async () => {
     clientSocket.emit('currentUi', { userId: 12311, ui: 'abc' });
     clientSocket.emit('currentUi', { userId: 54321, ui: 'chatRooms-345abc' });
-    setTimeout(() => {
-      expect(manager.getActivity(12311)).toBeNull();
-      expect(manager.getActivity(54321)).toBeNull();
-      done();
-    }, 1000);
+
+    await new Promise((resolve) => setTimeout(() => resolve('done'), 1000));
+    expect(manager.getActivity(12311)).toBeNull();
+    expect(manager.getActivity(54321)).toBeNull();
   });
 
-  it('should throw BAD REQUEST when an invalid userId has been passed to Activity Gateway', (done) => {
+  it('should throw BAD REQUEST when an invalid userId has been passed to Activity Gateway', async () => {
     clientSocket.emit('currentUi', { userId: -4242, ui: 'waitingRoom' });
     clientSocket.emit('currentUi', { userId: '100000a', ui: 'profile' });
     clientSocket.emit('currentUi', { userId: 0, ui: 'chats' });
     clientSocket.emit('currentUi', { userId: '9999', ui: 'waitingRoom' });
-    setTimeout(() => {
-      expect(manager.getActivity(-4242)).toBeNull();
-      expect(manager.getActivity(0)).toBeNull();
-      expect(manager.getActivity(100000)).toBeNull();
-      expect(manager.getActivity(9999)).toBeNull();
-      done();
-    }, 1000);
+    await new Promise((resolve) => setTimeout(() => resolve('done'), 1000));
+    expect(manager.getActivity(-4242)).toBeNull();
+    expect(manager.getActivity(0)).toBeNull();
+    expect(manager.getActivity(100000)).toBeNull();
+    expect(manager.getActivity(9999)).toBeNull();
   });
 
   it('should contain <UserId, SocketId> & <SocketId, UserID> in UserSocketStorage', () => {

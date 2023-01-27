@@ -53,8 +53,10 @@ export class ActivityGateway
     const socketId = clientSocket.id;
     this.userSocketStorage.clients.set(userId, socketId);
     this.userSocketStorage.sockets.set(socketId, userId);
-    await this.userRelationshipStorage.load(userId);
-    await this.channelStorage.loadUser(userId);
+    await Promise.all([
+      this.userRelationshipStorage.load(userId),
+      this.channelStorage.loadUser(userId),
+    ]);
   }
 
   handleDisconnect(clientSocket: Socket) {
