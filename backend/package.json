@@ -34,7 +34,8 @@
     "reflect-metadata": "^0.1.13",
     "rxjs": "^7.2.0",
     "socket.io": "^4.5.4",
-    "typeorm": "^0.3.11"
+    "typeorm": "^0.3.11",
+    "wait-for-expect": "^3.0.2"
   },
   "devDependencies": {
     "@faker-js/faker": "^7.6.0",

@@ -62,6 +62,7 @@ export class ActivityGateway
   handleDisconnect(clientSocket: Socket) {
     const socketId = clientSocket.id;
     const userId = this.userSocketStorage.sockets.get(socketId);
+    this.activityManager.deleteActivity(userId);
     this.userSocketStorage.clients.delete(userId);
     this.userSocketStorage.sockets.delete(socketId);
     this.userRelationshipStorage.unload(userId);
@@ -90,6 +91,6 @@ export class ActivityGateway
     //   this.chatsGateway.joinRoom(clientSocket, ui);
     // }
     this.activityManager.setActivity(userId, ui);
-    console.log(clientSocket.request.headers);
+    // console.log(clientSocket.request.headers);
   }
 }

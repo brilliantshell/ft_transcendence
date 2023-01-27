@@ -1,6 +1,6 @@
 import { INestApplication } from '@nestjs/common';
+import { Socket, io } from 'socket.io-client';
 import { Test, TestingModule } from '@nestjs/testing';
-import { io, Socket } from 'socket.io-client';
 
 import { ActivityManager } from '../src/user-status/activity.manager';
 import { AppModule } from '../src/app.module';

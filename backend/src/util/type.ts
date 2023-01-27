@@ -37,3 +37,12 @@ export type CurrentUi =
   | 'ranks'
   | 'watchingGame'
   | 'waitingRoom';
+
+export type Activity = 'online' | 'offline' | 'inGame';
+
+export interface UserInfoMessage {
+  activity: Activity;
+  gameId: number;
+  relationship: Relationship;
+  userId: UserId;
+}
