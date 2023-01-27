@@ -10,6 +10,7 @@ export const mockUsersRepositoryFactory = (entities: any[]) => {
       ),
   };
 };
+
 export const mockFriendsRepositoryFactory = (entities: any[]) => {
   return {
     find: jest.fn().mockResolvedValue(entities),
@@ -25,6 +26,7 @@ export const mockFriendsRepositoryFactory = (entities: any[]) => {
       ),
   };
 };
+
 export const mockBlockedUsersRepositoryFactory = (entities: any[]) => {
   return {
     find: jest.fn().mockResolvedValue(entities),
