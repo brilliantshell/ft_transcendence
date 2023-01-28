@@ -1,6 +1,6 @@
 # NOTE : A Dockerfile is for FRONTEND DEVELOPMENT environment
 
-FROM node:18.12.1-bullseye
+FROM node:18.13.0-bullseye
 
 # Install useful tools
 RUN apt-get update && apt-get install -y \
