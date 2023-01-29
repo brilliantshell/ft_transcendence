@@ -8,6 +8,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { UserModule } from './user/user.module';
 import { UserStatusModule } from './user-status/user-status.module';
+import { ChatsModule } from './chats/chats.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { UserStatusModule } from './user-status/user-status.module';
         apiConfigService.postgresConfig,
       inject: [ApiConfigService],
     }),
+    ChatsModule,
     UserModule,
     UserStatusModule,
   ],

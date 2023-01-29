@@ -8,6 +8,7 @@ import { BlockedUsers } from '../entity/blocked-users.entity';
 import { ChannelMembers } from '../entity/channel-members.entity';
 import { ChannelStorage } from './channel.storage';
 import { Channels } from '../entity/channels.entity';
+import { ChatsGateway } from '../chats/chats.gateway';
 import { Friends } from '../entity/friends.entity';
 import { Messages } from '../entity/messages.entity';
 import { UserRelationshipStorage } from './user-relationship.storage';
@@ -29,6 +30,7 @@ import { Users } from '../entity/users.entity';
   providers: [
     ActivityGateway,
     ActivityManager,
+    ChatsGateway,
     ChannelStorage,
     UserRelationshipStorage,
     UserSocketStorage,
