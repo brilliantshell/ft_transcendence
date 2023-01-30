@@ -18,7 +18,7 @@ const createRandomUser = (): Users => {
   user.ladder = faker.datatype.number(100);
   user.lossCount = faker.datatype.number(100);
   user.nickname = faker.helpers.unique(faker.name.firstName);
-  user.profileImage = faker.image.imageUrl();
+  user.profileImage = `/${user.nickname}/profile.png`;
   user.winCount = faker.datatype.number(100);
   user.userId = faker.helpers.unique(faker.datatype.number, [
     { min: 10000, max: 99999 },
