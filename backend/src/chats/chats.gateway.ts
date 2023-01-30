@@ -170,4 +170,14 @@ export class ChatsGateway {
   getRoomMembers(chatRoom: string) {
     return this.server.sockets.adapter.rooms.get(chatRoom);
   }
+
+  getInactiveUsers(channelId: ChannelId) {
+    const rooms = new Set<number>();
+    this.getRoomMembers(`chatRooms-${channelId}`).forEach((socketId) => {
+      if (!this.getRoomMembers(`chatRooms-${channelId}-active`).has(socketId)) {
+        rooms.add(this.userSocketStorage.sockets.get(socketId));
+      }
+    });
+    return rooms;
+  }
 }

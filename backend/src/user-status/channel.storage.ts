@@ -632,7 +632,7 @@ export class ChannelStorage implements OnModuleInit {
   }
 
   /**
-   * @descriptio DM 채널을 DB 에 저장
+   * @description DM 채널을 DB 에 저장
    *
    * @param manager DB manager
    * @param owner DM 생성자
