@@ -30,7 +30,9 @@ export const destroyDataSources = async (
   dataSource: DataSource,
   initDataSource: DataSource,
 ) => {
-  dataSource.destroy();
-  initDataSource.createQueryRunner().dropDatabase(TEST_DB);
+  await dataSource.destroy();
+  await initDataSource
+    .createQueryRunner()
+    .query(`DROP DATABASE ${TEST_DB} WITH (FORCE);`);
   initDataSource.destroy();
 };
