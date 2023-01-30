@@ -1,5 +1,3 @@
-import { UserSocketStorage } from './../src/user-status/user-socket.storage';
-import { UserRelationshipStorage } from './../src/user-status/user-relationship.storage';
 import { INestApplication } from '@nestjs/common';
 import { Socket, io } from 'socket.io-client';
 import { Test, TestingModule } from '@nestjs/testing';
@@ -7,13 +5,22 @@ import { faker } from '@faker-js/faker';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import waitForExpect from 'wait-for-expect';
 
+import { Activity, UserId } from '../src/util/type';
 import { ActivityManager } from '../src/user-status/activity.manager';
 import { AppModule } from '../src/app.module';
+import {
+  BlockedDto,
+  FriendCancelledDto,
+  FriendDeclinedDto,
+  FriendRemovedDto,
+  PendingFriendRequestDto,
+  UnblockedDto,
+} from '../src/user/dto/user.dto';
 import { BlockedUsers } from '../src/entity/blocked-users.entity';
+import { FriendAcceptedDto, UserInfoDto } from '../src/user/dto/user.dto';
 import { Friends } from '../src/entity/friends.entity';
 import { UserGateway } from '../src/user/user.gateway';
-import { Activity, UserId } from '../src/util/type';
-import { UserInfoDto } from '../src/user/dto/user-info.dto';
+import { UserRelationshipStorage } from '../src/user-status/user-relationship.storage';
 import { Users } from '../src/entity/users.entity';
 import {
   generateUsers,
@@ -203,12 +210,13 @@ describe('UserStatusModule (e2e)', () => {
 
     // TODO : add tests for inGame
 
-   /*****************************************************************************
-    *                                                                           *
-    * SECTION : DTO creator                                                     *
-    *                                                                           *
-    ****************************************************************************/
+    /*****************************************************************************
+     *                                                                           *
+     * SECTION : DTO creator                                                     *
+     *                                                                           *
+     ****************************************************************************/
 
+    //  NOTE : UserService 구현 하면서 UserService 내부 로직으로 들어갈 코드
     const createUserInfoDto = (
       requesterId: UserId,
       requestedId: UserId,
@@ -240,34 +248,116 @@ describe('UserStatusModule (e2e)', () => {
    * SECTION : Events for friendship                                           *
    *                                                                           *
    ****************************************************************************/
-  // describe('Events for friendship', () => {
-  //   let senderSocket: Socket;
-  //   let receiverSocket: Socket;
+  describe('Events for friendship', () => {
+    let senderId: UserId;
+    let receiverId: UserId;
+    let senderSocket: Socket;
+    let receiverSocket: Socket;
 
-  //   afterEach(() => {
-  //     senderSocket.close();
-  //     receiverSocket?.close();
-  //   });
+    beforeEach(async () => {
+      const clients = await createClients(usersEntities, ONLINE);
+      senderId = clients[0].id;
+      receiverId = clients[1].id;
+      senderSocket = clients[0].socket;
+      receiverSocket = clients[1].socket;
+    });
 
-    // it('should send a notification to the pendingSender that the friendship request has been accepted', async () => {
-    //   const clients = await createClients(
-    //     usersEntities,
-    //     ONLINE,
-    //     Relationships.FRIEND,
-    //     [44, 45],
-    //   );
-    //   const senderId = clients[0].id;
-    //   const receiverId = clients[1].id;
-    //   senderSocket = clients[0].socket;
-    //   receiverSocket = clients[1].socket;
+    afterEach(() => {
+      senderSocket.close();
+      receiverSocket?.close();
+    });
 
-    //   await waitForExpect(() => {
-    //     expect(activityManager.getActivity(senderId)).not.toBeNull();
-    //     expect(activityManager.getActivity(receiverId)).not.toBeNull();
-    //   });
+    it('should let the sender know that the friendship request has been accepted', async () => {
+      gateway.emitFriendAccepted(senderSocket.id, receiverId);
+      const { newFriendId } = await new Promise<FriendAcceptedDto>((resolve) =>
+        senderSocket.on('friendAccepted', (data: FriendAcceptedDto) =>
+          resolve(data),
+        ),
+      );
+      expect(newFriendId).toEqual(receiverId);
+    });
 
-    //   gateway.emitFriendAccepted(senderSocket, receiverId);
-    // });
+    it('should let the sender know that the friendship request has been declined', async () => {
+      gateway.emitFriendDeclined(senderSocket.id, receiverId);
+      const { declinedBy } = await new Promise<FriendDeclinedDto>((resolve) =>
+        senderSocket.on('friendDeclined', (data: FriendDeclinedDto) =>
+          resolve(data),
+        ),
+      );
+      expect(declinedBy).toEqual(receiverId);
+    });
+
+    it('should let the receiver know that the friend request has been cancelled by the sender', async () => {
+      gateway.emitFriendCancelled(receiverSocket.id, senderId);
+      const { cancelledBy } = await new Promise<FriendCancelledDto>((resolve) =>
+        receiverSocket.on('friendCancelled', (data: FriendCancelledDto) =>
+          resolve(data),
+        ),
+      );
+      expect(cancelledBy).toEqual(senderId);
+    });
+
+    it('should notifiy a user when there is a new friend request', async () => {
+      gateway.emitPendingFriendRequest(receiverSocket.id, true);
+      const { isPending } = await new Promise<PendingFriendRequestDto>(
+        (resolve) => {
+          receiverSocket.on(
+            'pendingFriendRequest',
+            (data: PendingFriendRequestDto) => resolve(data),
+          );
+        },
+      );
+      expect(isPending).toBeTruthy();
+    });
+
+    it('should let the user know that he is no longer friend to another user', async () => {
+      gateway.emitFriendRemoved(senderSocket.id, receiverId);
+      const { removedBy } = await new Promise<FriendRemovedDto>((resolve) =>
+        senderSocket.on('friendRemoved', (data: FriendRemovedDto) =>
+          resolve(data),
+        ),
+      );
+      expect(removedBy).toEqual(receiverId);
+    });
+  });
+
+  /*****************************************************************************
+   *                                                                           *
+   * SECTION : Events for block                                                *
+   *                                                                           *
+   ****************************************************************************/
+  describe('Events for block', () => {
+    let blockerId: UserId;
+    let blockerSocket: Socket;
+    let blockedSocket: Socket;
+
+    beforeEach(async () => {
+      const clients = await createClients(usersEntities, ONLINE);
+      blockerId = clients[0].id;
+      blockerSocket = clients[0].socket;
+      blockedSocket = clients[1].socket;
+    });
+
+    afterEach(() => {
+      blockerSocket.close();
+      blockedSocket?.close();
+    });
+
+    it('should let the blocked user know that he is blocked by another user', async () => {
+      gateway.emitBlocked(blockedSocket.id, blockerId);
+      const { blockedBy } = await new Promise<BlockedDto>((resolve) =>
+        blockedSocket.on('blocked', (data: BlockedDto) => resolve(data)),
+      );
+      expect(blockedBy).toEqual(blockerId);
+    });
+
+    it('should let the user know that he is unblocked by another user', async () => {
+      gateway.emitUnblocked(blockedSocket.id, blockerId);
+      const { unblockedBy } = await new Promise<UnblockedDto>((resolve) =>
+        blockedSocket.on('unblocked', (data: UnblockedDto) => resolve(data)),
+      );
+      expect(unblockedBy).toEqual(blockerId);
+    });
   });
 });
 
@@ -289,11 +379,29 @@ const connectClient = async (userId: UserId, ui = 'profile') => {
 const createClients = async (
   usersEntities: Users[],
   isRequestedOnline: boolean,
-  relationship: Relationships,
-  indexes: [number, number] | null = null,
+  relationship: Relationships | null = null,
 ) => {
-  const [first, second] = (() => {
-    if (indexes) return indexes;
+  const [first, second] =
+    relationship !== null
+      ? chooseUsersIndices(relationship)
+      : [
+          faker.helpers.unique(faker.datatype.number, [{ min: 0, max: 99 }]),
+          faker.helpers.unique(faker.datatype.number, [{ min: 0, max: 99 }]),
+        ];
+  const clientIds = [usersEntities[first].userId, usersEntities[second].userId];
+  const requester = await connectClient(clientIds[0]);
+  let requested: Socket;
+  if (isRequestedOnline) {
+    requested = await connectClient(clientIds[1]);
+  }
+  return [
+    { id: clientIds[0], socket: requester },
+    { id: clientIds[1], socket: requested ?? null },
+  ];
+};
+
+const chooseUsersIndices = (relationship: Relationships) => {
+  {
     switch (relationship) {
       case Relationships.NORMAL:
         return [
@@ -306,15 +414,5 @@ const createClients = async (
         return faker.datatype.boolean() ? [70, 71] : [73, 72];
       default:
     }
-  })();
-  const clientIds = [usersEntities[first].userId, usersEntities[second].userId];
-  const requester = await connectClient(clientIds[0], 'profile');
-  let requested: Socket;
-  if (isRequestedOnline) {
-    requested = await connectClient(clientIds[1], 'profile');
   }
-  return [
-    { id: clientIds[0], socket: requester },
-    { id: clientIds[1], socket: requested ?? null },
-  ];
 };
