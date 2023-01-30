@@ -19,11 +19,11 @@ export class UserGateway {
   /**
    * @description activity & relationship 정보 전달
    *
-   * @param socketId 요청한 유저의 socket id
+   * @param requesterSocketId 요청한 유저의 socket id
    * @param userInfo 요청한 유저의 activity & relationship 정보
    */
-  emitUserInfo(socketId: SocketId, userInfo: UserInfoDto) {
-    this.server.to(socketId).emit('userInfo', userInfo);
+  emitUserInfo(requesterSocketId: SocketId, userInfo: UserInfoDto) {
+    this.server.to(requesterSocketId).emit('userInfo', userInfo);
   }
 
   /*****************************************************************************
