@@ -1,3 +1,5 @@
+import { SocketId } from './../util/type';
+import { UserInfoDto } from './dto/user-info.dto';
 import { Server } from 'socket.io';
 import {
   SubscribeMessage,
@@ -19,6 +21,12 @@ export class UserGateway {
     private userRelationshipStorage: UserRelationshipStorage,
   ) {}
 
+  /*****************************************************************************
+   *                                                                           *
+   * SECTION : User info                                                       *
+   *                                                                           *
+   ****************************************************************************/
+
   /**
    * @description activity & relationship 정보 전달
    *
@@ -26,25 +34,13 @@ export class UserGateway {
    * @param requestedId 요청받은 유저의 id
    */
   @SubscribeMessage('message')
-  emitUserInfo(requesterId: UserId, requestedId: UserId) {
-    let activity: Activity = 'offline';
-    const currentUi = this.activityManager.getActivity(requestedId);
-    if (currentUi) {
-      activity = currentUi === 'playingGame' ? 'inGame' : 'online';
-    }
-
-    // TODO : 게임 중이라면 GameStorage 에서 gameId 가져오기
-    const gameId = null;
-
-    const relationship =
-      this.userRelationshipStorage.getRelationship(requesterId, requestedId) ??
-      'normal';
-
-    this.server.emit('userInfo', {
-      activity,
-      gameId,
-      relationship,
-      userId: requestedId,
-    });
+  emitUserInfo(socketId: SocketId, userInfoDto: UserInfoDto) {
+    this.server.to(socketId).emit('userInfo', userInfoDto);
   }
+
+  /*****************************************************************************
+   *                                                                           *
+   * SECTION : Friends                                                         *
+   *                                                                           *
+   ****************************************************************************/
 }

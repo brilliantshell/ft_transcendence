@@ -1,3 +1,5 @@
+import { UserSocketStorage } from './../src/user-status/user-socket.storage';
+import { UserRelationshipStorage } from './../src/user-status/user-relationship.storage';
 import { INestApplication } from '@nestjs/common';
 import { Socket, io } from 'socket.io-client';
 import { Test, TestingModule } from '@nestjs/testing';
@@ -5,13 +7,14 @@ import { faker } from '@faker-js/faker';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import waitForExpect from 'wait-for-expect';
 
-import { ActivityManager } from './../src/user-status/activity.manager';
+import { ActivityManager } from '../src/user-status/activity.manager';
 import { AppModule } from '../src/app.module';
-import { BlockedUsers } from './../src/entity/blocked-users.entity';
-import { Friends } from './../src/entity/friends.entity';
-import { UserId, UserInfoMessage } from './../src/util/type';
-import { Users } from './../src/entity/users.entity';
-import { UserGateway } from './../src/user/user.gateway';
+import { BlockedUsers } from '../src/entity/blocked-users.entity';
+import { Friends } from '../src/entity/friends.entity';
+import { UserGateway } from '../src/user/user.gateway';
+import { Activity, UserId } from '../src/util/type';
+import { UserInfoDto } from '../src/user/dto/user-info.dto';
+import { Users } from '../src/entity/users.entity';
 import {
   generateUsers,
   generateFriends,
@@ -34,11 +37,10 @@ const OFFLINE = false;
 
 describe('UserStatusModule (e2e)', () => {
   let app: INestApplication;
-  let requesterSocket: Socket;
-  let requestedSocket: Socket;
   let usersEntities: Users[];
   let gateway: UserGateway;
   let activityManager: ActivityManager;
+  let userRelationshipStorage: UserRelationshipStorage;
 
   beforeAll(async () => {
     usersEntities = generateUsers(100);
@@ -65,6 +67,7 @@ describe('UserStatusModule (e2e)', () => {
     await app.listen(4244);
     gateway = moduleFixture.get(UserGateway);
     activityManager = moduleFixture.get(ActivityManager);
+    userRelationshipStorage = moduleFixture.get(UserRelationshipStorage);
   });
 
   afterAll(async () => {
@@ -78,6 +81,9 @@ describe('UserStatusModule (e2e)', () => {
    ****************************************************************************/
 
   describe('emitUserInfo', () => {
+    let requesterSocket: Socket;
+    let requestedSocket: Socket;
+
     afterEach(() => {
       requesterSocket.close();
       requestedSocket?.close();
@@ -95,8 +101,11 @@ describe('UserStatusModule (e2e)', () => {
       await waitForExpect(() =>
         expect(activityManager.getActivity(requesterId)).not.toBeNull(),
       );
-      gateway.emitUserInfo(requesterId, requestedId);
-      const data: UserInfoMessage = await new Promise((resolve) =>
+      gateway.emitUserInfo(
+        requesterSocket.id,
+        createUserInfoDto(requesterId, requestedId),
+      );
+      const data: UserInfoDto = await new Promise((resolve) =>
         requesterSocket.on('userInfo', (data) => resolve(data)),
       );
       expect(data).toEqual({
@@ -119,7 +128,10 @@ describe('UserStatusModule (e2e)', () => {
       await waitForExpect(() =>
         expect(activityManager.getActivity(requesterId)).not.toBeNull(),
       );
-      gateway.emitUserInfo(requesterId, requestedId);
+      gateway.emitUserInfo(
+        requesterSocket.id,
+        createUserInfoDto(requesterId, requestedId),
+      );
       const data = await new Promise((resolve) =>
         requesterSocket.on('userInfo', (data) => resolve(data)),
       );
@@ -145,8 +157,11 @@ describe('UserStatusModule (e2e)', () => {
         expect(activityManager.getActivity(requesterId)).not.toBeNull();
         expect(activityManager.getActivity(requestedId)).not.toBeNull();
       });
-      gateway.emitUserInfo(requesterId, requestedId);
-      const { activity, gameId, relationship, userId }: UserInfoMessage =
+      gateway.emitUserInfo(
+        requesterSocket.id,
+        createUserInfoDto(requesterId, requestedId),
+      );
+      const { activity, gameId, relationship, userId }: UserInfoDto =
         await new Promise((resolve) =>
           requesterSocket.on('userInfo', (data) => resolve(data)),
         );
@@ -170,8 +185,11 @@ describe('UserStatusModule (e2e)', () => {
         expect(activityManager.getActivity(requesterId)).not.toBeNull();
         expect(activityManager.getActivity(requestedId)).not.toBeNull();
       });
-      gateway.emitUserInfo(requesterId, requestedId);
-      const { activity, gameId, relationship, userId }: UserInfoMessage =
+      gateway.emitUserInfo(
+        requesterSocket.id,
+        createUserInfoDto(requesterId, requestedId),
+      );
+      const { activity, gameId, relationship, userId }: UserInfoDto =
         await new Promise((resolve) =>
           requesterSocket.on('userInfo', (data) => resolve(data)),
         );
@@ -184,6 +202,72 @@ describe('UserStatusModule (e2e)', () => {
     });
 
     // TODO : add tests for inGame
+
+   /*****************************************************************************
+    *                                                                           *
+    * SECTION : DTO creator                                                     *
+    *                                                                           *
+    ****************************************************************************/
+
+    const createUserInfoDto = (
+      requesterId: UserId,
+      requestedId: UserId,
+    ): UserInfoDto => {
+      let activity: Activity = 'offline';
+      const currentUi = activityManager.getActivity(requestedId);
+      if (currentUi) {
+        activity = currentUi === 'playingGame' ? 'inGame' : 'online';
+      }
+
+      // TODO : 게임 중이라면 GameStorage 에서 gameId 가져오기
+      const gameId = null;
+
+      const relationship =
+        userRelationshipStorage.getRelationship(requesterId, requestedId) ??
+        'normal';
+
+      return {
+        activity,
+        gameId,
+        relationship,
+        userId: requestedId,
+      };
+    };
+  });
+
+  /*****************************************************************************
+   *                                                                           *
+   * SECTION : Events for friendship                                           *
+   *                                                                           *
+   ****************************************************************************/
+  // describe('Events for friendship', () => {
+  //   let senderSocket: Socket;
+  //   let receiverSocket: Socket;
+
+  //   afterEach(() => {
+  //     senderSocket.close();
+  //     receiverSocket?.close();
+  //   });
+
+    // it('should send a notification to the pendingSender that the friendship request has been accepted', async () => {
+    //   const clients = await createClients(
+    //     usersEntities,
+    //     ONLINE,
+    //     Relationships.FRIEND,
+    //     [44, 45],
+    //   );
+    //   const senderId = clients[0].id;
+    //   const receiverId = clients[1].id;
+    //   senderSocket = clients[0].socket;
+    //   receiverSocket = clients[1].socket;
+
+    //   await waitForExpect(() => {
+    //     expect(activityManager.getActivity(senderId)).not.toBeNull();
+    //     expect(activityManager.getActivity(receiverId)).not.toBeNull();
+    //   });
+
+    //   gateway.emitFriendAccepted(senderSocket, receiverId);
+    // });
   });
 });
 
@@ -206,8 +290,10 @@ const createClients = async (
   usersEntities: Users[],
   isRequestedOnline: boolean,
   relationship: Relationships,
+  indexes: [number, number] | null = null,
 ) => {
   const [first, second] = (() => {
+    if (indexes) return indexes;
     switch (relationship) {
       case Relationships.NORMAL:
         return [
