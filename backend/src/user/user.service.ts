@@ -1,12 +1,4 @@
-import { ChannelStorage } from './../user-status/channel.storage';
-import { UserSocketStorage } from './../user-status/user-socket.storage';
-import { UserRelationshipStorage } from './../user-status/user-relationship.storage';
-import { ActivityManager } from './../user-status/activity.manager';
-import { UserGateway } from './user.gateway';
-import { UserProfileDto } from './dto/user.dto';
-import { UserInfoDto } from './dto/user-gateway.dto';
-import { UserId, Activity } from './../util/type';
-import { Users } from './../entity/users.entity';
+import { EntityNotFoundError, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import {
   Injectable,
@@ -14,20 +6,30 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { EntityNotFoundError, Repository } from 'typeorm';
+
+import { ActivityManager } from '../user-status/activity.manager';
+import { ChannelStorage } from '../user-status/channel.storage';
+import { UserGateway } from './user.gateway';
+import { Activity, UserId } from '../util/type';
+import { UserInfoDto } from './dto/user-gateway.dto';
+import { UserProfileDto } from './dto/user.dto';
+import { UserRelationshipStorage } from '../user-status/user-relationship.storage';
+import { UserSocketStorage } from '../user-status/user-socket.storage';
+import { Users } from '../entity/users.entity';
 
 @Injectable()
 export class UserService {
   private readonly logger = new Logger(UserService.name);
   constructor(
-    @InjectRepository(Users)
-    private readonly usersRepository: Repository<Users>,
-    private readonly userRelationshipStorage: UserRelationshipStorage,
-    private readonly userGateway: UserGateway,
-    private readonly userSocketStorage: UserSocketStorage,
     private readonly activityManager: ActivityManager,
     private readonly channelStorage: ChannelStorage,
+    @InjectRepository(Users)
+    private readonly userGateway: UserGateway,
+    private readonly userRelationshipStorage: UserRelationshipStorage,
+    private readonly userSocketStorage: UserSocketStorage,
+    private readonly usersRepository: Repository<Users>,
   ) {}
+
   /*****************************************************************************
    *                                                                           *
    * SECTION : Public methods                                                  *
@@ -120,22 +122,29 @@ export class UserService {
    *                                                                           *
    ****************************************************************************/
 
-  createUserInfoDto(requesterId: UserId, requestedId: UserId): UserInfoDto {
+  /**
+   * @description 유저의 상태 정보를 담은 UserInfoDto 를 생성
+   *
+   * @param requesterId 요청하는 유저의 id
+   * @param targetId 조회 대상 유저의 id
+   * @returns
+   */
+  createUserInfoDto(requesterId: UserId, targetId: UserId): UserInfoDto {
     let activity: Activity = 'offline';
-    const currentUi = this.activityManager.getActivity(requestedId);
+    const currentUi = this.activityManager.getActivity(targetId);
     if (currentUi) {
       activity = currentUi === 'playingGame' ? 'inGame' : 'online';
     }
     // TODO : 게임 중이라면 GameStorage 에서 gameId 가져오기
     const gameId = null;
     const relationship =
-      this.userRelationshipStorage.getRelationship(requesterId, requestedId) ??
+      this.userRelationshipStorage.getRelationship(requesterId, targetId) ??
       'normal';
     return {
       activity,
       gameId,
       relationship,
-      userId: requestedId,
+      userId: targetId,
     };
   }
 }

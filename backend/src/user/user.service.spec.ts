@@ -1,28 +1,30 @@
-import { Messages } from './../entity/messages.entity';
-import { BannedMembers } from './../entity/banned-members.entity';
-import { ChannelMembers } from './../entity/channel-members.entity';
-import { ChannelStorage } from './../user-status/channel.storage';
-import { Friends } from './../entity/friends.entity';
-import { Channels } from './../entity/channels.entity';
-import { BlockedUsers } from './../entity/blocked-users.entity';
-import { ActivityManager } from './../user-status/activity.manager';
-import { UserSocketStorage } from './../user-status/user-socket.storage';
-import { UserRelationshipStorage } from './../user-status/user-relationship.storage';
-import { UserGateway } from './user.gateway';
-import { NotFoundException } from '@nestjs/common';
-import { UserId } from './../util/type';
-import { TypeOrmModule } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
+import { NotFoundException } from '@nestjs/common';
+import { Test, TestingModule } from '@nestjs/testing';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { nanoid } from 'nanoid';
+
+import { ActivityManager } from '../user-status/activity.manager';
+import { BannedMembers } from '../entity/banned-members.entity';
+import { BlockedUsers } from '../entity/blocked-users.entity';
+import { ChannelMembers } from '../entity/channel-members.entity';
+import { ChannelStorage } from '../user-status/channel.storage';
+import { Channels } from '../entity/channels.entity';
+import { Friends } from '../entity/friends.entity';
+import { Messages } from '../entity/messages.entity';
 import {
+  TYPEORM_SHARED_CONFIG,
   createDataSources,
   destroyDataSources,
-  TYPEORM_SHARED_CONFIG,
-} from './../../test/db-resource-manager';
-import { generateUsers } from './../../test/generate-mock-data';
-import { Users } from './../entity/users.entity';
-import { Test, TestingModule } from '@nestjs/testing';
+} from '../../test/db-resource-manager';
+import { UserGateway } from './user.gateway';
+import { UserId, SocketId } from '../util/type';
+import { UserInfoDto } from './dto/user-gateway.dto';
+import { UserRelationshipStorage } from '../user-status/user-relationship.storage';
 import { UserService } from './user.service';
-import { nanoid } from 'nanoid';
+import { UserSocketStorage } from '../user-status/user-socket.storage';
+import { Users } from '../entity/users.entity';
+import { generateUsers } from '../../test/generate-mock-data';
 
 const TEST_DB = 'test_db_user_service';
 const ENTITIES = [
@@ -82,7 +84,7 @@ describe('UserService', () => {
     })
       .overrideProvider(UserGateway)
       .useValue({
-        emitUserInfo: (socketId, userInfo) => {},
+        emitUserInfo: (socketId: SocketId, userInfo: UserInfoDto) => {},
       })
       .compile();
 
