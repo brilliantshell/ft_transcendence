@@ -15,9 +15,12 @@ import {
   FriendRemovedDto,
   PendingFriendRequestDto,
   UnblockedDto,
-} from '../src/user/dto/user.dto';
+} from '../src/user/dto/user-gateway.dto';
 import { BlockedUsers } from '../src/entity/blocked-users.entity';
-import { FriendAcceptedDto, UserInfoDto } from '../src/user/dto/user.dto';
+import {
+  FriendAcceptedDto,
+  UserInfoDto,
+} from '../src/user/dto/user-gateway.dto';
 import { Friends } from '../src/entity/friends.entity';
 import { UserGateway } from '../src/user/user.gateway';
 import { UserRelationshipStorage } from '../src/user-status/user-relationship.storage';
