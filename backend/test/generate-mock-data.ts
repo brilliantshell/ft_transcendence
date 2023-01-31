@@ -14,15 +14,15 @@ import { Users } from '../src/entity/users.entity';
 // SECTION : Users
 const createRandomUser = (): Users => {
   const user = new Users();
+  user.userId = faker.helpers.unique(faker.datatype.number, [
+    { min: 10000, max: 99999 },
+  ]);
   user.authEmail = faker.helpers.unique(faker.internet.email);
   user.ladder = faker.datatype.number(100);
   user.lossCount = faker.datatype.number(100);
   user.nickname = faker.helpers.unique(faker.name.firstName);
-  user.profileImage = `/${user.nickname}/profile.png`;
+  user.profileImage = `/${user.userId}/profile.png`;
   user.winCount = faker.datatype.number(100);
-  user.userId = faker.helpers.unique(faker.datatype.number, [
-    { min: 10000, max: 99999 },
-  ]);
   return user;
 };
 
