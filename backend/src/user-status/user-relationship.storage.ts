@@ -240,6 +240,23 @@ export class UserRelationshipStorage implements OnModuleInit {
    ****************************************************************************/
 
   /**
+   * @description 유저의 친구 목록 반환
+   *
+   * @param userId 유저 id
+   * @returns 친구 목록
+   */
+  getFriends(userId: UserId) {
+    const friends: UserId[] = [];
+    this.users
+      .get(userId)
+      .forEach(
+        (status, counterpartId) =>
+          FRIENDSHIP_TYPES.includes(status) && friends.push(counterpartId),
+      );
+    return friends;
+  }
+
+  /**
    * @description 수락 전 친구 관계 추가
    *
    * @param senderId 친구 추가 요청을 보낸 유저의 id

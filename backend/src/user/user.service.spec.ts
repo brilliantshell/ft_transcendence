@@ -1,5 +1,5 @@
-import { DataSource, Repository } from 'typeorm';
 import { ConflictException, NotFoundException } from '@nestjs/common';
+import { DataSource, Repository } from 'typeorm';
 import { Test, TestingModule } from '@nestjs/testing';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { nanoid } from 'nanoid';
@@ -461,6 +461,29 @@ describe('UserService', () => {
       await expect(
         service.acceptFriendRequest(accepter, accepted),
       ).rejects.toThrowError(ConflictException);
+    });
+
+    it("should return a list of friends's ids", async () => {
+      const friends = generateUsers(10);
+      await usersRepository.save(friends);
+      const { userId } = friends[9];
+      for (const friend of friends) {
+        const socketId = nanoid();
+        userSocketStorage.clients.set(friend.userId, socketId);
+        userSocketStorage.sockets.set(socketId, friend.userId);
+        userRelationshipStorage.load(friend.userId);
+        channelStorage.loadUser(friend.userId);
+        activityManager.setActivity(friend.userId, 'profile');
+      }
+      friends.pop();
+      const friendIds = [];
+      await Promise.all(
+        friends.map((friend) => {
+          friendIds.push(friend.userId);
+          return service.createFriendRequest(userId, friend.userId);
+        }),
+      );
+      expect(new Set(service.findFriends(userId))).toEqual(new Set(friendIds));
     });
   });
 });

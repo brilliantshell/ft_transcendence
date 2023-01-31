@@ -1,6 +1,4 @@
 import { BlockedUsers } from './../entity/blocked-users.entity';
-import { EntityNotFoundError, Repository } from 'typeorm';
-import { InjectRepository } from '@nestjs/typeorm';
 import {
   ConflictException,
   Injectable,
@@ -8,6 +6,8 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
+import { EntityNotFoundError, Repository } from 'typeorm';
+import { InjectRepository } from '@nestjs/typeorm';
 
 import { Activity, UserId } from '../util/type';
 import { ActivityManager } from '../user-status/activity.manager';
@@ -166,6 +166,16 @@ export class UserService {
    * SECTION : Friend                                                          *
    *                                                                           *
    ****************************************************************************/
+
+  /**
+   * @description 유저의 친구 목록 반환
+   *
+   * @param userId 유저 id
+   * @returns 친구 목록
+   */
+  findFriends(userId: UserId) {
+    return this.userRelationshipStorage.getFriends(userId);
+  }
 
   /**
    * @description 유저를 친구 추가
