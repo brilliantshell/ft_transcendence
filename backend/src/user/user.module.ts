@@ -6,6 +6,7 @@ import { UserStatusModule } from '../user-status/user-status.module';
 
 @Module({
   imports: [UserStatusModule],
-  providers: [UserGateway, UserService],
+  providers: [UserGateway],
+  // providers: [UserGateway, UserService],
 })
 export class UserModule {}

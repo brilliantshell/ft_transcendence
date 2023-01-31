@@ -23,8 +23,8 @@ const BLOCK_TYPES: Relationship[] = ['blocker', 'blocked'];
 
 @Injectable()
 export class UserRelationshipStorage implements OnModuleInit {
-  private dms: Map<ChannelId, boolean> = new Map<ChannelId, boolean>();
-  private users: Map<UserId, Map<UserId, Relationship>> = new Map<
+  private readonly dms: Map<ChannelId, boolean> = new Map<ChannelId, boolean>();
+  private readonly users: Map<UserId, Map<UserId, Relationship>> = new Map<
     UserId,
     Map<UserId, Relationship>
   >();

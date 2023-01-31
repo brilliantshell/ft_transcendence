@@ -56,7 +56,7 @@ describe('UserService', () => {
     initDataSource = dataSources.initDataSource;
     dataSource = dataSources.dataSource;
 
-    usersEntities = generateUsers(20);
+    usersEntities = generateUsers(40);
 
     usersRepository = dataSource.getRepository(Users);
 
@@ -88,7 +88,14 @@ describe('UserService', () => {
         emitUserInfo: (socketId: SocketId, userInfo: UserInfoDto) => {},
         emitBlocked: (socketId: SocketId, blockerId: UserId) => {},
         emitUnblocked: (socketId: SocketId, unblockerId: UserId) => {},
-        emitFriendRequest: (socketId: SocketId, requesterId: UserId) => {},
+        emitPendingFriendRequest: (
+          socketId: SocketId,
+          isPending: boolean,
+        ) => {},
+        emitFriendCancelled: (socketId: SocketId, cancelledBy: UserId) => {},
+        emitFriendRemoved: (socketId: SocketId, removedBy: UserId) => {},
+        emitFriendAccepted: (socketId: SocketId, acceptedBy: UserId) => {},
+        emitFriendDeclined: (socketId: SocketId, declinedBy: UserId) => {},
       })
       .compile();
 
@@ -180,7 +187,7 @@ describe('UserService', () => {
   // describe('Game', () => {});
 
   describe('Block', () => {
-    it('should block a user (both logged in)', async () => {
+    it('should block a user (both are logged in)', async () => {
       const [blockerId, blockedId] = userIds;
       const spy = jest.spyOn(userGateway, 'emitBlocked');
       expect(await service.createBlock(blockerId, blockedId)).toBeTruthy();
@@ -217,7 +224,7 @@ describe('UserService', () => {
       expect(await service.createBlock(blockerId, blockedId)).toBeFalsy();
     });
 
-    it('should unblock a user (both logged in)', async () => {
+    it('should unblock a user (both are logged in)', async () => {
       const [unblockerId, unblockedId] = userIds;
       await service.createBlock(unblockerId, unblockedId);
       expect(
@@ -255,23 +262,205 @@ describe('UserService', () => {
     });
   });
 
-  // describe('Friend', () => {
-  //   it('should send a friend requst (both logged in)', async () => {
-  //     const [senderId, receiverID] = userIds;
-  //     const spy = jest.spyOn(userGateway, 'emitPendingFriendRequest');
-  //     expect(
-  //       await service.createFriendRequest(senderId, receiverID),
-  //     ).toBeTruthy();
-  //     expect(
-  //       userRelationshipStorage.getRelationship(senderId, receiverID),
-  //     ).toEqual('pendingSender');
-  //     expect(
-  //       userRelationshipStorage.getRelationship(receiverID, senderId),
-  //     ).toEqual('pendingReceiver');
-  //     expect(spy).toHaveBeenCalledWith(
-  //       userSocketStorage.clients.get(receiverID),
-  //       senderId,
-  //     );
-  //   });
-  // });
+  describe('Friend', () => {
+    it('should send a friend requst (both are logged in)', async () => {
+      const [senderId, receiverId] = userIds;
+      const spy = jest.spyOn(userGateway, 'emitPendingFriendRequest');
+      expect(
+        await service.createFriendRequest(senderId, receiverId),
+      ).toBeTruthy();
+      expect(
+        userRelationshipStorage.getRelationship(senderId, receiverId),
+      ).toEqual('pendingSender');
+      expect(
+        userRelationshipStorage.getRelationship(receiverId, senderId),
+      ).toEqual('pendingReceiver');
+      expect(spy).toHaveBeenCalledWith(
+        userSocketStorage.clients.get(receiverId),
+        true,
+      );
+    });
+
+    it('should send a friend requst (only the sender is logged in)', async () => {
+      const [senderId, receiverId] = userIds;
+      userSocketStorage.clients.delete(receiverId);
+      userRelationshipStorage.unload(receiverId);
+      activityManager.deleteActivity(receiverId);
+      const spy = jest.spyOn(userGateway, 'emitPendingFriendRequest');
+      expect(
+        await service.createFriendRequest(senderId, receiverId),
+      ).toBeTruthy();
+      expect(
+        userRelationshipStorage.getRelationship(senderId, receiverId),
+      ).toEqual('pendingSender');
+      expect(
+        userRelationshipStorage.getRelationship(receiverId, senderId),
+      ).toBeNull();
+      expect(spy).not.toHaveBeenCalled();
+    });
+
+    it('should return false when the friend request has been already there', async () => {
+      const [senderId, receiverId] = userIds;
+      expect(
+        await service.createFriendRequest(senderId, receiverId),
+      ).toBeTruthy();
+      expect(
+        await service.createFriendRequest(senderId, receiverId),
+      ).toBeFalsy();
+    });
+
+    it('should throw CONFLICT when the sender had already received a friend request from the receiver', async () => {
+      const [senderId, receiverId] = userIds;
+      await service.createFriendRequest(receiverId, senderId);
+      await expect(
+        service.createFriendRequest(senderId, receiverId),
+      ).rejects.toThrowError(ConflictException);
+    });
+
+    it('should throw CONFLICT when the sender and the receiver are already friends', async () => {
+      const [senderId, receiverId] = userIds;
+      await service.createFriendRequest(senderId, receiverId);
+      await service.acceptFriendRequest(receiverId, senderId);
+      await expect(
+        service.createFriendRequest(senderId, receiverId),
+      ).rejects.toThrowError(ConflictException);
+    });
+
+    it('should cancel a friend request (both are logged in)', async () => {
+      const [canceller, cancelled] = userIds;
+      await service.createFriendRequest(canceller, cancelled);
+      expect(
+        userRelationshipStorage.getRelationship(canceller, cancelled),
+      ).toEqual('pendingSender');
+      expect(
+        userRelationshipStorage.getRelationship(cancelled, canceller),
+      ).toEqual('pendingReceiver');
+      const spy = jest.spyOn(userGateway, 'emitFriendCancelled');
+      await service.deleteFriendship(canceller, cancelled);
+      expect(
+        userRelationshipStorage.getRelationship(canceller, cancelled),
+      ).toBeNull();
+      expect(
+        userRelationshipStorage.getRelationship(cancelled, canceller),
+      ).toBeNull();
+      expect(spy).toHaveBeenCalledWith(
+        userSocketStorage.clients.get(cancelled),
+        canceller,
+      );
+    });
+
+    it('should cancel a friend request (only the canceller is logged in)', async () => {
+      const [canceller, cancelled] = userIds;
+      userSocketStorage.clients.delete(cancelled);
+      userRelationshipStorage.unload(cancelled);
+      activityManager.deleteActivity(cancelled);
+      await service.createFriendRequest(canceller, cancelled);
+      expect(
+        userRelationshipStorage.getRelationship(canceller, cancelled),
+      ).toEqual('pendingSender');
+      const spy = jest.spyOn(userGateway, 'emitFriendCancelled');
+      await service.deleteFriendship(canceller, cancelled);
+      expect(
+        userRelationshipStorage.getRelationship(canceller, cancelled),
+      ).toBeNull();
+      expect(spy).not.toHaveBeenCalled();
+    });
+
+    it('should decline a friend request (both are logged in)', async () => {
+      const [decliner, declined] = userIds;
+      await service.createFriendRequest(declined, decliner);
+      expect(
+        userRelationshipStorage.getRelationship(decliner, declined),
+      ).toEqual('pendingReceiver');
+      expect(
+        userRelationshipStorage.getRelationship(declined, decliner),
+      ).toEqual('pendingSender');
+      const spy = jest.spyOn(userGateway, 'emitFriendDeclined');
+      await service.deleteFriendship(decliner, declined);
+      expect(
+        userRelationshipStorage.getRelationship(declined, decliner),
+      ).toBeNull();
+      expect(
+        userRelationshipStorage.getRelationship(decliner, declined),
+      ).toBeNull();
+      expect(spy).toHaveBeenCalledWith(
+        userSocketStorage.clients.get(declined),
+        decliner,
+      );
+    });
+
+    it('should decline a friend request (only the decliner is logged in)', async () => {
+      const [decliner, declined] = userIds;
+      await service.createFriendRequest(declined, decliner);
+      userSocketStorage.clients.delete(declined);
+      userRelationshipStorage.unload(declined);
+      activityManager.deleteActivity(declined);
+      expect(
+        userRelationshipStorage.getRelationship(decliner, declined),
+      ).toEqual('pendingReceiver');
+      const spy = jest.spyOn(userGateway, 'emitFriendDeclined');
+      await service.deleteFriendship(decliner, declined);
+      expect(
+        userRelationshipStorage.getRelationship(declined, decliner),
+      ).toBeNull();
+      expect(spy).not.toHaveBeenCalled();
+    });
+
+    it('should accept a friend request (both are logged in)', async () => {
+      const [accepter, accepted] = userIds;
+      await service.createFriendRequest(accepted, accepter);
+      expect(
+        userRelationshipStorage.getRelationship(accepter, accepted),
+      ).toEqual('pendingReceiver');
+      expect(
+        userRelationshipStorage.getRelationship(accepted, accepter),
+      ).toEqual('pendingSender');
+      const spy = jest.spyOn(userGateway, 'emitFriendAccepted');
+      await service.acceptFriendRequest(accepter, accepted);
+      expect(
+        userRelationshipStorage.getRelationship(accepted, accepter),
+      ).toEqual('friend');
+      expect(
+        userRelationshipStorage.getRelationship(accepter, accepted),
+      ).toEqual('friend');
+      expect(spy).toHaveBeenCalledWith(
+        userSocketStorage.clients.get(accepted),
+        accepter,
+      );
+    });
+
+    it('should accept a friend request (only the accepter is logged in)', async () => {
+      const [accepter, accepted] = userIds;
+      await service.createFriendRequest(accepted, accepter);
+      userSocketStorage.clients.delete(accepted);
+      userRelationshipStorage.unload(accepted);
+      activityManager.deleteActivity(accepted);
+      expect(
+        userRelationshipStorage.getRelationship(accepter, accepted),
+      ).toEqual('pendingReceiver');
+      const spy = jest.spyOn(userGateway, 'emitFriendAccepted');
+      await service.acceptFriendRequest(accepter, accepted);
+      expect(
+        userRelationshipStorage.getRelationship(accepter, accepted),
+      ).toEqual('friend');
+      expect(spy).not.toHaveBeenCalled();
+    });
+
+    it('should throw CONFLICT when the accepter had sent a friend request from the accepted', async () => {
+      const [accepter, accepted] = userIds;
+      await service.createFriendRequest(accepter, accepted);
+      await expect(
+        service.acceptFriendRequest(accepter, accepted),
+      ).rejects.toThrowError(ConflictException);
+    });
+
+    it('should throw CONFLICT when the accepter already is a friend with the accepted', async () => {
+      const [accepter, accepted] = userIds;
+      await service.createFriendRequest(accepted, accepter);
+      await service.acceptFriendRequest(accepter, accepted);
+      await expect(
+        service.acceptFriendRequest(accepter, accepted),
+      ).rejects.toThrowError(ConflictException);
+    });
+  });
 });
