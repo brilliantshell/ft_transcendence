@@ -7,10 +7,10 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 
+import { Activity, UserId } from '../util/type';
 import { ActivityManager } from '../user-status/activity.manager';
 import { ChannelStorage } from '../user-status/channel.storage';
 import { UserGateway } from './user.gateway';
-import { Activity, UserId } from '../util/type';
 import { UserInfoDto } from './dto/user-gateway.dto';
 import { UserProfileDto } from './dto/user.dto';
 import { UserRelationshipStorage } from '../user-status/user-relationship.storage';
@@ -23,10 +23,10 @@ export class UserService {
   constructor(
     private readonly activityManager: ActivityManager,
     private readonly channelStorage: ChannelStorage,
-    @InjectRepository(Users)
     private readonly userGateway: UserGateway,
     private readonly userRelationshipStorage: UserRelationshipStorage,
     private readonly userSocketStorage: UserSocketStorage,
+    @InjectRepository(Users)
     private readonly usersRepository: Repository<Users>,
   ) {}
 
