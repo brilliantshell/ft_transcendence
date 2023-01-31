@@ -29,10 +29,10 @@ export class UserRelationshipStorage implements OnModuleInit {
     Map<UserId, Relationship>
   >();
 
-  private blockedUsersRepository: Repository<BlockedUsers>;
-  private channelsRepository: Repository<Channels>;
-  private friendsRepository: Repository<Friends>;
-  private logger = new Logger(UserRelationshipStorage.name);
+  private readonly blockedUsersRepository: Repository<BlockedUsers>;
+  private readonly channelsRepository: Repository<Channels>;
+  private readonly friendsRepository: Repository<Friends>;
+  private readonly logger = new Logger(UserRelationshipStorage.name);
 
   constructor(
     @InjectDataSource()
@@ -191,7 +191,6 @@ export class UserRelationshipStorage implements OnModuleInit {
       await this.dataSource.manager.transaction(async (manager) => {
         await manager.save(BlockedUsers, { blockerId, blockedId });
         await this.setDmReadonly(blockerId, blockedId);
-
         FRIENDSHIP_TYPES.includes(this.users.get(blockerId).get(blockedId)) &&
           (await this.queryConditionalDelete(
             manager.withRepository(this.friendsRepository),
@@ -215,6 +214,7 @@ export class UserRelationshipStorage implements OnModuleInit {
    */
   async unblockUser(unblocker: UserId, unblocked: UserId) {
     const relationship = this.users.get(unblocker).get(unblocked);
+    // FIXME : Guard 로 막으면 필요 없을수도
     if ('blocker' !== relationship) {
       throw new BadRequestException('Invalid relationship');
     }

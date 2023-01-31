@@ -1,5 +1,5 @@
 import { DataSource, Repository } from 'typeorm';
-import { NotFoundException } from '@nestjs/common';
+import { ConflictException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { nanoid } from 'nanoid';
@@ -48,6 +48,7 @@ describe('UserService', () => {
   let userSocketStorage: UserSocketStorage;
   let channelStorage: ChannelStorage;
   let userRelationshipStorage: UserRelationshipStorage;
+  let activityManager: ActivityManager;
   let index = 0;
 
   beforeAll(async () => {
@@ -85,6 +86,9 @@ describe('UserService', () => {
       .overrideProvider(UserGateway)
       .useValue({
         emitUserInfo: (socketId: SocketId, userInfo: UserInfoDto) => {},
+        emitBlocked: (socketId: SocketId, blockerId: UserId) => {},
+        emitUnblocked: (socketId: SocketId, unblockerId: UserId) => {},
+        emitFriendRequest: (socketId: SocketId, requesterId: UserId) => {},
       })
       .compile();
 
@@ -97,6 +101,7 @@ describe('UserService', () => {
       UserRelationshipStorage,
     );
     channelStorage = module.get<ChannelStorage>(ChannelStorage);
+    activityManager = module.get<ActivityManager>(ActivityManager);
     userIds = [usersEntities[index].userId, usersEntities[index + 1].userId];
     userIds.forEach((userId) => {
       const socketId = nanoid();
@@ -104,6 +109,7 @@ describe('UserService', () => {
       userSocketStorage.sockets.set(socketId, userId);
       userRelationshipStorage.load(userId);
       channelStorage.loadUser(userId);
+      activityManager.setActivity(userId, 'profile');
     });
   });
 
@@ -169,4 +175,103 @@ describe('UserService', () => {
       expect(existing.isNew).toBeFalsy();
     });
   });
+
+  // TODO : game 관련 비즈니스 로직 테스트
+  // describe('Game', () => {});
+
+  describe('Block', () => {
+    it('should block a user (both logged in)', async () => {
+      const [blockerId, blockedId] = userIds;
+      const spy = jest.spyOn(userGateway, 'emitBlocked');
+      expect(await service.createBlock(blockerId, blockedId)).toBeTruthy();
+      expect(
+        userRelationshipStorage.getRelationship(blockerId, blockedId),
+      ).toEqual('blocker');
+      expect(
+        userRelationshipStorage.getRelationship(blockedId, blockerId),
+      ).toEqual('blocked');
+      expect(spy).toHaveBeenCalledWith(
+        userSocketStorage.clients.get(blockedId),
+        blockerId,
+      );
+    });
+
+    it('should block a user (only the blocker is logged in)', async () => {
+      const [blockerId, blockedId] = userIds;
+      userSocketStorage.clients.delete(blockedId);
+      userRelationshipStorage.unload(blockedId);
+      activityManager.deleteActivity(blockedId);
+      const spy = jest.spyOn(userGateway, 'emitBlocked');
+      expect(await service.createBlock(blockerId, blockedId)).toBeTruthy();
+      expect(
+        userRelationshipStorage.getRelationship(blockerId, blockedId),
+      ).toEqual('blocker');
+      expect(userRelationshipStorage.getRelationship(blockedId, blockerId))
+        .toBeUndefined;
+      expect(spy).not.toHaveBeenCalled();
+    });
+
+    it('should return false when the block relationship has been already there', async () => {
+      const [blockerId, blockedId] = userIds;
+      expect(await service.createBlock(blockerId, blockedId)).toBeTruthy();
+      expect(await service.createBlock(blockerId, blockedId)).toBeFalsy();
+    });
+
+    it('should unblock a user (both logged in)', async () => {
+      const [unblockerId, unblockedId] = userIds;
+      await service.createBlock(unblockerId, unblockedId);
+      expect(
+        userRelationshipStorage.getRelationship(unblockerId, unblockedId),
+      ).toEqual('blocker');
+      const spy = jest.spyOn(userGateway, 'emitUnblocked');
+      await service.deleteBlock(unblockerId, unblockedId);
+      expect(
+        userRelationshipStorage.getRelationship(unblockerId, unblockedId),
+      ).toBeNull();
+      expect(
+        userRelationshipStorage.getRelationship(unblockedId, unblockerId),
+      ).toBeNull();
+      expect(spy).toHaveBeenCalledWith(
+        userSocketStorage.clients.get(unblockedId),
+        unblockerId,
+      );
+    });
+
+    it('should unblock a user (only the unblocker is logged in)', async () => {
+      const [unblockerId, unblockedId] = userIds;
+      userSocketStorage.clients.delete(unblockedId);
+      userRelationshipStorage.unload(unblockedId);
+      activityManager.deleteActivity(unblockedId);
+      await service.createBlock(unblockerId, unblockedId);
+      expect(
+        userRelationshipStorage.getRelationship(unblockerId, unblockedId),
+      ).toEqual('blocker');
+      const spy = jest.spyOn(userGateway, 'emitUnblocked');
+      await service.deleteBlock(unblockerId, unblockedId);
+      expect(
+        userRelationshipStorage.getRelationship(unblockerId, unblockedId),
+      ).toBeNull();
+      expect(spy).not.toHaveBeenCalled();
+    });
+  });
+
+  // describe('Friend', () => {
+  //   it('should send a friend requst (both logged in)', async () => {
+  //     const [senderId, receiverID] = userIds;
+  //     const spy = jest.spyOn(userGateway, 'emitPendingFriendRequest');
+  //     expect(
+  //       await service.createFriendRequest(senderId, receiverID),
+  //     ).toBeTruthy();
+  //     expect(
+  //       userRelationshipStorage.getRelationship(senderId, receiverID),
+  //     ).toEqual('pendingSender');
+  //     expect(
+  //       userRelationshipStorage.getRelationship(receiverID, senderId),
+  //     ).toEqual('pendingReceiver');
+  //     expect(spy).toHaveBeenCalledWith(
+  //       userSocketStorage.clients.get(receiverID),
+  //       senderId,
+  //     );
+  //   });
+  // });
 });
