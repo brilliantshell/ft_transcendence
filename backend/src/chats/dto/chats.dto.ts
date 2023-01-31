@@ -1,3 +1,4 @@
+import { IsOptional, IsString, Length, Matches } from 'class-validator';
 import { ChannelId, UserRole } from '../../util/type';
 
 interface OtherChannel {
@@ -18,13 +19,6 @@ export interface AllChannelsDto {
   otherChannels?: OtherChannel[];
 }
 
-// change to class
-export interface NewChannelDto {
-  channelName: string;
-  password?: string;
-  accessMode: 'public' | 'protected' | 'private';
-}
-
 interface ChannelMember {
   id: number;
   role: UserRole;
@@ -33,4 +27,20 @@ interface ChannelMember {
 export interface ChannelInfoDto {
   channelsMembers: ChannelMember[];
   isReadonlyDm: boolean | null;
+}
+
+export class CreateChannelDto {
+  @IsString()
+  @Length(1, 128)
+  channelName: string;
+
+  // TODO : password max length 정하기
+  @IsString()
+  @Length(1, 20)
+  @IsOptional()
+  password?: string;
+
+  @IsString()
+  @Matches(/^(public|protected|private)$/)
+  accessMode: 'public' | 'protected' | 'private';
 }

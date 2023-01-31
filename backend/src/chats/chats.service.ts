@@ -2,6 +2,8 @@ import {
   BadRequestException,
   ForbiddenException,
   Injectable,
+  InternalServerErrorException,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -10,20 +12,20 @@ import { hash, compare } from 'bcrypt';
 
 import { AccessMode, Channels } from '../entity/channels.entity';
 import { ActivityManager } from '../user-status/activity.manager';
-import { AllChannelsDto, NewChannelDto } from './dto/chats.dto';
+import { AllChannelsDto, CreateChannelDto } from './dto/chats.dto';
 import { ChannelStorage } from '../user-status/channel.storage';
 import { ChannelId, UserChannelStatus, UserId } from '../util/type';
 import { ChatsGateway } from './chats.gateway';
 import { UserRelationshipStorage } from '../user-status/user-relationship.storage';
 import { BannedMembers } from '../entity/banned-members.entity';
 import { DateTime } from 'luxon';
+import { Messages } from '../entity/messages.entity';
 
 /*
 [x]유저가 참여중인 채팅방 & 모든 PUBLIC, PROTECTED 채팅방 channels.modified_at 순으로 정렬 후 전달
 [x]유저 인풋 기반으로 채팅방 생성
 [x]유저를 채널에 추가 (protected 면 password 확인, 초대받았으면 바로 입장)
 [x]채팅방 멤버 표시 및 관리
-[]차단된 유저 간 DM readonly
 []채팅방 메시지 송수신 및 표시
 []채팅방 멤버 권한 & 상태 (ban/mute) 관리
 []확인하지 않은 메시지 카운트
@@ -31,6 +33,7 @@ import { DateTime } from 'luxon';
 
 @Injectable()
 export class ChatsService {
+  private readonly logger = new Logger(ChatsService.name);
   constructor(
     @InjectRepository(BannedMembers)
     private readonly bannedMembersRepository: Repository<BannedMembers>,
@@ -39,6 +42,8 @@ export class ChatsService {
     @InjectRepository(Channels)
     private readonly channelsRepository: Repository<Channels>,
     private readonly chatsGateway: ChatsGateway,
+    @InjectRepository(Messages)
+    private readonly messagesRepository: Repository<Messages>,
     private readonly userRelationshipStorage: UserRelationshipStorage,
   ) {}
 
@@ -85,7 +90,7 @@ export class ChatsService {
    * @returns 생성된 채널 Id
    */
   // NOTE : WS 이벤트 emit 해야 할 수 있음
-  async createChannel(userId: UserId, channel: NewChannelDto) {
+  async createChannel(userId: UserId, channel: CreateChannelDto) {
     const { channelName, accessMode } = channel;
     const password = channel.password ?? null;
 
@@ -113,6 +118,13 @@ export class ChatsService {
    *                                                                           *
    ****************************************************************************/
 
+  /**
+   * @description 채널의 멤버 목록 및 DM 차단 여부를 반환
+   *
+   * @param userId 요청한 유저의 Id
+   * @param channelId 요청한 채널의 Id
+   * @returns 채널의 멤버 목록 및 DM 차단 여부
+   */
   findChannelMembers(userId: UserId, channelId: ChannelId) {
     const channelInfo = this.channelStorage.getChannel(channelId);
     if (channelInfo === undefined) {
@@ -155,6 +167,7 @@ export class ChatsService {
     }
     const accessMode = this.channelStorage.getChannel(channelId).accessMode;
     if (accessMode === 'public' || isInvited) {
+      this.chatsGateway.emitMemberJoin(userId, channelId);
       return await this.channelStorage.addUserToChannel(channelId, userId);
     }
     if (accessMode === 'protected') {
@@ -164,12 +177,54 @@ export class ChatsService {
       if (!password || !(await compare(password, channelPassword))) {
         throw new ForbiddenException('Password is incorrect');
       }
+      this.chatsGateway.emitMemberJoin(userId, channelId);
       return await this.channelStorage.addUserToChannel(channelId, userId);
     }
     throw new ForbiddenException('Forbidden to join');
   }
 
-  //[]차단된 유저 간 DM readonly
+  /**
+   * @description 채널의 메시지를 최신순으로 begin부터 size만큼 반환
+   *
+   * @param userId 요청한 유저의 Id
+   * @param channelId 요청한 채널의 Id
+   * @param begin 시작 인덱스
+   * @param size 반환할 메시지의 수
+   * @returns
+   */
+  async findChannelMessages(
+    userId: UserId,
+    channelId: ChannelId,
+    offset: number,
+    size: number,
+  ) {
+    const channelInfo = this.channelStorage.getChannel(channelId);
+    if (channelInfo === undefined) {
+      throw new NotFoundException('Channel not found');
+    }
+    if (!channelInfo.userRoleMap.has(userId)) {
+      throw new ForbiddenException('You are not a member of this channel');
+    }
+    try {
+      const messages = (
+        await this.messagesRepository.find({
+          order: {
+            createdAt: 'ASC' as any,
+          },
+          skip: offset,
+          take: size,
+          select: { senderId: true, contents: true, createdAt: true as any },
+        })
+      ).map((message) => {
+        const { senderId, contents, createdAt } = message;
+        return { senderId, contents, createdAt: createdAt.toMillis() };
+      });
+      return { messages };
+    } catch (e) {
+      this.logger.error(e);
+      throw new InternalServerErrorException('Fail to get message');
+    }
+  }
 
   /*****************************************************************************
    *                                                                           *

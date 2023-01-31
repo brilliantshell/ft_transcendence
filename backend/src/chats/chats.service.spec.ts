@@ -15,7 +15,7 @@ import { Channels } from '../entity/channels.entity';
 import { ChatsGateway } from './chats.gateway';
 import { ChatsService } from './chats.service';
 import { Messages } from '../entity/messages.entity';
-import { NewChannelDto } from './dto/chats.dto';
+import { CreateChannelDto } from './dto/chats.dto';
 import { UserRelationshipStorage } from '../user-status/user-relationship.storage';
 import { UserStatusModule } from '../user-status/user-status.module';
 import { Users } from '../entity/users.entity';
@@ -28,9 +28,11 @@ import {
   generateBannedMembers,
   generateChannelMembers,
   generateChannels,
+  generateMessages,
   generateUsers,
 } from '../../test/generate-mock-data';
 import { DateTime } from 'luxon';
+import { ChatsModule } from './chats.module';
 
 const TEST_DB = 'test_db_chat_service';
 const ENTITIES = [BannedMembers, ChannelMembers, Channels, Messages, Users];
@@ -39,6 +41,7 @@ describe('ChatsService', () => {
   let dataSource: DataSource;
   let initDataSource: DataSource;
   let service: ChatsService;
+  let chatsGateway: ChatsGateway;
   let userRelationshipStorage: UserRelationshipStorage;
   let channelStorage: ChannelStorage;
   let usersEntities: Users[];
@@ -76,7 +79,8 @@ describe('ChatsService', () => {
           database: TEST_DB,
           poolSize: 3,
         }),
-        TypeOrmModule.forFeature([Channels, BannedMembers]),
+        TypeOrmModule.forFeature([Channels, BannedMembers, Messages]),
+        ChatsModule,
       ],
       providers: [ChatsGateway, ChatsService],
     }).compile();
@@ -87,6 +91,7 @@ describe('ChatsService', () => {
       UserRelationshipStorage,
     );
     channelStorage = module.get<ChannelStorage>(ChannelStorage);
+    chatsGateway = module.get<ChatsGateway>(ChatsGateway);
     for (const u of usersEntities) {
       await userRelationshipStorage.load(u.userId);
       await channelStorage.loadUser(u.userId);
@@ -235,7 +240,7 @@ describe('ChatsService', () => {
   describe('createChannel', () => {
     it('should create new channel', async () => {
       const userId = usersEntities[0].userId;
-      const newChannelData: NewChannelDto = {
+      const newChannelData: CreateChannelDto = {
         channelName: 'newChannel',
         password: '1q2w3e4r',
         accessMode: 'protected',
@@ -259,7 +264,7 @@ describe('ChatsService', () => {
 
     it('should not create new channel if no password given when protected room', async () => {
       const userId = usersEntities[0].userId;
-      const newChannelData: NewChannelDto = {
+      const newChannelData: CreateChannelDto = {
         channelName: 'newChannel',
         accessMode: 'protected',
       };
@@ -316,22 +321,34 @@ describe('ChatsService', () => {
     });
 
     it('should throw Forbidden exception when a user is not member of the channel', async () => {
-      const channelId = channelsEntities.find(
-        (v) => v.dmPeerId === null,
-      ).channelId;
-      const [nonChannelMember] = channelMembersEntities.filter(
-        (v) => v.channelId !== channelId,
+      const channel = channelsEntities.find((v) => v.dmPeerId === null);
+      const channelId = channel.channelId;
+      const channelMemberIds = channelMembersEntities
+        .filter((v) => v.channelId === channelId)
+        .map((v) => v.memberId);
+      const nonChannelMember = usersEntities.find(
+        (v) => !channelMemberIds.includes(v.userId),
       );
+      if (!nonChannelMember) {
+        return console.log('FIND NON CHANNEL MEMBER TEST SKIPPED!!!');
+      }
+      const nonChannelMemberId = nonChannelMember.userId;
       expect(() =>
-        service.findChannelMembers(nonChannelMember.memberId, channelId),
+        service.findChannelMembers(nonChannelMemberId, channelId),
       ).toThrow(ForbiddenException);
     });
   });
 
   describe('joinChannel', () => {
+    let memberJoinSpy: jest.SpyInstance;
+    beforeEach(() => {
+      memberJoinSpy = jest
+        .spyOn(chatsGateway, 'emitMemberJoin')
+        .mockImplementation(() => undefined);
+    });
     it('should join user to the public channel', async () => {
       const userId = usersEntities[0].userId;
-      const newChannelData: NewChannelDto = {
+      const newChannelData: CreateChannelDto = {
         channelName: 'newChannel',
         accessMode: 'public',
       };
@@ -342,6 +359,7 @@ describe('ChatsService', () => {
       expect(
         channelStorage.getUser(anotherUserId).has(newChannelId),
       ).toBeTruthy();
+      expect(memberJoinSpy).toBeCalledWith(anotherUserId, newChannelId);
 
       expect(channelStorage.getUserRole(newChannelId, anotherUserId)).toBe(
         'member',
@@ -350,7 +368,7 @@ describe('ChatsService', () => {
 
     it('should join user to the protected channel', async () => {
       const userId = usersEntities[0].userId;
-      const newChannelData: NewChannelDto = {
+      const newChannelData: CreateChannelDto = {
         channelName: 'newChannel',
         password: '1q2w3e4r',
         accessMode: 'protected',
@@ -362,6 +380,7 @@ describe('ChatsService', () => {
       expect(
         channelStorage.getUser(anotherUserId).has(newChannelId),
       ).toBeTruthy();
+      expect(memberJoinSpy).toBeCalledWith(anotherUserId, newChannelId);
 
       expect(channelStorage.getUserRole(newChannelId, anotherUserId)).toBe(
         'member',
@@ -370,7 +389,7 @@ describe('ChatsService', () => {
 
     it('should throw when user attempt to join the protected channel with incorrect or no password', async () => {
       const userId = usersEntities[0].userId;
-      const newChannelData: NewChannelDto = {
+      const newChannelData: CreateChannelDto = {
         channelName: 'newChannel2',
         password: 'trickyPassword',
         accessMode: 'protected',
@@ -388,7 +407,7 @@ describe('ChatsService', () => {
 
     it('should add user to the protected channel by invitation without password ', async () => {
       const userId = usersEntities[0].userId;
-      const newChannelData: NewChannelDto = {
+      const newChannelData: CreateChannelDto = {
         channelName: 'newChannel',
         password: 'password',
         accessMode: 'protected',
@@ -400,6 +419,7 @@ describe('ChatsService', () => {
       expect(
         channelStorage.getUser(anotherUserId).has(newChannelId),
       ).toBeTruthy();
+      expect(memberJoinSpy).toBeCalledWith(anotherUserId, newChannelId);
 
       expect(channelStorage.getUserRole(newChannelId, anotherUserId)).toBe(
         'member',
@@ -408,7 +428,7 @@ describe('ChatsService', () => {
 
     it('should not add user to the private channel', async () => {
       const userId = usersEntities[0].userId;
-      const newChannelData: NewChannelDto = {
+      const newChannelData: CreateChannelDto = {
         channelName: 'newChannel',
         accessMode: 'private',
       };
@@ -422,7 +442,7 @@ describe('ChatsService', () => {
 
     it('should add user to the private channel by invitation', async () => {
       const userId = usersEntities[0].userId;
-      const newChannelData: NewChannelDto = {
+      const newChannelData: CreateChannelDto = {
         channelName: 'newChannel',
         accessMode: 'private',
       };
@@ -433,6 +453,7 @@ describe('ChatsService', () => {
       expect(
         channelStorage.getUser(anotherUserId).has(newChannelId),
       ).toBeTruthy();
+      expect(memberJoinSpy).toBeCalledWith(anotherUserId, newChannelId);
 
       expect(channelStorage.getUserRole(newChannelId, anotherUserId)).toBe(
         'member',
@@ -441,7 +462,7 @@ describe('ChatsService', () => {
 
     it('should not add banned user to the channel', async () => {
       const userId = usersEntities[0].userId;
-      const newChannelData: NewChannelDto = {
+      const newChannelData: CreateChannelDto = {
         channelName: 'newChannel',
         accessMode: 'public',
       };
@@ -459,7 +480,30 @@ describe('ChatsService', () => {
     });
   });
 
-  // describe('DM Readonly', () => {
-  //   it('should set DM readonly', async () => {});
-  // });
+  describe('findChannelMessages', () => {
+    it('should find messages (n, m) in channel order by createdAt', async () => {
+      const channelId = Array.from(channelStorage.getChannels()).find(
+        (v) => v[1].userRoleMap.size > 3,
+      )[0];
+      const [userId] = channelStorage
+        .getChannels()
+        .get(channelId)
+        .userRoleMap.keys();
+      if (!channelId) {
+        return console.log('FIND CHANNEL MESSAGES TEST SKIPPED!!!');
+      }
+      const messages = generateMessages(
+        channelMembersEntities.filter((v) => v.channelId === channelId),
+      ).sort((a, b) => a.createdAt.valueOf() - b.createdAt.valueOf());
+      await dataSource.getRepository(Messages).insert(messages);
+      const messagesDto = messages.map((v) => {
+        const { createdAt, contents, senderId } = v;
+        return { senderId, contents, createdAt: createdAt.toMillis() };
+      });
+      const ret = await service.findChannelMessages(userId, channelId, 0, 3);
+      expect(ret).toEqual({ messages: [...messagesDto.slice(0, 3)] });
+      await dataSource.getRepository(Messages).remove(messages);
+    });
+    // TODO: edge 케이스 생각해서 테스트
+  });
 });
