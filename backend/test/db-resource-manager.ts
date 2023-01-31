@@ -6,6 +6,7 @@ export const TYPEORM_SHARED_CONFIG = {
   username: 'test_user',
   password: 'test_password',
   synchronize: true,
+  poolSize: 3,
 };
 
 export const createDataSources = async (TEST_DB: string, ENTITIES: any[]) => {
@@ -30,7 +31,9 @@ export const destroyDataSources = async (
   dataSource: DataSource,
   initDataSource: DataSource,
 ) => {
-  await dataSource.dropDatabase();
-  dataSource.destroy();
-  initDataSource.destroy();
+  await initDataSource
+    .createQueryRunner()
+    .query(`DROP DATABASE ${TEST_DB} WITH (FORCE)`);
+  await dataSource.destroy();
+  await initDataSource.destroy();
 };

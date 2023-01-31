@@ -1,9 +1,8 @@
 import { Server } from 'socket.io';
 import { WebSocketGateway, WebSocketServer } from '@nestjs/websockets';
 
-import { SocketId } from '../util/type';
-import { UserId } from '../util/type';
-import { UserInfoDto } from './dto/user.dto';
+import { SocketId, UserId } from '../util/type';
+import { UserInfoDto } from './dto/user-gateway.dto';
 
 @WebSocketGateway()
 export class UserGateway {

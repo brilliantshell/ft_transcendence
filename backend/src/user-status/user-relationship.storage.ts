@@ -84,7 +84,9 @@ export class UserRelationshipStorage implements OnModuleInit {
       });
     } catch (e) {
       this.logger.error(e);
-      throw new InternalServerErrorException();
+      throw new InternalServerErrorException(
+        'Failed to initialize user relationships',
+      );
     }
   }
 

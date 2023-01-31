@@ -10,13 +10,13 @@ import {
 import { Channels } from '../entity/channels.entity';
 import { Friends } from '../entity/friends.entity';
 import { Relationship, UserId } from '../util/type';
-import { UserRelationshipStorage } from './user-relationship.storage';
-import { Users } from '../entity/users.entity';
 import {
+  TYPEORM_SHARED_CONFIG,
   createDataSources,
   destroyDataSources,
-  TYPEORM_SHARED_CONFIG,
 } from '../../test/db-resource-manager';
+import { UserRelationshipStorage } from './user-relationship.storage';
+import { Users } from '../entity/users.entity';
 import {
   generateBlockedUsers,
   generateChannels,
