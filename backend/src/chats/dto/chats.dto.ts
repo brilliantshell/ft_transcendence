@@ -1,4 +1,4 @@
-import { ChannelId } from '../../util/type';
+import { ChannelId, UserRole } from '../../util/type';
 
 interface OtherChannel {
   channelId: ChannelId;
@@ -18,9 +18,19 @@ export interface AllChannelsDto {
   otherChannels?: OtherChannel[];
 }
 
-// TODO : receive DTO / send DTO 어떻게 할지 생각하기
+// change to class
 export interface NewChannelDto {
   channelName: string;
   password?: string;
   accessMode: 'public' | 'protected' | 'private';
+}
+
+interface ChannelMember {
+  id: number;
+  role: UserRole;
+}
+
+export interface ChannelInfoDto {
+  channelsMembers: ChannelMember[];
+  isReadonlyDm: boolean | null;
 }
