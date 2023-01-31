@@ -6,8 +6,8 @@ import {
   NotFoundException,
   OnModuleInit,
 } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { IsNull, Not, Repository } from 'typeorm';
+import { DataSource, IsNull, Not, Repository } from 'typeorm';
+import { InjectDataSource } from '@nestjs/typeorm';
 
 import { BlockedUsers } from '../entity/blocked-users.entity';
 import { ChannelId, Relationship, UserId } from '../util/type';
@@ -28,16 +28,20 @@ export class UserRelationshipStorage implements OnModuleInit {
     UserId,
     Map<UserId, Relationship>
   >();
+
+  private blockedUsersRepository: Repository<BlockedUsers>;
+  private channelsRepository: Repository<Channels>;
+  private friendsRepository: Repository<Friends>;
   private logger = new Logger(UserRelationshipStorage.name);
 
   constructor(
-    @InjectRepository(BlockedUsers)
-    private blockedUsersRepository: Repository<BlockedUsers>,
-    @InjectRepository(Channels)
-    private channelsRepository: Repository<Channels>,
-    @InjectRepository(Friends)
-    private friendsRepository: Repository<Friends>,
-  ) {}
+    @InjectDataSource()
+    private readonly dataSource: DataSource, // @InjectRepository(BlockedUsers) // private readonly blockedUsersRepository: Repository<BlockedUsers>, // @InjectRepository(Channels) // private readonly channelsRepository: Repository<Channels>, // @InjectRepository(Friends) // private readonly friendsRepository: Repository<Friends>,
+  ) {
+    this.blockedUsersRepository = this.dataSource.getRepository(BlockedUsers);
+    this.channelsRepository = this.dataSource.getRepository(Channels);
+    this.friendsRepository = this.dataSource.getRepository(Friends);
+  }
 
   /*****************************************************************************
    *                                                                           *
@@ -60,14 +64,8 @@ export class UserRelationshipStorage implements OnModuleInit {
   async init() {
     try {
       const dmChannels = await this.channelsRepository.find({
-        select: {
-          channelId: true,
-          dmPeerId: true,
-          ownerId: true,
-        },
-        where: {
-          dmPeerId: Not(IsNull()),
-        },
+        select: ['channelId', 'dmPeerId', 'ownerId'],
+        where: { dmPeerId: Not(IsNull()) },
       });
       const blocks: Partial<BlockedUsers>[] =
         await this.blockedUsersRepository.find();
@@ -190,15 +188,17 @@ export class UserRelationshipStorage implements OnModuleInit {
    */
   async blockUser(blockerId: UserId, blockedId: UserId) {
     try {
-      await this.blockedUsersRepository.save({ blockerId, blockedId });
-      await this.setDmReadonly(blockerId, blockedId);
+      await this.dataSource.manager.transaction(async (manager) => {
+        await manager.save(BlockedUsers, { blockerId, blockedId });
+        await this.setDmReadonly(blockerId, blockedId);
 
-      FRIENDSHIP_TYPES.includes(this.users.get(blockerId).get(blockedId)) &&
-        (await this.queryConditionalDelete(
-          this.friendsRepository,
-          blockerId,
-          blockedId,
-        ));
+        FRIENDSHIP_TYPES.includes(this.users.get(blockerId).get(blockedId)) &&
+          (await this.queryConditionalDelete(
+            manager.withRepository(this.friendsRepository),
+            blockerId,
+            blockedId,
+          ));
+      });
     } catch (e) {
       this.logger.error(e);
       throw new InternalServerErrorException('Failed to block a user');
