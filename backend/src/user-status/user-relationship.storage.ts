@@ -36,7 +36,7 @@ export class UserRelationshipStorage implements OnModuleInit {
 
   constructor(
     @InjectDataSource()
-    private readonly dataSource: DataSource, // @InjectRepository(BlockedUsers) // private readonly blockedUsersRepository: Repository<BlockedUsers>, // @InjectRepository(Channels) // private readonly channelsRepository: Repository<Channels>, // @InjectRepository(Friends) // private readonly friendsRepository: Repository<Friends>,
+    private readonly dataSource: DataSource,
   ) {
     this.blockedUsersRepository = this.dataSource.getRepository(BlockedUsers);
     this.channelsRepository = this.dataSource.getRepository(Channels);
@@ -213,11 +213,6 @@ export class UserRelationshipStorage implements OnModuleInit {
    * @param unblocked 차단 해제되는 유저의 id
    */
   async unblockUser(unblocker: UserId, unblocked: UserId) {
-    const relationship = this.users.get(unblocker).get(unblocked);
-    // FIXME : Guard 로 막으면 필요 없을수도
-    if ('blocker' !== relationship) {
-      throw new BadRequestException('Invalid relationship');
-    }
     try {
       await this.queryConditionalDelete(
         this.blockedUsersRepository,
@@ -263,6 +258,7 @@ export class UserRelationshipStorage implements OnModuleInit {
    * @param receiverId 친구 추가 요청을 받은 유저의 id
    */
   async sendFriendRequest(senderId: UserId, receiverId: UserId) {
+    // FIXME : Guard 로 해결 가능할수도...
     if (BLOCK_TYPES.includes(this.users.get(senderId).get(receiverId))) {
       throw new BadRequestException('Invalid relationship');
     }
@@ -283,6 +279,7 @@ export class UserRelationshipStorage implements OnModuleInit {
    * @param sender 요청을 보낸 유저의 id
    */
   async acceptFriendRequest(receiverId: UserId, senderId: UserId) {
+    // FIXME : Guard 로 해결 가능할수도...
     if (BLOCK_TYPES.includes(this.users.get(receiverId).get(senderId))) {
       throw new BadRequestException('Invalid relationship');
     }
@@ -311,6 +308,7 @@ export class UserRelationshipStorage implements OnModuleInit {
    * @param to 삭제된 대상
    */
   async deleteFriendship(from: UserId, to: UserId) {
+    // FIXME : Guard 로 해결 가능할수도...
     const relationship = this.users.get(from).get(to);
     if (!relationship || BLOCK_TYPES.includes(relationship)) {
       throw new BadRequestException('Invalid relationship');

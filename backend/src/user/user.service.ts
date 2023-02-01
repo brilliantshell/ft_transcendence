@@ -1,6 +1,6 @@
 import { BlockedUsers } from './../entity/blocked-users.entity';
 import {
-  ConflictException,
+  BadRequestException,
   Injectable,
   InternalServerErrorException,
   Logger,
@@ -153,6 +153,13 @@ export class UserService {
    * @param unblockedId 차단 해제 될 유저 id
    */
   async deleteBlock(unblockerId: UserId, unblockedId: UserId) {
+    const prevRelationship = this.userRelationshipStorage.getRelationship(
+      unblockerId,
+      unblockedId,
+    );
+    if (prevRelationship !== 'blocker') {
+      throw new BadRequestException('Invalid relationship');
+    }
     await this.userRelationshipStorage.unblockUser(unblockerId, unblockedId);
     if (this.activityManager.getActivity(unblockedId)) {
       const unblockedSocketId = this.userSocketStorage.clients.get(unblockedId);
@@ -194,11 +201,7 @@ export class UserService {
       receiverId,
     );
     if (['friend', 'pendingReceiver'].includes(prevRelationship)) {
-      throw new ConflictException(
-        prevRelationship === 'friend'
-          ? 'Already friends'
-          : 'Already received a friend request from the other user',
-      );
+      throw new BadRequestException('Invalid relationship');
     }
     await this.userRelationshipStorage.sendFriendRequest(senderId, receiverId);
     if (this.activityManager.getActivity(receiverId)) {
@@ -257,11 +260,7 @@ export class UserService {
       acceptedId,
     );
     if (['friend', 'pendingSender'].includes(prevRelationship)) {
-      throw new ConflictException(
-        prevRelationship === 'friend'
-          ? 'Already friends'
-          : 'Already received a friend request from the other user',
-      );
+      throw new BadRequestException('Invalid relationship');
     }
     await this.userRelationshipStorage.acceptFriendRequest(
       accepterId,

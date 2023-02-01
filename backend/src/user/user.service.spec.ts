@@ -1,4 +1,4 @@
-import { ConflictException, NotFoundException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { DataSource, Repository } from 'typeorm';
 import { Test, TestingModule } from '@nestjs/testing';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -318,7 +318,7 @@ describe('UserService', () => {
       await service.createFriendRequest(receiverId, senderId);
       await expect(
         service.createFriendRequest(senderId, receiverId),
-      ).rejects.toThrowError(ConflictException);
+      ).rejects.toThrowError(BadRequestException);
     });
 
     it('should throw CONFLICT when the sender and the receiver are already friends', async () => {
@@ -327,7 +327,7 @@ describe('UserService', () => {
       await service.acceptFriendRequest(receiverId, senderId);
       await expect(
         service.createFriendRequest(senderId, receiverId),
-      ).rejects.toThrowError(ConflictException);
+      ).rejects.toThrowError(BadRequestException);
     });
 
     it('should cancel a friend request (both are logged in)', async () => {
@@ -455,7 +455,7 @@ describe('UserService', () => {
       await service.createFriendRequest(accepter, accepted);
       await expect(
         service.acceptFriendRequest(accepter, accepted),
-      ).rejects.toThrowError(ConflictException);
+      ).rejects.toThrowError(BadRequestException);
     });
 
     it('should throw CONFLICT when the accepter already is a friend with the accepted', async () => {
@@ -464,7 +464,7 @@ describe('UserService', () => {
       await service.acceptFriendRequest(accepter, accepted);
       await expect(
         service.acceptFriendRequest(accepter, accepted),
-      ).rejects.toThrowError(ConflictException);
+      ).rejects.toThrowError(BadRequestException);
     });
 
     it("should return a list of friends's ids", async () => {
