@@ -1,4 +1,3 @@
-import { BlockedUsers } from './../entity/blocked-users.entity';
 import {
   BadRequestException,
   Injectable,
@@ -6,6 +5,7 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
+import { BlockedUsers } from './../entity/blocked-users.entity';
 import { EntityNotFoundError, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 
