@@ -1,4 +1,5 @@
 import { IsOptional, IsString, Length, Matches } from 'class-validator';
+
 import { ChannelId, UserRole } from '../../util/type';
 
 interface OtherChannel {

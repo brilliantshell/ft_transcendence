@@ -1,6 +1,6 @@
 import { DateTime } from 'luxon';
 
-import { ChannelId, UserId, UserRole } from '../util/type';
+import { ChannelId, UserId, UserRole } from '../../util/type';
 
 export interface MemberJoinedMessage {
   joinedMember: UserId;

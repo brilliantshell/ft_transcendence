@@ -5,8 +5,6 @@ import { WebSocketGateway, WebSocketServer } from '@nestjs/websockets';
 import { ChannelId, SocketId, UserId, UserRole } from '../util/type';
 import { UserSocketStorage } from '../user-status/user-socket.storage';
 
-// TODO : service 에서 member 가 아닌 유저가 채팅방 관련 이벤트를 보내는 경우 처리
-// TODO : unseenCount 어디서 처리할지 고민
 @WebSocketGateway()
 export class ChatsGateway {
   @WebSocketServer()
@@ -169,15 +167,5 @@ export class ChatsGateway {
    ****************************************************************************/
   getRoomMembers(chatRoom: string) {
     return this.server.sockets.adapter.rooms.get(chatRoom);
-  }
-
-  getInactiveUsers(channelId: ChannelId) {
-    const rooms = new Set<number>();
-    this.getRoomMembers(`chatRooms-${channelId}`).forEach((socketId) => {
-      if (!this.getRoomMembers(`chatRooms-${channelId}-active`).has(socketId)) {
-        rooms.add(this.userSocketStorage.sockets.get(socketId));
-      }
-    });
-    return rooms;
   }
 }

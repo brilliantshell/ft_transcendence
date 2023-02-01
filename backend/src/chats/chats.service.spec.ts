@@ -4,26 +4,29 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { DataSource } from 'typeorm';
+import { DateTime } from 'luxon';
 import { Test, TestingModule } from '@nestjs/testing';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { compare } from 'bcrypt';
 
+import { ActivityManager } from '../user-status/activity.manager';
 import { BannedMembers } from '../entity/banned-members.entity';
 import { ChannelMembers } from '../entity/channel-members.entity';
 import { ChannelStorage } from '../user-status/channel.storage';
 import { Channels } from '../entity/channels.entity';
 import { ChatsGateway } from './chats.gateway';
+import { ChatsModule } from './chats.module';
 import { ChatsService } from './chats.service';
-import { Messages } from '../entity/messages.entity';
 import { CreateChannelDto } from './dto/chats.dto';
-import { UserRelationshipStorage } from '../user-status/user-relationship.storage';
-import { UserStatusModule } from '../user-status/user-status.module';
-import { Users } from '../entity/users.entity';
+import { Messages } from '../entity/messages.entity';
 import {
   TYPEORM_SHARED_CONFIG,
   createDataSources,
   destroyDataSources,
 } from '../../test/db-resource-manager';
+import { UserRelationshipStorage } from '../user-status/user-relationship.storage';
+import { UserStatusModule } from '../user-status/user-status.module';
+import { Users } from '../entity/users.entity';
 import {
   generateBannedMembers,
   generateChannelMembers,
@@ -31,8 +34,6 @@ import {
   generateMessages,
   generateUsers,
 } from '../../test/generate-mock-data';
-import { DateTime } from 'luxon';
-import { ChatsModule } from './chats.module';
 
 const TEST_DB = 'test_db_chat_service';
 const ENTITIES = [BannedMembers, ChannelMembers, Channels, Messages, Users];
@@ -47,8 +48,8 @@ describe('ChatsService', () => {
   let usersEntities: Users[];
   let channelsEntities: Channels[];
   let channelMembersEntities: ChannelMembers[];
-  let messagesEntities: Messages[];
   let bannedMembersEntities: BannedMembers[];
+  let activityManager: ActivityManager;
 
   beforeAll(async () => {
     const dataSources = await createDataSources(TEST_DB, ENTITIES);
@@ -77,7 +78,7 @@ describe('ChatsService', () => {
           ...TYPEORM_SHARED_CONFIG,
           autoLoadEntities: true,
           database: TEST_DB,
-          poolSize: 3,
+          poolSize: 2,
         }),
         TypeOrmModule.forFeature([Channels, BannedMembers, Messages]),
         ChatsModule,
@@ -96,6 +97,7 @@ describe('ChatsService', () => {
       await userRelationshipStorage.load(u.userId);
       await channelStorage.loadUser(u.userId);
     }
+    activityManager = module.get<ActivityManager>(ActivityManager);
   });
 
   afterAll(() => {
@@ -480,8 +482,85 @@ describe('ChatsService', () => {
     });
   });
 
+  describe('leaveChannel', () => {
+    let memberLeftSpy: jest.SpyInstance;
+    beforeEach(() => {
+      jest
+        .spyOn(chatsGateway, 'emitMemberJoin')
+        .mockImplementation(() => undefined);
+      memberLeftSpy = jest
+        .spyOn(chatsGateway, 'emitMemberLeft')
+        .mockImplementation(() => undefined);
+    });
+    it('should leave channel (not owner)', async () => {
+      const userId = usersEntities[0].userId;
+      const newChannelData: CreateChannelDto = {
+        channelName: 'newChannel',
+        password: 'password',
+        accessMode: 'protected',
+      };
+      const newChannelId = await service.createChannel(userId, newChannelData);
+
+      const anotherUserId = usersEntities[1].userId;
+      await service.joinChannel(anotherUserId, newChannelId, true);
+
+      await service.leaveChannel(anotherUserId, newChannelId);
+      expect(
+        channelStorage.getUser(anotherUserId).has(newChannelId),
+      ).toBeFalsy();
+      expect(memberLeftSpy).toBeCalledWith(anotherUserId, newChannelId, false);
+
+      expect(
+        channelStorage.getUserRole(newChannelId, anotherUserId),
+      ).toBeFalsy();
+    });
+
+    it('should leave channel (owner)', async () => {
+      const userId = usersEntities[0].userId;
+      const newChannelData: CreateChannelDto = {
+        channelName: 'newChannel2',
+        password: 'trickyPassword',
+        accessMode: 'protected',
+      };
+      const newChannelId = await service.createChannel(userId, newChannelData);
+
+      const anotherUserId = usersEntities[1].userId;
+      await service.joinChannel(anotherUserId, newChannelId, true);
+      await service.leaveChannel(userId, newChannelId);
+      expect(channelStorage.getChannel(newChannelId)).toBeFalsy();
+      expect(channelStorage.getUserRole(newChannelId, userId)).toBeFalsy();
+      expect(
+        channelStorage.getUserRole(newChannelId, anotherUserId),
+      ).toBeFalsy();
+    });
+
+    it('should leave channel (owner, already existed channel)', async () => {
+      const targetChannel = channelsEntities[7];
+      const userId = targetChannel.ownerId;
+      const newChannelData: CreateChannelDto = {
+        channelName: 'newChannel2',
+        password: 'trickyPassword',
+        accessMode: 'protected',
+      };
+      const newChannelId = await service.createChannel(userId, newChannelData);
+      const anotherUserId = usersEntities[1].userId;
+      await service.joinChannel(anotherUserId, newChannelId, true);
+      await service.leaveChannel(userId, newChannelId);
+      expect(channelStorage.getChannel(newChannelId)).toBeFalsy();
+      expect(channelStorage.getUserRole(newChannelId, userId)).toBeFalsy();
+      expect(
+        channelStorage.getUserRole(newChannelId, anotherUserId),
+      ).toBeFalsy();
+      expect(
+        await dataSource
+          .getRepository(Messages)
+          .findBy({ channelId: newChannelId }),
+      ).toHaveLength(0);
+    });
+  });
+
   describe('findChannelMessages', () => {
-    it('should find messages (n, m) in channel order by createdAt', async () => {
+    it('should find messages (offset, size) in channel order by createdAt', async () => {
       const channelId = Array.from(channelStorage.getChannels()).find(
         (v) => v[1].userRoleMap.size > 3,
       )[0];
@@ -494,16 +573,463 @@ describe('ChatsService', () => {
       }
       const messages = generateMessages(
         channelMembersEntities.filter((v) => v.channelId === channelId),
-      ).sort((a, b) => a.createdAt.valueOf() - b.createdAt.valueOf());
+      );
       await dataSource.getRepository(Messages).insert(messages);
-      const messagesDto = messages.map((v) => {
-        const { createdAt, contents, senderId } = v;
-        return { senderId, contents, createdAt: createdAt.toMillis() };
-      });
+      const messagesDto = messages
+        .sort((a, b) => a.createdAt.valueOf() - b.createdAt.valueOf())
+        .map((v) => {
+          const { createdAt, contents, senderId } = v;
+          return { senderId, contents, createdAt: createdAt.toMillis() };
+        });
       const ret = await service.findChannelMessages(userId, channelId, 0, 3);
       expect(ret).toEqual({ messages: [...messagesDto.slice(0, 3)] });
       await dataSource.getRepository(Messages).remove(messages);
     });
-    // TODO: edge 케이스 생각해서 테스트
+
+    it('should find messages (offset, size) even the size is bigger than the number of messages', async () => {
+      const channelId = Array.from(channelStorage.getChannels()).find(
+        (v) => v[1].userRoleMap.size > 3,
+      )[0];
+      if (channelId === undefined) {
+        return console.log(
+          'FIND CHANNEL MESSAGES WITT MAX SIZE TEST SKIPPED!!!',
+        );
+      }
+      const [userId] = channelStorage
+        .getChannels()
+        .get(channelId)
+        .userRoleMap.keys();
+      const messages = generateMessages(
+        channelMembersEntities.filter((v) => v.channelId === channelId),
+      );
+      await dataSource.getRepository(Messages).insert(messages);
+      const messagesDto = messages
+        .sort((a, b) => a.createdAt.valueOf() - b.createdAt.valueOf())
+        .map((v) => {
+          const { createdAt, contents, senderId } = v;
+          return { senderId, contents, createdAt: createdAt.toMillis() };
+        });
+      const ret = await service.findChannelMessages(
+        userId,
+        channelId,
+        0,
+        // BigInt('9223372036854775806') javascript change the number to 9223372036854766000
+        21474836499923,
+      );
+      expect(ret).toEqual({ messages: [...messagesDto] });
+      await dataSource.getRepository(Messages).remove(messages);
+    });
+
+    it('should not find messages (offset, size) if the offset is bigger than the number of messages', async () => {
+      const channelId = Array.from(channelStorage.getChannels()).find(
+        (v) => v[1].userRoleMap.size > 3,
+      )[0];
+      const [userId] = channelStorage
+        .getChannels()
+        .get(channelId)
+        .userRoleMap.keys();
+      if (!channelId) {
+        return console.log(
+          'FIND CHANNEL MESSAGES WITH BIG OFFSET TEST SKIPPED!!!',
+        );
+      }
+      const messages = generateMessages(
+        channelMembersEntities.filter((v) => v.channelId === channelId),
+      );
+      await dataSource.getRepository(Messages).insert(messages);
+      const ret = await service.findChannelMessages(
+        userId,
+        channelId,
+        99999999999999,
+        3,
+      );
+      expect(ret).toEqual({ messages: [] });
+      await dataSource.getRepository(Messages).remove(messages);
+    });
+  });
+
+  describe('manageMessage (createMessage & executeCommand)', () => {
+    let newMessageSpy: jest.SpyInstance;
+    let memberLeftSpy: jest.SpyInstance;
+    let roleChangedSpy: jest.SpyInstance;
+    let mutedSpy: jest.SpyInstance;
+    let messageArrivedSpy: jest.SpyInstance;
+    beforeEach(() => {
+      newMessageSpy = jest
+        .spyOn(chatsGateway, 'emitNewMessage')
+        .mockImplementation((userId, channelId) => {
+          chatsGateway.emitMessageArrived(channelId);
+        });
+
+      memberLeftSpy = jest
+        .spyOn(chatsGateway, 'emitMemberLeft')
+        .mockImplementation(() => undefined);
+
+      roleChangedSpy = jest
+        .spyOn(chatsGateway, 'emitRoleChanged')
+        .mockImplementation(() => undefined);
+
+      mutedSpy = jest
+        .spyOn(chatsGateway, 'emitMuted')
+        .mockImplementation(() => undefined);
+      messageArrivedSpy = jest
+        .spyOn(chatsGateway, 'emitMessageArrived')
+        .mockImplementation(() => undefined);
+      jest
+        .spyOn(chatsGateway, 'emitMemberJoin')
+        .mockImplementation(() => undefined);
+    });
+
+    it('should create message and then notify new message arrived', async () => {
+      // user create channel and send message
+      // another user is already loaded and join the channel
+      const userId = usersEntities[1].userId;
+      const newChannelData: CreateChannelDto = {
+        channelName: 'newChannel',
+        accessMode: 'private',
+      };
+      const newChannelId = await service.createChannel(userId, newChannelData);
+
+      const anotherUser = usersEntities[2];
+      activityManager.setActivity(userId, `chatRooms-${newChannelId}`);
+      activityManager.setActivity(anotherUser.userId, 'profile');
+
+      await service.joinChannel(anotherUser.userId, newChannelId, true);
+      const msg = { message: 'hello message!' };
+      await service.manageMessage(userId, newChannelId, msg.message);
+      expect(newMessageSpy).toBeCalledWith(
+        userId,
+        newChannelId,
+        msg.message,
+        expect.any(DateTime),
+      );
+      expect(messageArrivedSpy).toBeCalledWith(newChannelId);
+      expect(channelStorage.getUser(userId).get(newChannelId).unseenCount).toBe(
+        0,
+      );
+      expect(
+        channelStorage.getUser(anotherUser.userId).get(newChannelId)
+          .unseenCount,
+      ).toBe(1);
+      expect(
+        await dataSource
+          .getRepository(Messages)
+          .findOneBy({ channelId: newChannelId }),
+      ).toEqual({
+        messageId: expect.any(Number),
+        channelId: newChannelId,
+        contents: msg.message,
+        createdAt: expect.any(DateTime),
+        senderId: userId,
+      });
+    });
+
+    it('should not create message when muted user sends message', async () => {
+      // user create channel and send message
+      // another user is already loaded and join the channel
+      const userId = usersEntities[1].userId;
+      const newChannelData: CreateChannelDto = {
+        channelName: 'newChannel',
+        accessMode: 'private',
+      };
+      const newChannelId = await service.createChannel(userId, newChannelData);
+
+      const anotherUser = usersEntities[2];
+      activityManager.setActivity(userId, `chatRooms-${newChannelId}`);
+      activityManager.setActivity(
+        anotherUser.userId,
+        `chatRooms-${newChannelId}`,
+      );
+
+      await service.joinChannel(anotherUser.userId, newChannelId, true);
+      const msg = { message: 'hello message!' };
+      await channelStorage.updateMuteStatus(
+        newChannelId,
+        userId,
+        anotherUser.userId,
+        DateTime.now().plus({ days: 1 }),
+      );
+      expect(
+        async () =>
+          await service.manageMessage(
+            anotherUser.userId,
+            newChannelId,
+            msg.message,
+          ),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('should execute role command (executor : owner)', async () => {
+      const ownerId = usersEntities[1].userId;
+      const newChannelData: CreateChannelDto = {
+        channelName: 'newChannel',
+        accessMode: 'private',
+      };
+      const newChannelId = await service.createChannel(ownerId, newChannelData);
+
+      const anotherUser = usersEntities[2];
+
+      await service.joinChannel(anotherUser.userId, newChannelId, true);
+      let msg = { message: `/role ${anotherUser.userId} admin` };
+      await service.manageMessage(ownerId, newChannelId, msg.message);
+      expect(channelStorage.getUserRole(newChannelId, anotherUser.userId)).toBe(
+        'admin',
+      );
+      expect(roleChangedSpy).toBeCalledWith(
+        anotherUser.userId,
+        newChannelId,
+        'admin',
+      );
+      msg = { message: `/role ${anotherUser.userId} member` };
+      await service.manageMessage(ownerId, newChannelId, msg.message);
+      expect(channelStorage.getUserRole(newChannelId, anotherUser.userId)).toBe(
+        'member',
+      );
+      expect(roleChangedSpy).toBeCalledWith(
+        anotherUser.userId,
+        newChannelId,
+        'member',
+      );
+    });
+
+    it('should execute role command (executor : owner & admin)', async () => {
+      const ownerId = usersEntities[1].userId;
+      const newChannelData: CreateChannelDto = {
+        channelName: 'newChannel',
+        accessMode: 'private',
+      };
+      const newChannelId = await service.createChannel(ownerId, newChannelData);
+
+      const memberId = usersEntities[2].userId;
+      const adminId = usersEntities[3].userId;
+
+      await service.joinChannel(adminId, newChannelId, true);
+      await service.joinChannel(memberId, newChannelId, true);
+
+      let msg = { message: `/role ${adminId} admin` };
+      await service.manageMessage(ownerId, newChannelId, msg.message);
+      expect(channelStorage.getUserRole(newChannelId, adminId)).toBe('admin');
+      expect(roleChangedSpy).toBeCalledWith(adminId, newChannelId, 'admin');
+
+      msg = { message: `/role ${memberId} admin` };
+      await service.manageMessage(adminId, newChannelId, msg.message);
+      expect(channelStorage.getUserRole(newChannelId, memberId)).toBe('admin');
+      expect(roleChangedSpy).toBeCalledWith(memberId, newChannelId, 'admin');
+    });
+
+    it('should not execute role command (executor : member)', async () => {
+      const ownerId = usersEntities[1].userId;
+      const newChannelData: CreateChannelDto = {
+        channelName: 'newChannel',
+        accessMode: 'private',
+      };
+      const newChannelId = await service.createChannel(ownerId, newChannelData);
+
+      const memberId = usersEntities[2].userId;
+      const adminId = usersEntities[3].userId;
+
+      await service.joinChannel(adminId, newChannelId, true);
+      await service.joinChannel(memberId, newChannelId, true);
+
+      let msg = { message: `/role ${adminId} admin` };
+      await service.manageMessage(ownerId, newChannelId, msg.message);
+      expect(channelStorage.getUserRole(newChannelId, adminId)).toBe('admin');
+      expect(roleChangedSpy).toBeCalledWith(adminId, newChannelId, 'admin');
+
+      msg = { message: `/role ${adminId} member` };
+      expect(
+        async () =>
+          await service.manageMessage(memberId, newChannelId, msg.message),
+      ).rejects.toThrow(ForbiddenException);
+
+      msg = { message: `/role ${adminId} owner` };
+      expect(
+        async () =>
+          await service.manageMessage(memberId, newChannelId, msg.message),
+      ).rejects.toThrow(BadRequestException);
+
+      msg = { message: `/role ${ownerId} admin` };
+      expect(
+        async () =>
+          await service.manageMessage(memberId, newChannelId, msg.message),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('should throw if a user attempt to execute command with invalid permission (member -> owner) ', async () => {
+      const ownerId = usersEntities[1].userId;
+      const newChannelData: CreateChannelDto = {
+        channelName: 'newChannel',
+        accessMode: 'private',
+      };
+      const newChannelId = await service.createChannel(ownerId, newChannelData);
+      const anotherUser = usersEntities[2];
+      await service.joinChannel(anotherUser.userId, newChannelId, true);
+      const msg = { message: `/role ${ownerId} admin` };
+      expect(
+        async () =>
+          await service.manageMessage(
+            anotherUser.userId,
+            newChannelId,
+            msg.message,
+          ),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('should throw if attempt to execute command with invalid permission (admin -> owner) ', async () => {
+      const ownerId = usersEntities[1].userId;
+      const newChannelData: CreateChannelDto = {
+        channelName: 'newChannel',
+        accessMode: 'private',
+      };
+      const newChannelId = await service.createChannel(ownerId, newChannelData);
+      const anotherUser = usersEntities[2];
+      await service.joinChannel(anotherUser.userId, newChannelId, true);
+      let msg = { message: `/role ${ownerId} admin` };
+      expect(
+        async () =>
+          await service.manageMessage(
+            anotherUser.userId,
+            newChannelId,
+            msg.message,
+          ),
+      ).rejects.toThrow(ForbiddenException);
+      msg = { message: `/ban ${ownerId} 42` };
+      expect(
+        async () =>
+          await service.manageMessage(
+            anotherUser.userId,
+            newChannelId,
+            msg.message,
+          ),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('should execute mute command (admin -> member)', async () => {
+      const ownerId = usersEntities[1].userId;
+      const newChannelData: CreateChannelDto = {
+        channelName: 'newChannel',
+        accessMode: 'private',
+      };
+      const newChannelId = await service.createChannel(ownerId, newChannelData);
+
+      const memberId = usersEntities[2].userId;
+      const adminId = usersEntities[3].userId;
+
+      await service.joinChannel(adminId, newChannelId, true);
+      await service.joinChannel(memberId, newChannelId, true);
+
+      let msg = { message: `/role ${adminId} admin` };
+      await service.manageMessage(ownerId, newChannelId, msg.message);
+      expect(channelStorage.getUserRole(newChannelId, adminId)).toBe('admin');
+      expect(roleChangedSpy).toBeCalledWith(adminId, newChannelId, 'admin');
+
+      msg = { message: `/mute ${memberId} 5` };
+      await service.manageMessage(ownerId, newChannelId, msg.message);
+      expect(
+        Math.round(
+          DateTime.now()
+            .diff(
+              channelStorage.getUser(memberId).get(newChannelId)
+                .muteEndAt as DateTime,
+              ['minutes'],
+            )
+            .toObject().minutes,
+        ),
+      ).toBe(-5);
+      expect(mutedSpy).toBeCalledWith(
+        memberId,
+        newChannelId,
+        expect.any(DateTime),
+      );
+    });
+
+    it('should not execute mute command if given time is invalid', async () => {
+      const ownerId = usersEntities[1].userId;
+      const newChannelData: CreateChannelDto = {
+        channelName: 'newChannel',
+        accessMode: 'private',
+      };
+      const newChannelId = await service.createChannel(ownerId, newChannelData);
+
+      const memberId = usersEntities[2].userId;
+      const adminId = usersEntities[3].userId;
+
+      await service.joinChannel(adminId, newChannelId, true);
+      await service.joinChannel(memberId, newChannelId, true);
+
+      let msg = { message: `/role ${adminId} admin` };
+      await service.manageMessage(ownerId, newChannelId, msg.message);
+      expect(channelStorage.getUserRole(newChannelId, adminId)).toBe('admin');
+      expect(roleChangedSpy).toBeCalledWith(adminId, newChannelId, 'admin');
+
+      msg = { message: `/mute ${memberId} -5` };
+      expect(
+        async () =>
+          await service.manageMessage(ownerId, newChannelId, msg.message),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should not execute mute command (admin -> owner)', async () => {
+      const ownerId = usersEntities[1].userId;
+      const newChannelData: CreateChannelDto = {
+        channelName: 'newChannel',
+        accessMode: 'private',
+      };
+      const newChannelId = await service.createChannel(ownerId, newChannelData);
+
+      const memberId = usersEntities[2].userId;
+      const adminId = usersEntities[3].userId;
+
+      await service.joinChannel(adminId, newChannelId, true);
+      await service.joinChannel(memberId, newChannelId, true);
+
+      let msg = { message: `/role ${adminId} admin` };
+      await service.manageMessage(ownerId, newChannelId, msg.message);
+      expect(channelStorage.getUserRole(newChannelId, adminId)).toBe('admin');
+      expect(roleChangedSpy).toBeCalledWith(adminId, newChannelId, 'admin');
+
+      msg = { message: `/mute ${ownerId} 5` };
+      expect(
+        async () =>
+          await service.manageMessage(adminId, newChannelId, msg.message),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('should execute ban command (admin -> member)', async () => {
+      const ownerId = usersEntities[1].userId;
+      const newChannelData: CreateChannelDto = {
+        channelName: 'newChannel',
+        accessMode: 'private',
+      };
+      const newChannelId = await service.createChannel(ownerId, newChannelData);
+
+      const memberId = usersEntities[2].userId;
+      const adminId = usersEntities[3].userId;
+
+      await service.joinChannel(adminId, newChannelId, true);
+      await service.joinChannel(memberId, newChannelId, true);
+
+      let msg = { message: `/role ${adminId} admin` };
+      await service.manageMessage(ownerId, newChannelId, msg.message);
+      expect(channelStorage.getUserRole(newChannelId, adminId)).toBe('admin');
+      expect(roleChangedSpy).toBeCalledWith(adminId, newChannelId, 'admin');
+
+      msg = { message: `/ban ${memberId} 5` };
+      await service.manageMessage(adminId, newChannelId, msg.message);
+      expect(
+        Math.round(
+          DateTime.now()
+            .diff(await channelStorage.getBanEndAt(newChannelId, memberId), [
+              'minutes',
+            ])
+            .toObject().minutes,
+        ),
+      ).toBe(-5);
+
+      expect(memberLeftSpy).toBeCalledWith(memberId, newChannelId, false);
+      expect(
+        async () => await service.joinChannel(memberId, newChannelId, true),
+      ).rejects.toThrow(ForbiddenException);
+    });
   });
 });

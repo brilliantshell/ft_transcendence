@@ -23,10 +23,10 @@ export class UserService {
   constructor(
     private readonly activityManager: ActivityManager,
     private readonly channelStorage: ChannelStorage,
-    @InjectRepository(Users)
     private readonly userGateway: UserGateway,
     private readonly userRelationshipStorage: UserRelationshipStorage,
     private readonly userSocketStorage: UserSocketStorage,
+    @InjectRepository(Users)
     private readonly usersRepository: Repository<Users>,
   ) {}
 
