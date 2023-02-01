@@ -441,7 +441,8 @@ describe('UserRelationshipService', () => {
     ).toBe(0);
   });
 
-  it('should throw error when a user who is not a blocker tries to unblock', async () => {
+  // NOTE : service 에서 throw
+  it.skip('should throw error when a user who is not a blocker tries to unblock', async () => {
     const { blockerId, blockedId } = blockEntities[0];
     await userRelationshipStorage.load(blockedId);
     expect(

@@ -6,8 +6,8 @@ import {
   NotFoundException,
   OnModuleInit,
 } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { IsNull, Not, Repository } from 'typeorm';
+import { DataSource, IsNull, Not, Repository } from 'typeorm';
+import { InjectDataSource } from '@nestjs/typeorm';
 
 import { BlockedUsers } from '../entity/blocked-users.entity';
 import { ChannelId, Relationship, UserId } from '../util/type';
@@ -23,21 +23,25 @@ const BLOCK_TYPES: Relationship[] = ['blocker', 'blocked'];
 
 @Injectable()
 export class UserRelationshipStorage implements OnModuleInit {
-  private dms: Map<ChannelId, boolean> = new Map<ChannelId, boolean>();
-  private users: Map<UserId, Map<UserId, Relationship>> = new Map<
+  private readonly dms: Map<ChannelId, boolean> = new Map<ChannelId, boolean>();
+  private readonly users: Map<UserId, Map<UserId, Relationship>> = new Map<
     UserId,
     Map<UserId, Relationship>
   >();
-  private logger = new Logger(UserRelationshipStorage.name);
+
+  private readonly blockedUsersRepository: Repository<BlockedUsers>;
+  private readonly channelsRepository: Repository<Channels>;
+  private readonly friendsRepository: Repository<Friends>;
+  private readonly logger = new Logger(UserRelationshipStorage.name);
 
   constructor(
-    @InjectRepository(BlockedUsers)
-    private blockedUsersRepository: Repository<BlockedUsers>,
-    @InjectRepository(Channels)
-    private channelsRepository: Repository<Channels>,
-    @InjectRepository(Friends)
-    private friendsRepository: Repository<Friends>,
-  ) {}
+    @InjectDataSource()
+    private readonly dataSource: DataSource,
+  ) {
+    this.blockedUsersRepository = this.dataSource.getRepository(BlockedUsers);
+    this.channelsRepository = this.dataSource.getRepository(Channels);
+    this.friendsRepository = this.dataSource.getRepository(Friends);
+  }
 
   /*****************************************************************************
    *                                                                           *
@@ -60,14 +64,8 @@ export class UserRelationshipStorage implements OnModuleInit {
   async init() {
     try {
       const dmChannels = await this.channelsRepository.find({
-        select: {
-          channelId: true,
-          dmPeerId: true,
-          ownerId: true,
-        },
-        where: {
-          dmPeerId: Not(IsNull()),
-        },
+        select: ['channelId', 'dmPeerId', 'ownerId'],
+        where: { dmPeerId: Not(IsNull()) },
       });
       const blocks: Partial<BlockedUsers>[] =
         await this.blockedUsersRepository.find();
@@ -190,15 +188,16 @@ export class UserRelationshipStorage implements OnModuleInit {
    */
   async blockUser(blockerId: UserId, blockedId: UserId) {
     try {
-      await this.blockedUsersRepository.save({ blockerId, blockedId });
-      await this.setDmReadonly(blockerId, blockedId);
-
-      FRIENDSHIP_TYPES.includes(this.users.get(blockerId).get(blockedId)) &&
-        (await this.queryConditionalDelete(
-          this.friendsRepository,
-          blockerId,
-          blockedId,
-        ));
+      await this.dataSource.manager.transaction(async (manager) => {
+        await manager.save(BlockedUsers, { blockerId, blockedId });
+        await this.setDmReadonly(blockerId, blockedId);
+        FRIENDSHIP_TYPES.includes(this.users.get(blockerId).get(blockedId)) &&
+          (await this.queryConditionalDelete(
+            manager.withRepository(this.friendsRepository),
+            blockerId,
+            blockedId,
+          ));
+      });
     } catch (e) {
       this.logger.error(e);
       throw new InternalServerErrorException('Failed to block a user');
@@ -214,10 +213,6 @@ export class UserRelationshipStorage implements OnModuleInit {
    * @param unblocked 차단 해제되는 유저의 id
    */
   async unblockUser(unblocker: UserId, unblocked: UserId) {
-    const relationship = this.users.get(unblocker).get(unblocked);
-    if ('blocker' !== relationship) {
-      throw new BadRequestException('Invalid relationship');
-    }
     try {
       await this.queryConditionalDelete(
         this.blockedUsersRepository,
@@ -240,12 +235,30 @@ export class UserRelationshipStorage implements OnModuleInit {
    ****************************************************************************/
 
   /**
+   * @description 유저의 친구 목록 반환
+   *
+   * @param userId 유저 id
+   * @returns 친구 목록
+   */
+  getFriends(userId: UserId) {
+    const friends: UserId[] = [];
+    this.users
+      .get(userId)
+      .forEach(
+        (status, counterpartId) =>
+          FRIENDSHIP_TYPES.includes(status) && friends.push(counterpartId),
+      );
+    return friends;
+  }
+
+  /**
    * @description 수락 전 친구 관계 추가
    *
    * @param senderId 친구 추가 요청을 보낸 유저의 id
    * @param receiverId 친구 추가 요청을 받은 유저의 id
    */
   async sendFriendRequest(senderId: UserId, receiverId: UserId) {
+    // FIXME : Guard 로 해결 가능할수도...
     if (BLOCK_TYPES.includes(this.users.get(senderId).get(receiverId))) {
       throw new BadRequestException('Invalid relationship');
     }
@@ -266,6 +279,7 @@ export class UserRelationshipStorage implements OnModuleInit {
    * @param sender 요청을 보낸 유저의 id
    */
   async acceptFriendRequest(receiverId: UserId, senderId: UserId) {
+    // FIXME : Guard 로 해결 가능할수도...
     if (BLOCK_TYPES.includes(this.users.get(receiverId).get(senderId))) {
       throw new BadRequestException('Invalid relationship');
     }
@@ -294,6 +308,7 @@ export class UserRelationshipStorage implements OnModuleInit {
    * @param to 삭제된 대상
    */
   async deleteFriendship(from: UserId, to: UserId) {
+    // FIXME : Guard 로 해결 가능할수도...
     const relationship = this.users.get(from).get(to);
     if (!relationship || BLOCK_TYPES.includes(relationship)) {
       throw new BadRequestException('Invalid relationship');
