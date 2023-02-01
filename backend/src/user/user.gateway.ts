@@ -7,7 +7,7 @@ import { UserInfoDto } from './dto/user-gateway.dto';
 @WebSocketGateway()
 export class UserGateway {
   @WebSocketServer()
-  private server: Server;
+  private readonly server: Server;
 
   /*****************************************************************************
    *                                                                           *

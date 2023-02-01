@@ -1,16 +1,17 @@
-import { EntityNotFoundError, Repository } from 'typeorm';
-import { InjectRepository } from '@nestjs/typeorm';
 import {
+  BadRequestException,
   Injectable,
   InternalServerErrorException,
   Logger,
   NotFoundException,
 } from '@nestjs/common';
+import { EntityNotFoundError, Repository } from 'typeorm';
+import { InjectRepository } from '@nestjs/typeorm';
 
+import { Activity, UserId } from '../util/type';
 import { ActivityManager } from '../user-status/activity.manager';
 import { ChannelStorage } from '../user-status/channel.storage';
 import { UserGateway } from './user.gateway';
-import { Activity, UserId } from '../util/type';
 import { UserInfoDto } from './dto/user-gateway.dto';
 import { UserProfileDto } from './dto/user.dto';
 import { UserRelationshipStorage } from '../user-status/user-relationship.storage';
@@ -23,10 +24,10 @@ export class UserService {
   constructor(
     private readonly activityManager: ActivityManager,
     private readonly channelStorage: ChannelStorage,
-    @InjectRepository(Users)
     private readonly userGateway: UserGateway,
     private readonly userRelationshipStorage: UserRelationshipStorage,
     private readonly userSocketStorage: UserSocketStorage,
+    @InjectRepository(Users)
     private readonly usersRepository: Repository<Users>,
   ) {}
 
@@ -60,7 +61,7 @@ export class UserService {
           );
     }
     const requesterSocketId = this.userSocketStorage.clients.get(targetId);
-    if (!requesterSocketId) {
+    if (requesterSocketId === undefined) {
       throw new InternalServerErrorException(
         'Failed to find socketId of a user',
       );
@@ -101,21 +102,178 @@ export class UserService {
     };
   }
 
+  // TODO
   /*****************************************************************************
    *                                                                           *
    * SECTION : Game                                                            *
    *                                                                           *
    ****************************************************************************/
+  // createGame() {}
+
+  // findGame(requesterId: UserId, peerId: UserId, gameId: GameId) {}
+
   /*****************************************************************************
    *                                                                           *
    * SECTION : Block                                                           *
    *                                                                           *
    ****************************************************************************/
+
+  /**
+   * @description 유저를 차단
+   *
+   * @param blockerId 차단자 id
+   * @param blockedId 차단당할 유저 id
+   * @returns 이미 차단한 유저라면 false, 아니라면 true
+   */
+  async createBlock(blockerId: UserId, blockedId: UserId) {
+    const prevRelationship = this.userRelationshipStorage.getRelationship(
+      blockerId,
+      blockedId,
+    );
+    await this.userRelationshipStorage.blockUser(blockerId, blockedId);
+    if (this.activityManager.getActivity(blockedId)) {
+      const blockedSocketId = this.userSocketStorage.clients.get(blockedId);
+      if (blockedSocketId === undefined) {
+        throw new InternalServerErrorException(
+          'Failed to find socketId of a user',
+        );
+      }
+      this.userGateway.emitBlocked(blockedSocketId, blockerId);
+    }
+    return prevRelationship !== 'blocker';
+  }
+
+  /**
+   * @description 유저를 차단 해제
+   *
+   * @param unblockerId 차단 해제자 id
+   * @param unblockedId 차단 해제 될 유저 id
+   */
+  async deleteBlock(unblockerId: UserId, unblockedId: UserId) {
+    const prevRelationship = this.userRelationshipStorage.getRelationship(
+      unblockerId,
+      unblockedId,
+    );
+    if (prevRelationship !== 'blocker') {
+      throw new BadRequestException('Invalid relationship');
+    }
+    await this.userRelationshipStorage.unblockUser(unblockerId, unblockedId);
+    if (this.activityManager.getActivity(unblockedId)) {
+      const unblockedSocketId = this.userSocketStorage.clients.get(unblockedId);
+      if (unblockedSocketId === undefined) {
+        throw new InternalServerErrorException(
+          'Failed to find socketId of a user',
+        );
+      }
+      this.userGateway.emitUnblocked(unblockedSocketId, unblockerId);
+    }
+  }
+
   /*****************************************************************************
    *                                                                           *
    * SECTION : Friend                                                          *
    *                                                                           *
    ****************************************************************************/
+
+  /**
+   * @description 유저의 친구 목록 반환
+   *
+   * @param userId 유저 id
+   * @returns 친구 목록
+   */
+  findFriends(userId: UserId) {
+    return this.userRelationshipStorage.getFriends(userId);
+  }
+
+  /**
+   * @description 유저를 친구 추가
+   *
+   * @param senderId 친구 추가 요청을 보낸 유저 id
+   * @param receiverId 친구 추가 요청을 받을 유저 id
+   * @returns 이미 친구 추가가 있다면 false, 아니라면 true
+   */
+  async createFriendRequest(senderId: UserId, receiverId: UserId) {
+    const prevRelationship = this.userRelationshipStorage.getRelationship(
+      senderId,
+      receiverId,
+    );
+    if (['friend', 'pendingReceiver'].includes(prevRelationship)) {
+      throw new BadRequestException('Invalid relationship');
+    }
+    await this.userRelationshipStorage.sendFriendRequest(senderId, receiverId);
+    if (this.activityManager.getActivity(receiverId)) {
+      const receiverSocketId = this.userSocketStorage.clients.get(receiverId);
+      if (receiverSocketId === undefined) {
+        throw new InternalServerErrorException(
+          'Failed to find socketId of a user',
+        );
+      }
+      this.userGateway.emitPendingFriendRequest(receiverSocketId, true);
+    }
+    return prevRelationship === null;
+  }
+
+  /**
+   * @description 친구 삭제, 친구 요청 거절, 친구 요청 취소
+   *
+   * @param deleterId 친구 관계 삭제 요청을 보낸 유저 id
+   * @param deletedId 친구 관계 삭제 당할 유저 id
+   */
+  async deleteFriendship(deleterId: UserId, deletedId: UserId) {
+    const prevRelationship = this.userRelationshipStorage.getRelationship(
+      deleterId,
+      deletedId,
+    );
+    //  TODO : throw NotFound (Guard 에서..?)
+    await this.userRelationshipStorage.deleteFriendship(deleterId, deletedId);
+    if (this.activityManager.getActivity(deletedId)) {
+      const deletedSocketId = this.userSocketStorage.clients.get(deletedId);
+      if (deletedSocketId === undefined) {
+        throw new InternalServerErrorException(
+          'Failed to find socketId of a user',
+        );
+      }
+      switch (prevRelationship) {
+        case 'friend':
+          this.userGateway.emitFriendRemoved(deletedSocketId, deleterId);
+        case 'pendingSender':
+          this.userGateway.emitFriendCancelled(deletedSocketId, deleterId);
+        case 'pendingReceiver':
+          this.userGateway.emitFriendDeclined(deletedSocketId, deleterId);
+        default:
+      }
+    }
+  }
+
+  /**
+   * @description 친구 요청 수락
+   *
+   * @param accepterId 친구 요청울 수락하는 유저 id
+   * @param acceptedId 친구 요청을 수락 당하는 유저 id
+   */
+  async acceptFriendRequest(accepterId: UserId, acceptedId: UserId) {
+    const prevRelationship = this.userRelationshipStorage.getRelationship(
+      accepterId,
+      acceptedId,
+    );
+    if (['friend', 'pendingSender'].includes(prevRelationship)) {
+      throw new BadRequestException('Invalid relationship');
+    }
+    await this.userRelationshipStorage.acceptFriendRequest(
+      accepterId,
+      acceptedId,
+    );
+    if (this.activityManager.getActivity(acceptedId)) {
+      const acceptedSocketId = this.userSocketStorage.clients.get(acceptedId);
+      if (acceptedSocketId === undefined) {
+        throw new InternalServerErrorException(
+          'Failed to find socketId of a user',
+        );
+      }
+      this.userGateway.emitFriendAccepted(acceptedSocketId, accepterId);
+    }
+  }
+
   /*****************************************************************************
    *                                                                           *
    * SECTION : Private Methods                                                 *

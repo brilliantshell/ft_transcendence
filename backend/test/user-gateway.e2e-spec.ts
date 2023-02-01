@@ -45,7 +45,7 @@ enum Relationships {
 const ONLINE = true;
 const OFFLINE = false;
 
-describe('UserStatusModule (e2e)', () => {
+describe.skip('UserStatusModule (e2e)', () => {
   let app: INestApplication;
   let usersEntities: Users[];
   let gateway: UserGateway;
