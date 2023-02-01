@@ -14,7 +14,6 @@ import { hash, compare } from 'bcrypt';
 import { AccessMode, Channels } from '../entity/channels.entity';
 import { ActivityManager } from '../user-status/activity.manager';
 import { AllChannelsDto, CreateChannelDto } from './dto/chats.dto';
-import { BannedMembers } from '../entity/banned-members.entity';
 import { ChannelStorage } from '../user-status/channel.storage';
 import { ChannelId, UserChannelStatus, UserId } from '../util/type';
 import { ChatsGateway } from './chats.gateway';
@@ -25,8 +24,6 @@ import { Messages } from '../entity/messages.entity';
 export class ChatsService {
   private readonly logger = new Logger(ChatsService.name);
   constructor(
-    @InjectRepository(BannedMembers)
-    private readonly bannedMembersRepository: Repository<BannedMembers>,
     private readonly activityManager: ActivityManager,
     private readonly channelStorage: ChannelStorage,
     @InjectRepository(Channels)
@@ -57,12 +54,10 @@ export class ChatsService {
    */
   async findAllChannels(userId: UserId): Promise<AllChannelsDto> {
     const userChannelMap = this.channelStorage.getUser(userId);
-    // NOTE: no channel in service
     if (this.channelStorage.getChannels().size === 0) {
       return { joinedChannels: [], otherChannels: [] };
     }
     if (!userChannelMap) {
-      // NOTE : user does not loaded
       throw new BadRequestException('Invalid Request');
     }
 
@@ -83,7 +78,6 @@ export class ChatsService {
   async createChannel(userId: UserId, channel: CreateChannelDto) {
     const { channelName, accessMode } = channel;
     const password = channel.password ?? null;
-
     if (
       (accessMode === 'protected' && !password) ||
       (accessMode !== 'protected' && password)
@@ -111,11 +105,11 @@ export class ChatsService {
   /**
    * @description 채널의 멤버 목록 및 DM 차단 여부를 반환
    *
-   * @param userId 요청한 유저의 Id
    * @param channelId 요청한 채널의 Id
+   * @param userId 요청한 유저의 Id
    * @returns 채널의 멤버 목록 및 DM 차단 여부
    */
-  findChannelMembers(userId: UserId, channelId: ChannelId) {
+  findChannelMembers(channelId: ChannelId, userId: UserId) {
     const channelInfo = this.getValidChannelInfo(userId, channelId);
     const channelMembers = Array.from(channelInfo.userRoleMap).map(
       ([userId, role]) => {
@@ -135,8 +129,8 @@ export class ChatsService {
    * @param password 비밀번호 (protected 채널일 경우)
    */
   async joinChannel(
-    userId: UserId,
     channelId: ChannelId,
+    userId: UserId,
     isInvited: boolean,
     password: string = null,
   ) {
@@ -165,11 +159,10 @@ export class ChatsService {
   /**
    * @description 유저가 채널에서 나감. 나갈시 채널에 이벤트 전송
    *
-   * @param userId 나갈 유저의 Id
    * @param channelId 나갈 채널 Id
-   * @returns
+   * @param userId 나갈 유저의 Id
    */
-  async leaveChannel(userId: UserId, channelId: ChannelId) {
+  async leaveChannel(channelId: ChannelId, userId: UserId) {
     this.getValidChannelInfo(userId, channelId);
     await this.channelStorage.deleteUserFromChannel(channelId, userId);
     return this.chatsGateway.emitMemberLeft(
@@ -182,16 +175,16 @@ export class ChatsService {
   /**
    * @description 채널의 메시지를 최신순으로 offset 부터 size만큼 반환
    *
-   * @param userId 요청한 유저의 Id
    * @param channelId 요청한 채널의 Id
+   * @param userId 요청한 유저의 Id
    * @param begin 시작 인덱스
    * @param size 반환할 메시지의 수
    * @returns 요청한 채널의 메시지 목록
    */
   // NOTE : offset, size 가 음수일 경우는 pipe 단계에서 걸러진다 가정
   async findChannelMessages(
-    userId: UserId,
     channelId: ChannelId,
+    userId: UserId,
     offset: number,
     size: number,
   ) {
@@ -220,14 +213,14 @@ export class ChatsService {
   /**
    * @description 채널에 메시지를 생성하거나 명령어를 실행
    *
-   * @param senderId 메시지를 보낸 유저의 Id
    * @param channelId 메시지를 보낼 채널의 Id
+   * @param senderId 메시지를 보낸 유저의 Id
    * @param contents 메시지 내용
    */
   // NOTE : message length 는 pipe 단계에서 걸러진다 가정
   async manageMessage(
-    senderId: UserId,
     channelId: ChannelId,
+    senderId: UserId,
     contents: string,
   ) {
     this.getValidChannelInfo(senderId, channelId);
@@ -236,9 +229,9 @@ export class ChatsService {
       throw new ForbiddenException('You are muted');
     }
     if (contents.startsWith('/')) {
-      return await this.executeCommand(senderId, channelId, contents);
+      return await this.executeCommand(channelId, senderId, contents);
     }
-    await this.createMessage(senderId, channelId, contents, now);
+    await this.createMessage(channelId, senderId, contents, now);
   }
 
   /*****************************************************************************
@@ -260,7 +253,7 @@ export class ChatsService {
    * @param channelId 요청한 채널의 Id
    * @returns 유효한 채널 정보
    */
-  // FIXME: guard 나 pipe 로 할 수 있을지도
+  // FIXME: guard 나 pipe 생각해보기
   private getValidChannelInfo(userId: UserId, channelId: ChannelId) {
     const channelInfo = this.channelStorage.getChannel(channelId);
     if (channelInfo === undefined) {
@@ -373,8 +366,8 @@ export class ChatsService {
    * @param createdAt 메시지 생성 시간
    */
   private async createMessage(
-    senderId: UserId,
     channelId: ChannelId,
+    senderId: UserId,
     contents: string,
     createdAt: DateTime,
   ) {
@@ -409,8 +402,8 @@ export class ChatsService {
    */
   // NOTE:  { message : "/command [targetId] [time]|[role]" } 와 같은 형식으로 명령어가 온다고 가정
   private async executeCommand(
-    senderId: UserId,
     channelId: ChannelId,
+    senderId: UserId,
     contents: string,
   ) {
     if (
