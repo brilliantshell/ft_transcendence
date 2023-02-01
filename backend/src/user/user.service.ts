@@ -5,7 +5,6 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { BlockedUsers } from './../entity/blocked-users.entity';
 import { EntityNotFoundError, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 
@@ -24,8 +23,6 @@ export class UserService {
   private readonly logger = new Logger(UserService.name);
   constructor(
     private readonly activityManager: ActivityManager,
-    @InjectRepository(BlockedUsers)
-    private readonly blockedUsersRepository: Repository<BlockedUsers>,
     private readonly channelStorage: ChannelStorage,
     private readonly userGateway: UserGateway,
     private readonly userRelationshipStorage: UserRelationshipStorage,
