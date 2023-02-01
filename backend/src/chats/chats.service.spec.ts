@@ -671,8 +671,6 @@ describe('ChatsService', () => {
     });
 
     it('should create message and then notify new message arrived', async () => {
-      // user create channel and send message
-      // another user is already loaded and join the channel
       const userId = usersEntities[1].userId;
       const newChannelData: CreateChannelDto = {
         channelName: 'newChannel',

@@ -17,8 +17,8 @@ import { AllChannelsDto, CreateChannelDto } from './dto/chats.dto';
 import { ChannelStorage } from '../user-status/channel.storage';
 import { ChannelId, UserChannelStatus, UserId } from '../util/type';
 import { ChatsGateway } from './chats.gateway';
-import { UserRelationshipStorage } from '../user-status/user-relationship.storage';
 import { Messages } from '../entity/messages.entity';
+import { UserRelationshipStorage } from '../user-status/user-relationship.storage';
 
 @Injectable()
 export class ChatsService {
@@ -98,7 +98,7 @@ export class ChatsService {
 
   /*****************************************************************************
    *                                                                           *
-   * SECTION : channel                                                         *
+   * SECTION : Join & Leave channel                                            *
    *                                                                           *
    ****************************************************************************/
 
@@ -210,6 +210,11 @@ export class ChatsService {
     }
   }
 
+  /*****************************************************************************
+   *                                                                           *
+   * SECTION : Receive Message                                                 *
+   *                                                                           *
+   ****************************************************************************/
   /**
    * @description 채널에 메시지를 생성하거나 명령어를 실행
    *
@@ -242,7 +247,7 @@ export class ChatsService {
 
   /*****************************************************************************
    *                                                                           *
-   * SECTION : param 유효성 검사                                               *
+   * SECTION : Validate parameters                                             *
    *                                                                           *
    ****************************************************************************/
 
