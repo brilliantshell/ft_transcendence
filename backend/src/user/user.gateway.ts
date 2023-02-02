@@ -65,11 +65,12 @@ export class UserGateway {
    * @description 친구 요청이 왔을 때 요청 받은 유저에게 알림
    *
    * @param receiverSocketId 요청 받은 유저의 socket id
+   * @param requesterId 요청한 유저의 id
    */
-  emitPendingFriendRequest(receiverSocketId: SocketId, isPending: boolean) {
+  emitFriendRequest(receiverSocketId: SocketId, requesterId: UserId) {
     this.server
       .to(receiverSocketId)
-      .emit('pendingFriendRequest', { isPending });
+      .emit('friendRequest', { requestedBy: requesterId });
   }
 
   /**

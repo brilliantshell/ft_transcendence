@@ -216,10 +216,37 @@ describe('UserController - /user (e2e)', () => {
         .expect(404);
     });
 
-    it('should throw NOT FOUND when the requester tries to unblock pendingSender/pendingReceiver/friend', async () => {
+    it('should throw NOT FOUND when the requester tries to unblock pendingSender', async () => {
       const friendsEntities = generateFriends(
         usersEntities.slice(index, index + 2),
       );
+      friendsEntities[0].isAccepted = false;
+      await dataSource.manager.save(Friends, friendsEntities);
+      await userRelationshipStorage.load(userIds[0]);
+      return request(app.getHttpServer())
+        .delete(`/user/${userIds[1]}/block`)
+        .set('x-user-id', userIds[0].toString())
+        .expect(404);
+    });
+
+    it('should throw NOT FOUND when the requester tries to unblock pendingReceiver', async () => {
+      const friendsEntities = generateFriends(
+        usersEntities.slice(index, index + 2),
+      );
+      friendsEntities[0].isAccepted = false;
+      await dataSource.manager.save(Friends, friendsEntities);
+      await userRelationshipStorage.load(userIds[1]);
+      return request(app.getHttpServer())
+        .delete(`/user/${userIds[0]}/block`)
+        .set('x-user-id', userIds[1].toString())
+        .expect(404);
+    });
+
+    it('should throw NOT FOUND when the requester tries to unblock friend', async () => {
+      const friendsEntities = generateFriends(
+        usersEntities.slice(index, index + 2),
+      );
+      friendsEntities[0].isAccepted = true;
       await dataSource.manager.save(Friends, friendsEntities);
       await userRelationshipStorage.load(userIds[0]);
       return request(app.getHttpServer())
@@ -248,11 +275,12 @@ describe('UserController - /user (e2e)', () => {
         .expect(404);
     });
 
-    it('should throw BAD REQUEST when a friend or a pendingReceiver tries to send a friend request', async () => {
+    it('should throw BAD REQUEST when a pendingReceiver tries to send a friend request', async () => {
       const [senderId, receiverId] = userIds;
       const friendsEntities = generateFriends(
         usersEntities.slice(index, index + 2),
       );
+      friendsEntities[0].isAccepted = false;
       await dataSource.manager.save(Friends, friendsEntities);
       await userRelationshipStorage.load(receiverId);
       return request(app.getHttpServer())
@@ -261,11 +289,12 @@ describe('UserController - /user (e2e)', () => {
         .expect(400);
     });
 
-    it('should throw BAD REQUEST when a friend or a pendingReceiver tries to send a friend request', async () => {
+    it('should throw BAD REQUEST when a friend tries to send a friend request', async () => {
       const [senderId, receiverId] = userIds;
       const friendsEntities = generateFriends(
         usersEntities.slice(index, index + 2),
       );
+      friendsEntities[0].isAccepted = true;
       await dataSource.manager.save(Friends, friendsEntities);
       await userRelationshipStorage.load(receiverId);
       return request(app.getHttpServer())
@@ -546,7 +575,34 @@ describe('UserController - /user (e2e)', () => {
    *                                                                           *
    ****************************************************************************/
 
-  // describe('PUT /user/:userId/friend', () => {
-  //   it()
-  // });
+  describe('PUT /user/:userId/friend', () => {
+    it('should send a friend request (201)', async () => {
+      const [wsMessage, response] = await Promise.all([
+        new Promise((resolve) =>
+          clientSockets[1].on('friendRequest', (data) => resolve(data)),
+        ),
+        request(app.getHttpServer())
+          .put(`/user/${userIds[1]}/friend`)
+          .set('x-user-id', userIds[0].toString()),
+      ]);
+      expect(wsMessage).toEqual({
+        requestedBy: userIds[0],
+      });
+      expect(response.status).toEqual(201);
+      expect(response.body).toEqual({});
+    });
+
+    it('should not resend the friend request (200)', async () => {
+      const responseOne = await request(app.getHttpServer())
+        .put(`/user/${userIds[1]}/friend`)
+        .set('x-user-id', userIds[0].toString());
+      const responseTwo = await request(app.getHttpServer())
+        .put(`/user/${userIds[1]}/friend`)
+        .set('x-user-id', userIds[0].toString());
+      expect(responseOne.status).toEqual(201);
+      expect(responseOne.body).toEqual({});
+      expect(responseTwo.status).toEqual(200);
+      expect(responseTwo.body).toEqual({});
+    });
+  });
 });

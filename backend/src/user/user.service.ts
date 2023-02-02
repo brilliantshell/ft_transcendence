@@ -182,10 +182,12 @@ export class UserService {
    * @returns 이미 친구 추가가 있다면 false, 아니라면 true
    */
   async createFriendRequest(senderId: UserId, receiverId: UserId) {
-    const prevRelationship = this.userRelationshipStorage.getRelationship(
-      senderId,
-      receiverId,
-    );
+    if (
+      this.userRelationshipStorage.getRelationship(senderId, receiverId) ===
+      'pendingSender'
+    ) {
+      return false;
+    }
     await this.userRelationshipStorage.sendFriendRequest(senderId, receiverId);
     if (this.activityManager.getActivity(receiverId)) {
       const receiverSocketId = this.userSocketStorage.clients.get(receiverId);
@@ -194,9 +196,9 @@ export class UserService {
           'Failed to find socketId of a user',
         );
       }
-      this.userGateway.emitPendingFriendRequest(receiverSocketId, true);
+      this.userGateway.emitFriendRequest(receiverSocketId, senderId);
     }
-    return prevRelationship === null;
+    return true;
   }
 
   /**

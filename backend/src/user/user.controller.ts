@@ -2,15 +2,17 @@ import {
   Controller,
   Delete,
   Get,
+  HttpStatus,
   Param,
   ParseIntPipe,
   Patch,
   Post,
   Put,
   Req,
+  Res,
   UseGuards,
 } from '@nestjs/common';
-import { Request } from 'express';
+import { Request, Response } from 'express';
 
 import { AcceptFriendGuard } from './guard/accept-friend.guard';
 import { BlockedUserGuard } from './guard/blocked-user.guard';
@@ -88,7 +90,19 @@ export class UserController {
     BlockedUserGuard,
     CreateFriendRequestGuard,
   )
-  createFriendRequest(@Req() req: Request, @Param('userId') userId: UserId) {}
+  async createFriendRequest(
+    @Req() req: VerifiedRequest,
+    @Param('userId', ParseIntPipe) targetId: UserId,
+    @Res() res: Response,
+  ) {
+    res
+      .status(
+        (await this.userService.createFriendRequest(req.user.userId, targetId))
+          ? HttpStatus.CREATED
+          : HttpStatus.OK,
+      )
+      .end();
+  }
 
   @Delete(':userId/friend')
   @UseGuards(
