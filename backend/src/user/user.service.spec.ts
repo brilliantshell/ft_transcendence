@@ -28,13 +28,13 @@ import { generateUsers } from '../../test/generate-mock-data';
 
 const TEST_DB = 'test_db_user_service';
 const ENTITIES = [
+  BannedMembers,
   BlockedUsers,
+  ChannelMembers,
   Channels,
   Friends,
-  Users,
-  ChannelMembers,
-  BannedMembers,
   Messages,
+  Users,
 ];
 
 describe('UserService', () => {
@@ -55,11 +55,8 @@ describe('UserService', () => {
     const dataSources = await createDataSources(TEST_DB, ENTITIES);
     initDataSource = dataSources.initDataSource;
     dataSource = dataSources.dataSource;
-
-    usersEntities = generateUsers(40);
-
+    usersEntities = generateUsers(50);
     usersRepository = dataSource.getRepository(Users);
-
     await usersRepository.save(usersEntities);
   });
 
@@ -85,17 +82,18 @@ describe('UserService', () => {
     })
       .overrideProvider(UserGateway)
       .useValue({
-        emitUserInfo: (socketId: SocketId, userInfo: UserInfoDto) => {},
-        emitBlocked: (socketId: SocketId, blockerId: UserId) => {},
-        emitUnblocked: (socketId: SocketId, unblockerId: UserId) => {},
-        emitPendingFriendRequest: (
-          socketId: SocketId,
-          isPending: boolean,
-        ) => {},
-        emitFriendCancelled: (socketId: SocketId, cancelledBy: UserId) => {},
-        emitFriendRemoved: (socketId: SocketId, removedBy: UserId) => {},
-        emitFriendAccepted: (socketId: SocketId, acceptedBy: UserId) => {},
-        emitFriendDeclined: (socketId: SocketId, declinedBy: UserId) => {},
+        emitUserInfo: (socketId: SocketId, userInfo: UserInfoDto) => undefined,
+        emitBlocked: (socketId: SocketId, blockerId: UserId) => undefined,
+        emitUnblocked: (socketId: SocketId, unblockerId: UserId) => undefined,
+        emitPendingFriendRequest: (socketId: SocketId, isPending: boolean) =>
+          undefined,
+        emitFriendCancelled: (socketId: SocketId, cancelledBy: UserId) =>
+          undefined,
+        emitFriendRemoved: (socketId: SocketId, removedBy: UserId) => undefined,
+        emitFriendAccepted: (socketId: SocketId, acceptedBy: UserId) =>
+          undefined,
+        emitFriendDeclined: (socketId: SocketId, declinedBy: UserId) =>
+          undefined,
       })
       .compile();
 
@@ -109,7 +107,7 @@ describe('UserService', () => {
     );
     channelStorage = module.get<ChannelStorage>(ChannelStorage);
     activityManager = module.get<ActivityManager>(ActivityManager);
-    userIds = [usersEntities[index].userId, usersEntities[index + 1].userId];
+    userIds = [usersEntities[index++].userId, usersEntities[index++].userId];
     userIds.forEach((userId) => {
       const socketId = nanoid();
       userSocketStorage.clients.set(userId, socketId);
@@ -118,10 +116,6 @@ describe('UserService', () => {
       channelStorage.loadUser(userId);
       activityManager.setActivity(userId, 'profile');
     });
-  });
-
-  afterEach(() => {
-    index++;
   });
 
   afterAll(async () => {
@@ -487,7 +481,9 @@ describe('UserService', () => {
           return service.createFriendRequest(userId, friend.userId);
         }),
       );
-      expect(new Set(service.findFriends(userId))).toEqual(new Set(friendIds));
+      expect(new Set(service.findFriends(userId).friends)).toEqual(
+        new Set(friendIds),
+      );
     });
   });
 });

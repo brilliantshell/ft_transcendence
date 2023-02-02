@@ -182,7 +182,7 @@ export class UserService {
    * @returns 친구 목록
    */
   findFriends(userId: UserId) {
-    return this.userRelationshipStorage.getFriends(userId);
+    return { friends: this.userRelationshipStorage.getFriends(userId) };
   }
 
   /**
@@ -287,7 +287,10 @@ export class UserService {
    * @param targetId 조회 대상 유저의 id
    * @returns
    */
-  createUserInfoDto(requesterId: UserId, targetId: UserId): UserInfoDto {
+  private createUserInfoDto(
+    requesterId: UserId,
+    targetId: UserId,
+  ): UserInfoDto {
     let activity: Activity = 'offline';
     const currentUi = this.activityManager.getActivity(targetId);
     if (currentUi) {
