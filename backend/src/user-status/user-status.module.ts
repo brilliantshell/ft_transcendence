@@ -30,8 +30,8 @@ import { Users } from '../entity/users.entity';
   providers: [
     ActivityGateway,
     ActivityManager,
-    ChatsGateway,
     ChannelStorage,
+    ChatsGateway,
     UserRelationshipStorage,
     UserSocketStorage,
   ],

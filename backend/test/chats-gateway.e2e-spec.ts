@@ -13,7 +13,7 @@ import {
   MutedMessage,
   NewMessage,
   RoleChangedMessage,
-} from './../src/chats/chats.interface';
+} from '../src/chats/dto/chats-gateway.dto';
 import { Users } from './../src/entity/users.entity';
 import {
   createChannelMember,

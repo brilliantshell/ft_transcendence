@@ -6,9 +6,9 @@ import { ApiConfigModule } from './config/api-config.module';
 import { ApiConfigService } from './config/api-config.service';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { ChatsModule } from './chats/chats.module';
 import { UserModule } from './user/user.module';
 import { UserStatusModule } from './user-status/user-status.module';
-import { ChatsModule } from './chats/chats.module';
 
 @Module({
   imports: [
