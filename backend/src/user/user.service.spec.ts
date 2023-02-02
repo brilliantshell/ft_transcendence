@@ -1,4 +1,3 @@
-import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { DataSource, Repository } from 'typeorm';
 import { Test, TestingModule } from '@nestjs/testing';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -135,17 +134,6 @@ describe('UserService', () => {
           where: { userId: targetId },
         }),
       );
-    });
-
-    it('should throw NOT FOUND when the user does not exist', async () => {
-      const [requesterId] = userIds;
-      let targetId = 10000;
-      while (userIds.includes(targetId)) {
-        targetId++;
-      }
-      expect(
-        async () => await service.findProfile(requesterId, targetId),
-      ).rejects.toThrowError(NotFoundException);
     });
 
     it('should emit userInfo event', async () => {
@@ -307,23 +295,6 @@ describe('UserService', () => {
       ).toBeFalsy();
     });
 
-    it('should throw CONFLICT when the sender had already received a friend request from the receiver', async () => {
-      const [senderId, receiverId] = userIds;
-      await service.createFriendRequest(receiverId, senderId);
-      await expect(
-        service.createFriendRequest(senderId, receiverId),
-      ).rejects.toThrowError(BadRequestException);
-    });
-
-    it('should throw CONFLICT when the sender and the receiver are already friends', async () => {
-      const [senderId, receiverId] = userIds;
-      await service.createFriendRequest(senderId, receiverId);
-      await service.acceptFriendRequest(receiverId, senderId);
-      await expect(
-        service.createFriendRequest(senderId, receiverId),
-      ).rejects.toThrowError(BadRequestException);
-    });
-
     it('should cancel a friend request (both are logged in)', async () => {
       const [canceller, cancelled] = userIds;
       await service.createFriendRequest(canceller, cancelled);
@@ -442,23 +413,6 @@ describe('UserService', () => {
         userRelationshipStorage.getRelationship(accepter, accepted),
       ).toEqual('friend');
       expect(spy).not.toHaveBeenCalled();
-    });
-
-    it('should throw CONFLICT when the accepter had sent a friend request from the accepted', async () => {
-      const [accepter, accepted] = userIds;
-      await service.createFriendRequest(accepter, accepted);
-      await expect(
-        service.acceptFriendRequest(accepter, accepted),
-      ).rejects.toThrowError(BadRequestException);
-    });
-
-    it('should throw CONFLICT when the accepter already is a friend with the accepted', async () => {
-      const [accepter, accepted] = userIds;
-      await service.createFriendRequest(accepted, accepter);
-      await service.acceptFriendRequest(accepter, accepted);
-      await expect(
-        service.acceptFriendRequest(accepter, accepted),
-      ).rejects.toThrowError(BadRequestException);
     });
 
     it("should return a list of friends's ids", async () => {

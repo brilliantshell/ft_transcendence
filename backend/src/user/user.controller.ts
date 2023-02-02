@@ -12,7 +12,7 @@ import {
 import { Request } from 'express';
 
 import { UserGuard } from './user.guard';
-import { UserId } from '../util/type';
+import { UserId, VerifiedRequest } from '../util/type';
 import { UserService } from './user.service';
 
 @Controller('user')
@@ -54,10 +54,12 @@ export class UserController {
    ****************************************************************************/
 
   @Get('friends')
-  findFriends(@Req() req: Request) {
-    // const { userId } = req.user;
-    const userId = Math.floor(Number(req.headers['x-user-id']));
-    return this.userService.findFriends(userId);
+  findFriends(@Req() req: VerifiedRequest) {
+    // return this.userService.findFriends(
+    //   process.env.NODE_ENV === 'development'
+    //     ? Math.floor(Number(req.headers['x-user-id']))
+    //     : req.user.userId,
+    // );
   }
 
   @Put(':userId/friend')

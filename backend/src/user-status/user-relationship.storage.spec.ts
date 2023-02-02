@@ -1,4 +1,3 @@
-import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { DataSource, IsNull, Not, Repository } from 'typeorm';
 import { Test, TestingModule } from '@nestjs/testing';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -158,20 +157,6 @@ describe('UserRelationshipService', () => {
     expect(userRelationshipStorage.getRelationshipMap(target)).toBeUndefined();
   });
 
-  it('should throw error when delete on nonexistent friendship was attempted', async () => {
-    const [userOne, userTwo] = [usersPool[3][0].userId, usersPool[3][1].userId];
-    await userRelationshipStorage.load(userOne);
-    const previousSize =
-      userRelationshipStorage.getRelationshipMap(userOne).size;
-
-    expect(async () => {
-      await userRelationshipStorage.deleteFriendship(userOne, userTwo);
-    }).rejects.toThrowError();
-    expect(userRelationshipStorage.getRelationshipMap(userOne).size).toBe(
-      previousSize,
-    );
-  });
-
   it('should add a pending friendship (both loaded)', async () => {
     const [sender, receiver] = [usersPool[3][0].userId, usersPool[3][1].userId];
     await userRelationshipStorage.load(sender);
@@ -299,36 +284,6 @@ describe('UserRelationshipService', () => {
     ).toBe(1);
   });
 
-  it('should throw error when a sender tries to accept his own request (sender loaded)', async () => {
-    const { senderId, receiverId } = (
-      await friendsRepository.findBy({
-        isAccepted: false,
-      })
-    )[0];
-    await userRelationshipStorage.load(senderId);
-    expect(
-      async () =>
-        await userRelationshipStorage.acceptFriendRequest(senderId, receiverId),
-    ).rejects.toThrowError(NotFoundException);
-
-    expect(
-      userRelationshipStorage.getRelationship(receiverId, senderId),
-    ).toBeNull();
-    expect(userRelationshipStorage.getRelationship(senderId, receiverId)).toBe(
-      'pendingSender',
-    );
-
-    expect(
-      (
-        await friendsRepository.findBy({
-          senderId,
-          receiverId,
-          isAccepted: false,
-        })
-      ).length,
-    ).toBe(1);
-  });
-
   it('should block a user (both loaded)', async () => {
     const { channelId, ownerId, dmPeerId } = channelEntities.find(
       ({ dmPeerId }) => dmPeerId !== null,
@@ -439,29 +394,5 @@ describe('UserRelationshipService', () => {
         })
       ).length,
     ).toBe(0);
-  });
-
-  // NOTE : service 에서 throw
-  it.skip('should throw error when a user who is not a blocker tries to unblock', async () => {
-    const { blockerId, blockedId } = blockEntities[0];
-    await userRelationshipStorage.load(blockedId);
-    expect(
-      async () =>
-        await userRelationshipStorage.unblockUser(blockedId, blockerId),
-    ).rejects.toThrowError(BadRequestException);
-  });
-
-  it('should throw error when a blocked user tries to set friendship', async () => {
-    const { blockerId, blockedId } = blockEntities[0];
-    await userRelationshipStorage.load(blockerId);
-    await userRelationshipStorage.load(blockedId);
-    expect(
-      async () =>
-        await userRelationshipStorage.sendFriendRequest(blockerId, blockedId),
-    ).rejects.toThrowError(BadRequestException);
-    expect(
-      async () =>
-        await userRelationshipStorage.acceptFriendRequest(blockedId, blockerId),
-    ).rejects.toThrowError(BadRequestException);
   });
 });

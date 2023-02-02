@@ -1,4 +1,5 @@
 import { DateTime } from 'luxon';
+import { Request } from 'express';
 
 export type UserId = number;
 
@@ -39,3 +40,7 @@ export type CurrentUi =
   | 'waitingRoom';
 
 export type Activity = 'online' | 'offline' | 'inGame';
+
+export interface VerifiedRequest extends Request {
+  user: { userId: UserId };
+}
