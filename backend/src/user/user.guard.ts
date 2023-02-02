@@ -95,7 +95,7 @@ export class UserGuard implements CanActivate {
     }
     if (
       path.endsWith('friend') &&
-      !['friend', 'pendingSender', 'pendingReceier'].includes(relationship)
+      !['friend', 'pendingSender', 'pendingReceiver'].includes(relationship)
     ) {
       throw new NotFoundException(
         'The user had not received/sent a friend request nor been friends with the other user',
