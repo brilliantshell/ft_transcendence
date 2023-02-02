@@ -1,4 +1,3 @@
-import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { DataSource, Repository } from 'typeorm';
 import { Test, TestingModule } from '@nestjs/testing';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -28,13 +27,13 @@ import { generateUsers } from '../../test/generate-mock-data';
 
 const TEST_DB = 'test_db_user_service';
 const ENTITIES = [
+  BannedMembers,
   BlockedUsers,
+  ChannelMembers,
   Channels,
   Friends,
-  Users,
-  ChannelMembers,
-  BannedMembers,
   Messages,
+  Users,
 ];
 
 describe('UserService', () => {
@@ -55,11 +54,8 @@ describe('UserService', () => {
     const dataSources = await createDataSources(TEST_DB, ENTITIES);
     initDataSource = dataSources.initDataSource;
     dataSource = dataSources.dataSource;
-
-    usersEntities = generateUsers(40);
-
+    usersEntities = generateUsers(50);
     usersRepository = dataSource.getRepository(Users);
-
     await usersRepository.save(usersEntities);
   });
 
@@ -85,17 +81,18 @@ describe('UserService', () => {
     })
       .overrideProvider(UserGateway)
       .useValue({
-        emitUserInfo: (socketId: SocketId, userInfo: UserInfoDto) => {},
-        emitBlocked: (socketId: SocketId, blockerId: UserId) => {},
-        emitUnblocked: (socketId: SocketId, unblockerId: UserId) => {},
-        emitPendingFriendRequest: (
-          socketId: SocketId,
-          isPending: boolean,
-        ) => {},
-        emitFriendCancelled: (socketId: SocketId, cancelledBy: UserId) => {},
-        emitFriendRemoved: (socketId: SocketId, removedBy: UserId) => {},
-        emitFriendAccepted: (socketId: SocketId, acceptedBy: UserId) => {},
-        emitFriendDeclined: (socketId: SocketId, declinedBy: UserId) => {},
+        emitUserInfo: (socketId: SocketId, userInfo: UserInfoDto) => undefined,
+        emitBlocked: (socketId: SocketId, blockerId: UserId) => undefined,
+        emitUnblocked: (socketId: SocketId, unblockerId: UserId) => undefined,
+        emitPendingFriendRequest: (socketId: SocketId, isPending: boolean) =>
+          undefined,
+        emitFriendCancelled: (socketId: SocketId, cancelledBy: UserId) =>
+          undefined,
+        emitFriendRemoved: (socketId: SocketId, removedBy: UserId) => undefined,
+        emitFriendAccepted: (socketId: SocketId, acceptedBy: UserId) =>
+          undefined,
+        emitFriendDeclined: (socketId: SocketId, declinedBy: UserId) =>
+          undefined,
       })
       .compile();
 
@@ -109,7 +106,7 @@ describe('UserService', () => {
     );
     channelStorage = module.get<ChannelStorage>(ChannelStorage);
     activityManager = module.get<ActivityManager>(ActivityManager);
-    userIds = [usersEntities[index].userId, usersEntities[index + 1].userId];
+    userIds = [usersEntities[index++].userId, usersEntities[index++].userId];
     userIds.forEach((userId) => {
       const socketId = nanoid();
       userSocketStorage.clients.set(userId, socketId);
@@ -118,10 +115,6 @@ describe('UserService', () => {
       channelStorage.loadUser(userId);
       activityManager.setActivity(userId, 'profile');
     });
-  });
-
-  afterEach(() => {
-    index++;
   });
 
   afterAll(async () => {
@@ -141,17 +134,6 @@ describe('UserService', () => {
           where: { userId: targetId },
         }),
       );
-    });
-
-    it('should throw NOT FOUND when the user does not exist', async () => {
-      const [requesterId] = userIds;
-      let targetId = 10000;
-      while (userIds.includes(targetId)) {
-        targetId++;
-      }
-      expect(
-        async () => await service.findProfile(requesterId, targetId),
-      ).rejects.toThrowError(NotFoundException);
     });
 
     it('should emit userInfo event', async () => {
@@ -313,23 +295,6 @@ describe('UserService', () => {
       ).toBeFalsy();
     });
 
-    it('should throw CONFLICT when the sender had already received a friend request from the receiver', async () => {
-      const [senderId, receiverId] = userIds;
-      await service.createFriendRequest(receiverId, senderId);
-      await expect(
-        service.createFriendRequest(senderId, receiverId),
-      ).rejects.toThrowError(BadRequestException);
-    });
-
-    it('should throw CONFLICT when the sender and the receiver are already friends', async () => {
-      const [senderId, receiverId] = userIds;
-      await service.createFriendRequest(senderId, receiverId);
-      await service.acceptFriendRequest(receiverId, senderId);
-      await expect(
-        service.createFriendRequest(senderId, receiverId),
-      ).rejects.toThrowError(BadRequestException);
-    });
-
     it('should cancel a friend request (both are logged in)', async () => {
       const [canceller, cancelled] = userIds;
       await service.createFriendRequest(canceller, cancelled);
@@ -450,23 +415,6 @@ describe('UserService', () => {
       expect(spy).not.toHaveBeenCalled();
     });
 
-    it('should throw CONFLICT when the accepter had sent a friend request from the accepted', async () => {
-      const [accepter, accepted] = userIds;
-      await service.createFriendRequest(accepter, accepted);
-      await expect(
-        service.acceptFriendRequest(accepter, accepted),
-      ).rejects.toThrowError(BadRequestException);
-    });
-
-    it('should throw CONFLICT when the accepter already is a friend with the accepted', async () => {
-      const [accepter, accepted] = userIds;
-      await service.createFriendRequest(accepted, accepter);
-      await service.acceptFriendRequest(accepter, accepted);
-      await expect(
-        service.acceptFriendRequest(accepter, accepted),
-      ).rejects.toThrowError(BadRequestException);
-    });
-
     it("should return a list of friends's ids", async () => {
       const friends = generateUsers(10);
       await usersRepository.save(friends);
@@ -487,7 +435,9 @@ describe('UserService', () => {
           return service.createFriendRequest(userId, friend.userId);
         }),
       );
-      expect(new Set(service.findFriends(userId))).toEqual(new Set(friendIds));
+      expect(new Set(service.findFriends(userId).friends)).toEqual(
+        new Set(friendIds),
+      );
     });
   });
 });

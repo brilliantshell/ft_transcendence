@@ -1,12 +1,10 @@
+import { DataSource, IsNull, Not, Repository } from 'typeorm';
 import {
-  BadRequestException,
   Injectable,
   InternalServerErrorException,
   Logger,
-  NotFoundException,
   OnModuleInit,
 } from '@nestjs/common';
-import { DataSource, IsNull, Not, Repository } from 'typeorm';
 import { InjectDataSource } from '@nestjs/typeorm';
 
 import { BlockedUsers } from '../entity/blocked-users.entity';
@@ -19,7 +17,6 @@ const FRIENDSHIP_TYPES: Relationship[] = [
   'pendingSender',
   'pendingReceiver',
 ];
-const BLOCK_TYPES: Relationship[] = ['blocker', 'blocked'];
 
 @Injectable()
 export class UserRelationshipStorage implements OnModuleInit {
@@ -258,10 +255,6 @@ export class UserRelationshipStorage implements OnModuleInit {
    * @param receiverId 친구 추가 요청을 받은 유저의 id
    */
   async sendFriendRequest(senderId: UserId, receiverId: UserId) {
-    // FIXME : Guard 로 해결 가능할수도...
-    if (BLOCK_TYPES.includes(this.users.get(senderId).get(receiverId))) {
-      throw new BadRequestException('Invalid relationship');
-    }
     try {
       await this.friendsRepository.save({ senderId, receiverId });
     } catch (e) {
@@ -279,23 +272,16 @@ export class UserRelationshipStorage implements OnModuleInit {
    * @param sender 요청을 보낸 유저의 id
    */
   async acceptFriendRequest(receiverId: UserId, senderId: UserId) {
-    // FIXME : Guard 로 해결 가능할수도...
-    if (BLOCK_TYPES.includes(this.users.get(receiverId).get(senderId))) {
-      throw new BadRequestException('Invalid relationship');
-    }
     try {
-      const { affected } = await this.friendsRepository.update(
+      await this.friendsRepository.update(
         { senderId, receiverId },
         { isAccepted: true },
       );
-      if (affected === 0) {
-        throw new NotFoundException('There is no such friend request');
-      }
     } catch (e) {
       this.logger.error(e);
-      throw e instanceof NotFoundException
-        ? e
-        : new InternalServerErrorException('Failed to accept a friend request');
+      throw new InternalServerErrorException(
+        'Failed to accept a friend request',
+      );
     }
     this.users.get(receiverId).set(senderId, 'friend');
     this.users.get(senderId)?.set(receiverId, 'friend');
@@ -308,11 +294,6 @@ export class UserRelationshipStorage implements OnModuleInit {
    * @param to 삭제된 대상
    */
   async deleteFriendship(from: UserId, to: UserId) {
-    // FIXME : Guard 로 해결 가능할수도...
-    const relationship = this.users.get(from).get(to);
-    if (!relationship || BLOCK_TYPES.includes(relationship)) {
-      throw new BadRequestException('Invalid relationship');
-    }
     try {
       await this.queryConditionalDelete(this.friendsRepository, from, to);
     } catch (e) {

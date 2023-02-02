@@ -1,12 +1,10 @@
+import { InjectRepository } from '@nestjs/typeorm';
 import {
-  BadRequestException,
   Injectable,
   InternalServerErrorException,
   Logger,
-  NotFoundException,
 } from '@nestjs/common';
-import { EntityNotFoundError, Repository } from 'typeorm';
-import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 
 import { Activity, UserId } from '../util/type';
 import { ActivityManager } from '../user-status/activity.manager';
@@ -48,17 +46,15 @@ export class UserService {
   async findProfile(requesterId: UserId, targetId: UserId) {
     let profile: UserProfileDto;
     try {
-      profile = await this.usersRepository.findOneOrFail({
+      profile = await this.usersRepository.findOne({
         select: ['nickname', 'profileImage'],
         where: { userId: targetId },
       });
     } catch (e) {
       this.logger.error(e);
-      throw e instanceof EntityNotFoundError
-        ? new NotFoundException('User not found')
-        : new InternalServerErrorException(
-            'Failed to find nickname and profileImage of a user',
-          );
+      throw new InternalServerErrorException(
+        'Failed to find nickname and profileImage of a user',
+      );
     }
     const requesterSocketId = this.userSocketStorage.clients.get(targetId);
     if (requesterSocketId === undefined) {
@@ -150,13 +146,6 @@ export class UserService {
    * @param unblockedId 차단 해제 될 유저 id
    */
   async deleteBlock(unblockerId: UserId, unblockedId: UserId) {
-    const prevRelationship = this.userRelationshipStorage.getRelationship(
-      unblockerId,
-      unblockedId,
-    );
-    if (prevRelationship !== 'blocker') {
-      throw new BadRequestException('Invalid relationship');
-    }
     await this.userRelationshipStorage.unblockUser(unblockerId, unblockedId);
     if (this.activityManager.getActivity(unblockedId)) {
       const unblockedSocketId = this.userSocketStorage.clients.get(unblockedId);
@@ -182,7 +171,7 @@ export class UserService {
    * @returns 친구 목록
    */
   findFriends(userId: UserId) {
-    return this.userRelationshipStorage.getFriends(userId);
+    return { friends: this.userRelationshipStorage.getFriends(userId) };
   }
 
   /**
@@ -197,9 +186,6 @@ export class UserService {
       senderId,
       receiverId,
     );
-    if (['friend', 'pendingReceiver'].includes(prevRelationship)) {
-      throw new BadRequestException('Invalid relationship');
-    }
     await this.userRelationshipStorage.sendFriendRequest(senderId, receiverId);
     if (this.activityManager.getActivity(receiverId)) {
       const receiverSocketId = this.userSocketStorage.clients.get(receiverId);
@@ -224,7 +210,6 @@ export class UserService {
       deleterId,
       deletedId,
     );
-    //  TODO : throw NotFound (Guard 에서..?)
     await this.userRelationshipStorage.deleteFriendship(deleterId, deletedId);
     if (this.activityManager.getActivity(deletedId)) {
       const deletedSocketId = this.userSocketStorage.clients.get(deletedId);
@@ -252,13 +237,6 @@ export class UserService {
    * @param acceptedId 친구 요청을 수락 당하는 유저 id
    */
   async acceptFriendRequest(accepterId: UserId, acceptedId: UserId) {
-    const prevRelationship = this.userRelationshipStorage.getRelationship(
-      accepterId,
-      acceptedId,
-    );
-    if (['friend', 'pendingSender'].includes(prevRelationship)) {
-      throw new BadRequestException('Invalid relationship');
-    }
     await this.userRelationshipStorage.acceptFriendRequest(
       accepterId,
       acceptedId,
@@ -287,7 +265,10 @@ export class UserService {
    * @param targetId 조회 대상 유저의 id
    * @returns
    */
-  createUserInfoDto(requesterId: UserId, targetId: UserId): UserInfoDto {
+  private createUserInfoDto(
+    requesterId: UserId,
+    targetId: UserId,
+  ): UserInfoDto {
     let activity: Activity = 'offline';
     const currentUi = this.activityManager.getActivity(targetId);
     if (currentUi) {
