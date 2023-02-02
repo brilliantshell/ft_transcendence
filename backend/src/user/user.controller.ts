@@ -17,6 +17,7 @@ import { BlockedUserGuard } from './guard/blocked-user.guard';
 import { CreateFriendRequestGuard } from './guard/create-friend-request.guard';
 import { DeleteFriendGuard } from './guard/delete-friend.guard';
 import { DeleteBlockGuard } from './guard/delete-block.guard';
+import { SelfCheckGuard } from './guard/self-check.guard';
 import { UserExistGuard } from './guard/user-exist.guard';
 import { UserId, VerifiedRequest } from '../util/type';
 import { UserService } from './user.service';
@@ -41,12 +42,15 @@ export class UserController {
    ****************************************************************************/
 
   @Post(':userId/game')
-  @UseGuards(UserExistGuard, BlockedUserGuard)
-  createGame(@Req() req: Request, @Param(':userId') userId: UserId) {}
+  @UseGuards(UserExistGuard, SelfCheckGuard, BlockedUserGuard)
+  createGame(@Req() req: Request, @Param('userId') userId: UserId) {}
 
   @Get(':userId/game/:gameId')
-  @UseGuards(UserExistGuard, BlockedUserGuard)
-  findGame(@Req() req: Request, @Param(':userId') userId: UserId) {}
+  @UseGuards(UserExistGuard, SelfCheckGuard, BlockedUserGuard)
+  findGame(
+    @Req() req: Request,
+    @Param() params: { userId: UserId; gameId: number },
+  ) {}
 
   /*****************************************************************************
    *                                                                           *
@@ -55,12 +59,12 @@ export class UserController {
    ****************************************************************************/
 
   @Put(':userId/block')
-  @UseGuards(UserExistGuard, BlockedUserGuard)
-  createBlock(@Req() req: Request, @Param(':userId') userId: UserId) {}
+  @UseGuards(UserExistGuard, SelfCheckGuard, BlockedUserGuard)
+  createBlock(@Req() req: Request, @Param('userId') userId: UserId) {}
 
   @Delete(':userId/block')
-  @UseGuards(UserExistGuard, BlockedUserGuard, DeleteBlockGuard)
-  deleteBlock(@Req() req: Request, @Param(':userId') userId: UserId) {}
+  @UseGuards(UserExistGuard, SelfCheckGuard, BlockedUserGuard, DeleteBlockGuard)
+  deleteBlock(@Req() req: Request, @Param('userId') userId: UserId) {}
 
   /*****************************************************************************
    *                                                                           *
@@ -78,14 +82,29 @@ export class UserController {
   }
 
   @Put(':userId/friend')
-  @UseGuards(UserExistGuard, BlockedUserGuard, CreateFriendRequestGuard)
-  createFriendRequest(@Req() req: Request, @Param(':userId') userId: UserId) {}
+  @UseGuards(
+    UserExistGuard,
+    SelfCheckGuard,
+    BlockedUserGuard,
+    CreateFriendRequestGuard,
+  )
+  createFriendRequest(@Req() req: Request, @Param('userId') userId: UserId) {}
 
   @Delete(':userId/friend')
-  @UseGuards(UserExistGuard, BlockedUserGuard, DeleteFriendGuard)
-  deleteFriendship(@Req() req: Request, @Param(':userId') userId: UserId) {}
+  @UseGuards(
+    UserExistGuard,
+    SelfCheckGuard,
+    BlockedUserGuard,
+    DeleteFriendGuard,
+  )
+  deleteFriendship(@Req() req: Request, @Param('userId') userId: UserId) {}
 
   @Patch(':userId/friend')
-  @UseGuards(UserExistGuard, BlockedUserGuard, AcceptFriendGuard)
-  updateFriendship(@Req() req: Request, @Param(':userId') userId: UserId) {}
+  @UseGuards(
+    UserExistGuard,
+    SelfCheckGuard,
+    BlockedUserGuard,
+    AcceptFriendGuard,
+  )
+  updateFriendship(@Req() req: Request, @Param('userId') userId: UserId) {}
 }

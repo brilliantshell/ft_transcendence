@@ -138,7 +138,7 @@ describe('UserController - /user (e2e)', () => {
             { path: `/user/${targetId}/friend`, method: reqObj.delete },
             { path: `/user/${targetId}/friend`, method: reqObj.patch },
             { path: `/user/${targetId}/game`, method: reqObj.post },
-            { path: `/user/${targetId}/game/:gameId`, method: reqObj.get },
+            { path: `/user/${targetId}/game/1`, method: reqObj.get },
           ].map(({ path, method }) =>
             method(path)
               .set('x-user-id', userIds[0].toString())
@@ -165,11 +165,32 @@ describe('UserController - /user (e2e)', () => {
             { path: `/user/${blockerId}/friend`, method: reqObj.delete },
             { path: `/user/${blockerId}/friend`, method: reqObj.patch },
             { path: `/user/${blockerId}/game`, method: reqObj.post },
-            { path: `/user/${blockerId}/game/:gameId`, method: reqObj.get },
+            { path: `/user/${blockerId}/game/1`, method: reqObj.get },
           ].map(({ path, method }) =>
             method(path)
               .set('x-user-id', blockedId.toString())
               .then((res) => expect(res.status).toEqual(403)),
+          ),
+        ),
+      ).resolves.toBeDefined();
+    });
+
+    it('should throw BAD REQUEST when the requester is a targeting him/herself', async () => {
+      const reqObj = request(app.getHttpServer());
+      await expect(
+        Promise.all(
+          [
+            { path: `/user/${userIds[0]}/block`, method: reqObj.put },
+            { path: `/user/${userIds[0]}/block`, method: reqObj.delete },
+            { path: `/user/${userIds[0]}/friend`, method: reqObj.put },
+            { path: `/user/${userIds[0]}/friend`, method: reqObj.delete },
+            { path: `/user/${userIds[0]}/friend`, method: reqObj.patch },
+            { path: `/user/${userIds[0]}/game`, method: reqObj.post },
+            { path: `/user/${userIds[0]}/game/1`, method: reqObj.get },
+          ].map(({ path, method }) =>
+            method(path)
+              .set('x-user-id', userIds[0].toString())
+              .then((res) => expect(res.status).toEqual(400)),
           ),
         ),
       ).resolves.toBeDefined();
@@ -518,4 +539,14 @@ describe('UserController - /user (e2e)', () => {
       await dataSource.manager.remove(Users, newUsersEntities);
     });
   });
+
+  /*****************************************************************************
+   *                                                                           *
+   * SECTION : Put /user/:userId/friend                                        *
+   *                                                                           *
+   ****************************************************************************/
+
+  // describe('PUT /user/:userId/friend', () => {
+  //   it()
+  // });
 });
