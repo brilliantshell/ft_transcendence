@@ -44,3 +44,7 @@ export type Activity = 'online' | 'offline' | 'inGame';
 export interface VerifiedRequest extends Request {
   user: { userId: UserId };
 }
+
+export interface RelationshipRequest extends VerifiedRequest {
+  relationship: Relationship | null;
+}
