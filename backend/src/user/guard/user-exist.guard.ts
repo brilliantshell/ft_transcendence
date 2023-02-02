@@ -22,6 +22,9 @@ export class UserExistGuard implements CanActivate {
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const req: RelationshipRequest = context.switchToHttp().getRequest();
+    if (process.env.NODE_ENV === 'development') {
+      req.user = { userId: Math.floor(Number(req.headers['x-user-id'])) };
+    }
     try {
       if (
         !(await this.usersRepository.exist({

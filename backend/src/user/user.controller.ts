@@ -3,6 +3,7 @@ import {
   Delete,
   Get,
   Param,
+  ParseIntPipe,
   Patch,
   Post,
   Put,
@@ -26,7 +27,12 @@ export class UserController {
 
   @Get(':userId/info')
   @UseGuards(UserExistGuard)
-  findProfile(@Req() req: Request, @Param(':userId') userId: UserId) {}
+  async findProfile(
+    @Req() req: VerifiedRequest,
+    @Param('userId', ParseIntPipe) targetId: UserId,
+  ) {
+    return await this.userService.findProfile(req.user.userId, targetId);
+  }
 
   /*****************************************************************************
    *                                                                           *
@@ -64,11 +70,11 @@ export class UserController {
 
   @Get('friends')
   findFriends(@Req() req: VerifiedRequest) {
-    // return this.userService.findFriends(
-    //   process.env.NODE_ENV === 'development'
-    //     ? Math.floor(Number(req.headers['x-user-id']))
-    //     : req.user.userId,
-    // );
+    return this.userService.findFriends(
+      process.env.NODE_ENV === 'development'
+        ? Math.floor(Number(req.headers['x-user-id']))
+        : req.user.userId,
+    );
   }
 
   @Put(':userId/friend')

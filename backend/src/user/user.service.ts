@@ -56,7 +56,7 @@ export class UserService {
         'Failed to find nickname and profileImage of a user',
       );
     }
-    const requesterSocketId = this.userSocketStorage.clients.get(targetId);
+    const requesterSocketId = this.userSocketStorage.clients.get(requesterId);
     if (requesterSocketId === undefined) {
       throw new InternalServerErrorException(
         'Failed to find socketId of a user',

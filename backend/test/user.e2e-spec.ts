@@ -5,7 +5,9 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { faker } from '@faker-js/faker';
 import * as request from 'supertest';
+import waitForExpect from 'wait-for-expect';
 
+import { ActivityManager } from '../src/user-status/activity.manager';
 import { AppModule } from '../src/app.module';
 import { BannedMembers } from '../src/entity/banned-members.entity';
 import { BlockedUsers } from '../src/entity/blocked-users.entity';
@@ -14,6 +16,7 @@ import { Channels } from '../src/entity/channels.entity';
 import { Friends } from '../src/entity/friends.entity';
 import { Messages } from '../src/entity/messages.entity';
 import { UserId } from '../src/util/type';
+import { UserInfoDto } from '../src/user/dto/user-gateway.dto';
 import { UserRelationshipStorage } from '../src/user-status/user-relationship.storage';
 import { Users } from '../src/entity/users.entity';
 import {
@@ -40,7 +43,7 @@ const ENTITIES = [
   Users,
 ];
 
-describe('UserController (e2e)', () => {
+describe('UserController - /user (e2e)', () => {
   let app: INestApplication;
   let clientSockets: Socket[];
   let initDataSource: DataSource;
@@ -48,6 +51,8 @@ describe('UserController (e2e)', () => {
   let usersEntities: Users[];
   let allUserIds: UserId[];
   let userIds: UserId[];
+  let activityManager: ActivityManager;
+  let userRelationshipStorage: UserRelationshipStorage;
   let index = 0;
 
   beforeAll(async () => {
@@ -71,6 +76,8 @@ describe('UserController (e2e)', () => {
     app = moduleFixture.createNestApplication();
     await app.init();
     await app.listen(4241);
+    activityManager = app.get(ActivityManager);
+    userRelationshipStorage = app.get(UserRelationshipStorage);
   });
 
   beforeEach(async () => {
@@ -92,7 +99,10 @@ describe('UserController (e2e)', () => {
     clientSockets.forEach((clientSocket, index) =>
       clientSocket.emit('currentUi', { userId: userIds[index], ui: 'profile' }),
     );
-    await new Promise((resolve) => setTimeout(() => resolve('done'), 360));
+    await waitForExpect(() => {
+      expect(activityManager.getActivity(userIds[0])).not.toBeNull();
+      expect(activityManager.getActivity(userIds[1])).not.toBeNull();
+    });
   });
 
   afterEach(async () => {
@@ -107,12 +117,11 @@ describe('UserController (e2e)', () => {
 
   /*****************************************************************************
    *                                                                           *
-   * SECTION : REST API                                                        *
+   * SECTION : UserGuard                                                       *
    *                                                                           *
    ****************************************************************************/
 
   describe('UserGuard', () => {
-    let userRelationshipStorage: UserRelationshipStorage;
     it('should throw NOT FOUND when the requested user does not exist', async () => {
       let targetId = userIds[0];
       while (allUserIds.includes(targetId)) {
@@ -140,7 +149,6 @@ describe('UserController (e2e)', () => {
     });
 
     it('should throw FORBIDDEN when the requester is a blocked user', async () => {
-      userRelationshipStorage = app.get(UserRelationshipStorage);
       const [blockerId, blockedId] = userIds;
       const blockedUsersEntities = generateBlockedUsers(
         usersEntities.slice(index, index + 2),
@@ -282,21 +290,232 @@ describe('UserController (e2e)', () => {
     });
   });
 
-  // describe('/user/friends (GET)', () => {
-  //   it('no friends', () => {
-  //     return request(app.getHttpServer())
-  //       .get(`/user/friends`)
-  //       .set('x-user-id', userIds[0].toString())
-  //       .expect(200)
-  //       .expect({ friends: [] });
-  //   });
+  /*****************************************************************************
+   *                                                                           *
+   * SECTION : GET /user/:userId/info                                          *
+   *                                                                           *
+   ****************************************************************************/
 
-  // it('some friends', async () => {
-  //   request(app.getHttpServer())
-  //     .get('/user/friends')
-  //     .set('x-user-id', userIds[0].toString())
-  //     .expect(200)
-  //     .expect({ friends: [] });
-  // });
-  // });
+  describe('GET /:userId/info', () => {
+    it('should return nickname, profileImage (HTTP) & online, normal (WS) (both are logged in)', async () => {
+      const [requesterId, targetId] = userIds;
+      const [wsMessage, response] = await Promise.all([
+        new Promise<UserInfoDto>((resolve) =>
+          clientSockets[0].on('userInfo', (data: UserInfoDto) => resolve(data)),
+        ),
+        request(app.getHttpServer())
+          .get(`/user/${targetId}/info`)
+          .set('x-user-id', requesterId.toString()),
+      ]);
+      expect(wsMessage).toEqual({
+        activity: 'online',
+        gameId: null,
+        relationship: 'normal',
+        userId: targetId,
+      });
+      expect(response.status).toEqual(200);
+      expect(response.body).toEqual({
+        nickname: usersEntities[index + 1].nickname,
+        profileImage: usersEntities[index + 1].profileImage,
+      });
+    });
+
+    it('should return nickname, profileImage (HTTP) & offline, normal (WS) (only the requester is logged in)', async () => {
+      const [requesterId, targetId] = userIds;
+      clientSockets[1].disconnect();
+      await waitForExpect(() => {
+        expect(activityManager.getActivity(targetId)).toBeNull();
+      });
+      const [wsMessage, response] = await Promise.all([
+        new Promise<UserInfoDto>((resolve) =>
+          clientSockets[0].on('userInfo', (data: UserInfoDto) => resolve(data)),
+        ),
+        request(app.getHttpServer())
+          .get(`/user/${targetId}/info`)
+          .set('x-user-id', requesterId.toString()),
+      ]);
+      expect(wsMessage).toEqual({
+        activity: 'offline',
+        gameId: null,
+        relationship: 'normal',
+        userId: targetId,
+      });
+      expect(response.status).toEqual(200);
+      expect(response.body).toEqual({
+        nickname: usersEntities[index + 1].nickname,
+        profileImage: usersEntities[index + 1].profileImage,
+      });
+    });
+
+    it('should return online, blocker (WS) (both are logged in)', async () => {
+      const [requesterId, targetId] = userIds;
+      const blockedUsersEntities = generateBlockedUsers(
+        usersEntities.slice(index, index + 2),
+      );
+      await dataSource.manager.save(BlockedUsers, blockedUsersEntities);
+      await userRelationshipStorage.load(requesterId);
+      const [wsMessage] = await Promise.all([
+        new Promise<UserInfoDto>((resolve) =>
+          clientSockets[0].on('userInfo', (data: UserInfoDto) => resolve(data)),
+        ),
+        request(app.getHttpServer())
+          .get(`/user/${targetId}/info`)
+          .set('x-user-id', requesterId.toString()),
+      ]);
+      expect(wsMessage).toEqual({
+        activity: 'online',
+        gameId: null,
+        relationship: 'blocker',
+        userId: targetId,
+      });
+    });
+
+    it('should return offline, blocked (WS) (only the requester is logged in)', async () => {
+      const [targetId, requesterId] = userIds;
+      const blockedUsersEntities = generateBlockedUsers(
+        usersEntities.slice(index, index + 2),
+      );
+      await dataSource.manager.save(BlockedUsers, blockedUsersEntities);
+      await userRelationshipStorage.load(requesterId);
+      clientSockets[0].disconnect();
+      await waitForExpect(() => {
+        expect(activityManager.getActivity(targetId)).toBeNull();
+      });
+      const [wsMessage] = await Promise.all([
+        new Promise<UserInfoDto>((resolve) =>
+          clientSockets[1].on('userInfo', (data: UserInfoDto) => resolve(data)),
+        ),
+        request(app.getHttpServer())
+          .get(`/user/${targetId}/info`)
+          .set('x-user-id', requesterId.toString()),
+      ]);
+      expect(wsMessage).toEqual({
+        activity: 'offline',
+        gameId: null,
+        relationship: 'blocked',
+        userId: targetId,
+      });
+    });
+
+    it('should return online, pendingSender (WS) (both are logged in)', async () => {
+      const [requesterId, targetId] = userIds;
+      const friendsEntities = generateFriends(
+        usersEntities.slice(index, index + 2),
+      );
+      friendsEntities[0].isAccepted = false;
+      await dataSource.manager.save(Friends, friendsEntities);
+      await userRelationshipStorage.load(requesterId);
+      const [wsMessage] = await Promise.all([
+        new Promise<UserInfoDto>((resolve) =>
+          clientSockets[0].on('userInfo', (data: UserInfoDto) => resolve(data)),
+        ),
+        request(app.getHttpServer())
+          .get(`/user/${targetId}/info`)
+          .set('x-user-id', requesterId.toString()),
+      ]);
+      expect(wsMessage).toEqual({
+        activity: 'online',
+        gameId: null,
+        relationship: 'pendingSender',
+        userId: targetId,
+      });
+    });
+
+    it('should return offline, pendingReceiver (WS) (only the requester is logged in)', async () => {
+      const [targetId, requesterId] = userIds;
+      const friendsEntities = generateFriends(
+        usersEntities.slice(index, index + 2),
+      );
+      friendsEntities[0].isAccepted = false;
+      await dataSource.manager.save(Friends, friendsEntities);
+      await userRelationshipStorage.load(requesterId);
+      clientSockets[0].disconnect();
+      await waitForExpect(() => {
+        expect(activityManager.getActivity(targetId)).toBeNull();
+      });
+      const [wsMessage] = await Promise.all([
+        new Promise<UserInfoDto>((resolve) =>
+          clientSockets[1].on('userInfo', (data: UserInfoDto) => resolve(data)),
+        ),
+        request(app.getHttpServer())
+          .get(`/user/${targetId}/info`)
+          .set('x-user-id', requesterId.toString()),
+      ]);
+      expect(wsMessage).toEqual({
+        activity: 'offline',
+        gameId: null,
+        relationship: 'pendingReceiver',
+        userId: targetId,
+      });
+    });
+
+    it('should return online, friend (WS) (both are logged in)', async () => {
+      const [requesterId, targetId] = userIds;
+      const friendsEntities = generateFriends(
+        usersEntities.slice(index, index + 2),
+      );
+      friendsEntities[0].isAccepted = true;
+      await dataSource.manager.save(Friends, friendsEntities);
+      await userRelationshipStorage.load(requesterId);
+      const [wsMessage] = await Promise.all([
+        new Promise<UserInfoDto>((resolve) =>
+          clientSockets[0].on('userInfo', (data: UserInfoDto) => resolve(data)),
+        ),
+        request(app.getHttpServer())
+          .get(`/user/${targetId}/info`)
+          .set('x-user-id', requesterId.toString()),
+      ]);
+      expect(wsMessage).toEqual({
+        activity: 'online',
+        gameId: null,
+        relationship: 'friend',
+        userId: targetId,
+      });
+    });
+    // TODO - GAME TEST
+  });
+
+  /*****************************************************************************
+   *                                                                           *
+   * SECTION : GET /user/friends                                               *
+   *                                                                           *
+   ****************************************************************************/
+
+  describe('GET /user/friends', () => {
+    it('no friends', () => {
+      return request(app.getHttpServer())
+        .get(`/user/friends`)
+        .set('x-user-id', userIds[0].toString())
+        .expect(200)
+        .expect({ friends: [] });
+    });
+
+    it('some friends', async () => {
+      const newUsersEntities = generateUsers(10).filter(
+        ({ userId }) => !allUserIds.includes(userId),
+      );
+      await dataSource.manager.save(Users, newUsersEntities);
+      const friendsEntities: Friends[] = [];
+      newUsersEntities.forEach((user, i) =>
+        friendsEntities.push(
+          ...generateFriends(
+            i % 2 === 0
+              ? [user, usersEntities[index]]
+              : [usersEntities[index], user],
+          ),
+        ),
+      );
+      await dataSource.manager.save(Friends, friendsEntities);
+      await userRelationshipStorage.load(userIds[0]);
+      const response = await request(app.getHttpServer())
+        .get('/user/friends')
+        .set('x-user-id', userIds[0].toString())
+        .expect(200);
+      expect(new Set(response.body.friends)).toEqual(
+        new Set(newUsersEntities.map(({ userId }) => userId)),
+      );
+      await dataSource.manager.remove(Friends, friendsEntities);
+      await dataSource.manager.remove(Users, newUsersEntities);
+    });
+  });
 });

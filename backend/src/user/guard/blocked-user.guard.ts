@@ -18,9 +18,7 @@ export class BlockedUserGuard implements CanActivate {
     const req: RelationshipRequest = context.switchToHttp().getRequest();
     const targetId = Math.floor(Number(req.params.userId));
     const relationship = this.userRelationshipStorage.getRelationship(
-      process.env.NODE_ENV === 'development'
-        ? Math.floor(Number(req.headers['x-user-id']))
-        : req.user.userId,
+      req.user.userId,
       targetId,
     );
     req.relationship = relationship;

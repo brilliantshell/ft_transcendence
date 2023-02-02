@@ -21,7 +21,7 @@ const createRandomUser = (): Users => {
   user.ladder = faker.datatype.number(100);
   user.lossCount = faker.datatype.number(100);
   user.nickname = faker.helpers.unique(faker.name.firstName);
-  user.profileImage = `/${user.userId}/profile.png`;
+  user.profileImage = `/asset/${user.userId}/profile.png`;
   user.winCount = faker.datatype.number(100);
   return user;
 };
