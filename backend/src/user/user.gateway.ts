@@ -11,18 +11,28 @@ export class UserGateway {
 
   /*****************************************************************************
    *                                                                           *
-   * SECTION : User info                                                       *
+   * SECTION : Block / unblock                                                 *
    *                                                                           *
    ****************************************************************************/
 
   /**
-   * @description activity & relationship 정보 전달
+   * @description 유저가 차단되었을 때 차단당한 유저에게 누구에게 차단 됐는지 알림
    *
-   * @param requesterSocketId 요청한 유저의 socket id
-   * @param userInfo 요청한 유저의 activity & relationship 정보
+   * @param blockedSocketId 차단당한 유저의 socket id
+   * @param blockedBy 차단한 유저의 id
    */
-  emitUserInfo(requesterSocketId: SocketId, userInfo: UserInfoDto) {
-    this.server.to(requesterSocketId).emit('userInfo', userInfo);
+  emitBlocked(blockedSocketId: SocketId, blockedBy: UserId) {
+    this.server.to(blockedSocketId).emit('blocked', { blockedBy });
+  }
+
+  /**
+   * @description 유저가 차단 해제되었을 때 차단 해제된 유저에게 누구에게 차단 해제 됐는지 알림
+   *
+   * @param unblockedSocketId 차단 해제된 유저의 socket id
+   * @param unblockedBy 차단 해제한 유저의 id
+   */
+  emitUnblocked(unblockedSocketId: SocketId, unblockedBy: UserId) {
+    this.server.to(unblockedSocketId).emit('unblocked', { unblockedBy });
   }
 
   /*****************************************************************************
@@ -85,27 +95,17 @@ export class UserGateway {
 
   /*****************************************************************************
    *                                                                           *
-   * SECTION : Block / unblock                                                 *
+   * SECTION : User info                                                       *
    *                                                                           *
    ****************************************************************************/
 
   /**
-   * @description 유저가 차단되었을 때 차단당한 유저에게 누구에게 차단 됐는지 알림
+   * @description activity & relationship 정보 전달
    *
-   * @param blockedSocketId 차단당한 유저의 socket id
-   * @param blockedBy 차단한 유저의 id
+   * @param requesterSocketId 요청한 유저의 socket id
+   * @param userInfo 요청한 유저의 activity & relationship 정보
    */
-  emitBlocked(blockedSocketId: SocketId, blockedBy: UserId) {
-    this.server.to(blockedSocketId).emit('blocked', { blockedBy });
-  }
-
-  /**
-   * @description 유저가 차단 해제되었을 때 차단 해제된 유저에게 누구에게 차단 해제 됐는지 알림
-   *
-   * @param unblockedSocketId 차단 해제된 유저의 socket id
-   * @param unblockedBy 차단 해제한 유저의 id
-   */
-  emitUnblocked(unblockedSocketId: SocketId, unblockedBy: UserId) {
-    this.server.to(unblockedSocketId).emit('unblocked', { unblockedBy });
+  emitUserInfo(requesterSocketId: SocketId, userInfo: UserInfoDto) {
+    this.server.to(requesterSocketId).emit('userInfo', userInfo);
   }
 }

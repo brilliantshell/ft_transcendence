@@ -65,6 +65,23 @@ export class UserController {
    *                                                                           *
    ****************************************************************************/
 
+  @Put(':userId/dm')
+  @UseGuards(SelfCheckGuard, UserExistGuard)
+  async createDm(
+    @Req() req: VerifiedRequest,
+    @Param('userId', ParseIntPipe) userId: UserId,
+    @Res() res: Response,
+  ) {
+    const { dmId, isNew } = await this.userService.createDm(
+      req.user.userId,
+      userId,
+    );
+    res
+      .status(isNew ? HttpStatus.CREATED : HttpStatus.OK)
+      .set('location', `/chats/${dmId}`)
+      .end();
+  }
+
   /*****************************************************************************
    *                                                                           *
    * SECTION : Friend                                                          *
@@ -129,10 +146,9 @@ export class UserController {
     await this.userService.acceptFriendRequest(req.user.userId, targetId);
   }
 
-  // TODO
   /*****************************************************************************
    *                                                                           *
-   * SECTION : Game                                                            *
+   * TODO : Game                                                               *
    *                                                                           *
    ****************************************************************************/
 
