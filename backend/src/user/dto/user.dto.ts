@@ -8,3 +8,7 @@ export interface UserProfileDto {
 export interface FriendListDto {
   friends: UserId[];
 }
+
+export interface UserIdDto {
+  userId: UserId;
+}

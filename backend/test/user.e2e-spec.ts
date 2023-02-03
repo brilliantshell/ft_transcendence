@@ -1,5 +1,5 @@
 import { DataSource } from 'typeorm';
-import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { INestApplication } from '@nestjs/common';
 import { Socket, io } from 'socket.io-client';
 import { Test, TestingModule } from '@nestjs/testing';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -38,7 +38,7 @@ import {
   generateBlockedUsers,
   generateFriends,
 } from './generate-mock-data';
-import { timeout } from './chats-gateway.e2e-spec';
+import { timeout } from './util';
 
 process.env.NODE_ENV = 'development';
 
@@ -53,7 +53,7 @@ const ENTITIES = [
   Users,
 ];
 
-describe('UserController - /user (e2e)', () => {
+describe('UserModule - /user (e2e)', () => {
   let app: INestApplication;
   let clientSockets: Socket[];
   let initDataSource: DataSource;
@@ -869,6 +869,22 @@ describe('UserController - /user (e2e)', () => {
    * SECTION : User Profile                                                    *
    *                                                                           *
    ****************************************************************************/
+
+  /*****************************************************************************
+   *                                                                           *
+   * ANCHOR : GET /user/id                                                     *
+   *                                                                           *
+   ****************************************************************************/
+
+  describe('GET /user/id', () => {
+    it('should return user id (200)', () => {
+      return request(app.getHttpServer())
+        .get('/user/id')
+        .set('x-user-id', userIds[0].toString())
+        .expect(200)
+        .expect({ userId: userIds[0] });
+    });
+  });
 
   /*****************************************************************************
    *                                                                           *

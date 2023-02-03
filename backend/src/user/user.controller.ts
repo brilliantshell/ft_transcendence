@@ -149,6 +149,16 @@ export class UserController {
    *                                                                           *
    ****************************************************************************/
 
+  @Get('id')
+  findId(@Req() req: VerifiedRequest) {
+    return {
+      userId:
+        process.env.NODE_ENV === 'development'
+          ? Math.floor(Number(req.headers['x-user-id']))
+          : req.user.userId,
+    };
+  }
+
   @Get(':userId/info')
   @UseGuards(UserExistGuard)
   async findProfile(@Req() req: RelationshipRequest) {
