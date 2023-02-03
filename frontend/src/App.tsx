@@ -3,16 +3,12 @@ import Sidebar from './components/Sidebar';
 
 function App() {
   return (
-	<>
-		<div className="aaa">
-			<header>headerheaderheaderheaderheader</header>
-			<Sidebar/>
-			<main>
-				mainmainmainmainmainmainmainmain
-			</main>
-		</div>
-	</>
+    <div className="aaa">
+      <header>headerheaderheaderheaderheader</header>
+      <Sidebar />
+      <main>mainmainmainmainmainmainmainmain</main>
+    </div>
   );
 }
 
-export default App
+export default App;

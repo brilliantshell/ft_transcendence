@@ -2,16 +2,16 @@ import '../App.css';
 import './Sidebar.css';
 
 function Sidebar() {
-	return (
-		<nav>
-			Navigation bar
-			{/* <button className="btn"> Button </button>
+  return (
+    <nav>
+      Navigation bar
+      {/* <button className="btn"> Button </button>
 			<button className="btn"> Button </button>
 			<button className="btn"> Button </button>
 			<button className="btn"> Button </button>
 			<button>logout</button> */}
-		</nav>
-	);
+    </nav>
+  );
 }
 
-export default Sidebar
+export default Sidebar;
