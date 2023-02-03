@@ -47,4 +47,5 @@ export interface VerifiedRequest extends Request {
 
 export interface RelationshipRequest extends VerifiedRequest {
   relationship: Relationship | null;
+  targetId: UserId;
 }

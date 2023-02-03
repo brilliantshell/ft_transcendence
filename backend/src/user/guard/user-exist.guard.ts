@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   CanActivate,
   ExecutionContext,
   Injectable,
@@ -22,13 +23,20 @@ export class UserExistGuard implements CanActivate {
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const req: RelationshipRequest = context.switchToHttp().getRequest();
+    if (
+      req.targetId === undefined &&
+      !/^[1-9][0-9]{4,5}$/.test(req.params.userId)
+    ) {
+      throw new BadRequestException('UserId must be between 10000 and 999999');
+    }
+    req.targetId = Math.floor(Number(req.params.userId));
     if (process.env.NODE_ENV === 'development' && req.user === undefined) {
       req.user = { userId: Math.floor(Number(req.headers['x-user-id'])) };
     }
     try {
       if (
         !(await this.usersRepository.exist({
-          where: { userId: Math.floor(Number(req.params.userId)) },
+          where: { userId: req.targetId },
         }))
       ) {
         throw new NotFoundException("The user doesn't exist");

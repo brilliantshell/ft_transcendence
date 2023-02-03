@@ -9,9 +9,9 @@ import { Repository } from 'typeorm';
 import { Activity, UserId } from '../util/type';
 import { ActivityManager } from '../user-status/activity.manager';
 import { ChannelStorage } from '../user-status/channel.storage';
+import { FriendListDto, UserProfileDto } from './dto/user.dto';
 import { UserGateway } from './user.gateway';
 import { UserInfoDto } from './dto/user-gateway.dto';
-import { UserProfileDto } from './dto/user.dto';
 import { UserRelationshipStorage } from '../user-status/user-relationship.storage';
 import { UserSocketStorage } from '../user-status/user-socket.storage';
 import { Users } from '../entity/users.entity';
@@ -118,7 +118,7 @@ export class UserService {
    * @param userId 유저 id
    * @returns 친구 목록
    */
-  findFriends(userId: UserId) {
+  findFriends(userId: UserId): FriendListDto {
     return { friends: this.userRelationshipStorage.getFriends(userId) };
   }
 

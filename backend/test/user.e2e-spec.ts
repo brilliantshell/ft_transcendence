@@ -1,5 +1,5 @@
 import { DataSource } from 'typeorm';
-import { INestApplication } from '@nestjs/common';
+import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { Socket, io } from 'socket.io-client';
 import { Test, TestingModule } from '@nestjs/testing';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -130,6 +130,44 @@ describe('UserController - /user (e2e)', () => {
    * SECTION : UserGuard                                                       *
    *                                                                           *
    ****************************************************************************/
+
+  describe(':userId Param', () => {
+    it('should throw BAD REQUEST when the param is invalid', async () => {
+      const targetIds = [
+        'invalid',
+        '-01234',
+        '+',
+        '0',
+        '01234',
+        '10000a',
+        '123abc321',
+      ];
+      const reqObj = request(app.getHttpServer());
+      const requestsMetaData = targetIds
+        .map((targetId) => [
+          { path: `/user/${targetId}/block`, method: reqObj.put },
+          { path: `/user/${targetId}/block`, method: reqObj.delete },
+          { path: `/user/${targetId}/dm`, method: reqObj.put },
+          { path: `/user/${targetId}/friend`, method: reqObj.put },
+          { path: `/user/${targetId}/friend`, method: reqObj.delete },
+          { path: `/user/${targetId}/friend`, method: reqObj.patch },
+          { path: `/user/${targetId}/game`, method: reqObj.post },
+          { path: `/user/${targetId}/game/1`, method: reqObj.get },
+          { path: `/user/${targetId}/info`, method: reqObj.get },
+        ])
+        .flat();
+
+      await expect(
+        Promise.all(
+          requestsMetaData.map(({ path, method }) =>
+            method(path)
+              .set('x-user-id', userIds[0].toString())
+              .then((response) => expect(response.status).toEqual(400)),
+          ),
+        ),
+      ).resolves.toBeDefined();
+    });
+  });
 
   describe('UserGuard', () => {
     it('should throw NOT FOUND when the requested user does not exist', async () => {

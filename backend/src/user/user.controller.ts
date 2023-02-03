@@ -3,8 +3,6 @@ import {
   Delete,
   Get,
   HttpStatus,
-  Param,
-  ParseIntPipe,
   Patch,
   Post,
   Put,
@@ -19,9 +17,9 @@ import { BlockedUserGuard } from './guard/blocked-user.guard';
 import { CreateFriendRequestGuard } from './guard/create-friend-request.guard';
 import { DeleteFriendGuard } from './guard/delete-friend.guard';
 import { DeleteBlockGuard } from './guard/delete-block.guard';
+import { RelationshipRequest, VerifiedRequest } from '../util/type';
 import { SelfCheckGuard } from './guard/self-check.guard';
 import { UserExistGuard } from './guard/user-exist.guard';
-import { UserId, VerifiedRequest } from '../util/type';
 import { UserService } from './user.service';
 
 @Controller('user')
@@ -36,14 +34,10 @@ export class UserController {
 
   @Put(':userId/block')
   @UseGuards(SelfCheckGuard, UserExistGuard, BlockedUserGuard)
-  async createBlock(
-    @Req() req: VerifiedRequest,
-    @Param('userId', ParseIntPipe) targetId: UserId,
-    @Res() res: Response,
-  ) {
+  async createBlock(@Req() req: RelationshipRequest, @Res() res: Response) {
     res
       .status(
-        (await this.userService.createBlock(req.user.userId, targetId))
+        (await this.userService.createBlock(req.user.userId, req.targetId))
           ? 201
           : 200,
       )
@@ -52,11 +46,8 @@ export class UserController {
 
   @Delete(':userId/block')
   @UseGuards(SelfCheckGuard, UserExistGuard, BlockedUserGuard, DeleteBlockGuard)
-  async deleteBlock(
-    @Req() req: VerifiedRequest,
-    @Param('userId', ParseIntPipe) targetId: UserId,
-  ) {
-    await this.userService.deleteBlock(req.user.userId, targetId);
+  async deleteBlock(@Req() req: RelationshipRequest) {
+    await this.userService.deleteBlock(req.user.userId, req.targetId);
   }
 
   /*****************************************************************************
@@ -67,14 +58,10 @@ export class UserController {
 
   @Put(':userId/dm')
   @UseGuards(SelfCheckGuard, UserExistGuard)
-  async createDm(
-    @Req() req: VerifiedRequest,
-    @Param('userId', ParseIntPipe) userId: UserId,
-    @Res() res: Response,
-  ) {
+  async createDm(@Req() req: RelationshipRequest, @Res() res: Response) {
     const { dmId, isNew } = await this.userService.createDm(
       req.user.userId,
-      userId,
+      req.targetId,
     );
     res
       .status(isNew ? HttpStatus.CREATED : HttpStatus.OK)
@@ -105,13 +92,15 @@ export class UserController {
     CreateFriendRequestGuard,
   )
   async createFriendRequest(
-    @Req() req: VerifiedRequest,
-    @Param('userId', ParseIntPipe) targetId: UserId,
+    @Req() req: RelationshipRequest,
     @Res() res: Response,
   ) {
     res
       .status(
-        (await this.userService.createFriendRequest(req.user.userId, targetId))
+        (await this.userService.createFriendRequest(
+          req.user.userId,
+          req.targetId,
+        ))
           ? HttpStatus.CREATED
           : HttpStatus.OK,
       )
@@ -125,11 +114,8 @@ export class UserController {
     BlockedUserGuard,
     DeleteFriendGuard,
   )
-  async deleteFriendship(
-    @Req() req: VerifiedRequest,
-    @Param('userId', ParseIntPipe) targetId: UserId,
-  ) {
-    await this.userService.deleteFriendship(req.user.userId, targetId);
+  async deleteFriendship(@Req() req: RelationshipRequest) {
+    await this.userService.deleteFriendship(req.user.userId, req.targetId);
   }
 
   @Patch(':userId/friend')
@@ -139,11 +125,8 @@ export class UserController {
     BlockedUserGuard,
     AcceptFriendGuard,
   )
-  async updateFriendship(
-    @Req() req: VerifiedRequest,
-    @Param('userId', ParseIntPipe) targetId: UserId,
-  ) {
-    await this.userService.acceptFriendRequest(req.user.userId, targetId);
+  async updateFriendship(@Req() req: RelationshipRequest) {
+    await this.userService.acceptFriendRequest(req.user.userId, req.targetId);
   }
 
   /*****************************************************************************
@@ -154,14 +137,11 @@ export class UserController {
 
   @Post(':userId/game')
   @UseGuards(SelfCheckGuard, UserExistGuard, BlockedUserGuard)
-  createGame(@Req() req: VerifiedRequest, @Param('userId') userId: UserId) {}
+  createGame(@Req() req: RelationshipRequest) {}
 
   @Get(':userId/game/:gameId')
   @UseGuards(SelfCheckGuard, UserExistGuard, BlockedUserGuard)
-  findGame(
-    @Req() req: VerifiedRequest,
-    @Param() params: { userId: UserId; gameId: number },
-  ) {}
+  findGame(@Req() req: RelationshipRequest) {}
 
   /*****************************************************************************
    *                                                                           *
@@ -171,10 +151,7 @@ export class UserController {
 
   @Get(':userId/info')
   @UseGuards(UserExistGuard)
-  async findProfile(
-    @Req() req: VerifiedRequest,
-    @Param('userId', ParseIntPipe) targetId: UserId,
-  ) {
-    return await this.userService.findProfile(req.user.userId, targetId);
+  async findProfile(@Req() req: RelationshipRequest) {
+    return await this.userService.findProfile(req.user.userId, req.targetId);
   }
 }
