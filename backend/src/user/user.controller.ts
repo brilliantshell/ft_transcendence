@@ -111,7 +111,12 @@ export class UserController {
     BlockedUserGuard,
     DeleteFriendGuard,
   )
-  deleteFriendship(@Req() req: Request, @Param('userId') userId: UserId) {}
+  async deleteFriendship(
+    @Req() req: VerifiedRequest,
+    @Param('userId', ParseIntPipe) targetId: UserId,
+  ) {
+    await this.userService.deleteFriendship(req.user.userId, targetId);
+  }
 
   @Patch(':userId/friend')
   @UseGuards(
@@ -120,5 +125,10 @@ export class UserController {
     BlockedUserGuard,
     AcceptFriendGuard,
   )
-  updateFriendship(@Req() req: Request, @Param('userId') userId: UserId) {}
+  async updateFriendship(
+    @Req() req: VerifiedRequest,
+    @Param('userId', ParseIntPipe) targetId: UserId,
+  ) {
+    await this.userService.acceptFriendRequest(req.user.userId, targetId);
+  }
 }

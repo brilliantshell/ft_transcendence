@@ -57,15 +57,12 @@ export class UserService {
       );
     }
     const requesterSocketId = this.userSocketStorage.clients.get(requesterId);
-    if (requesterSocketId === undefined) {
-      throw new InternalServerErrorException(
-        'Failed to find socketId of a user',
+    if (requesterSocketId !== undefined) {
+      this.userGateway.emitUserInfo(
+        requesterSocketId,
+        this.createUserInfoDto(requesterId, targetId),
       );
     }
-    this.userGateway.emitUserInfo(
-      requesterSocketId,
-      this.createUserInfoDto(requesterId, targetId),
-    );
     return profile;
   }
 
@@ -122,21 +119,18 @@ export class UserService {
    * @returns 이미 차단한 유저라면 false, 아니라면 true
    */
   async createBlock(blockerId: UserId, blockedId: UserId) {
-    const prevRelationship = this.userRelationshipStorage.getRelationship(
-      blockerId,
-      blockedId,
-    );
+    if (
+      this.userRelationshipStorage.getRelationship(blockerId, blockedId) ===
+      'blocker'
+    ) {
+      return false;
+    }
     await this.userRelationshipStorage.blockUser(blockerId, blockedId);
-    if (this.activityManager.getActivity(blockedId)) {
-      const blockedSocketId = this.userSocketStorage.clients.get(blockedId);
-      if (blockedSocketId === undefined) {
-        throw new InternalServerErrorException(
-          'Failed to find socketId of a user',
-        );
-      }
+    const blockedSocketId = this.userSocketStorage.clients.get(blockedId);
+    if (blockedSocketId !== undefined) {
       this.userGateway.emitBlocked(blockedSocketId, blockerId);
     }
-    return prevRelationship !== 'blocker';
+    return true;
   }
 
   /**
@@ -147,13 +141,8 @@ export class UserService {
    */
   async deleteBlock(unblockerId: UserId, unblockedId: UserId) {
     await this.userRelationshipStorage.unblockUser(unblockerId, unblockedId);
-    if (this.activityManager.getActivity(unblockedId)) {
-      const unblockedSocketId = this.userSocketStorage.clients.get(unblockedId);
-      if (unblockedSocketId === undefined) {
-        throw new InternalServerErrorException(
-          'Failed to find socketId of a user',
-        );
-      }
+    const unblockedSocketId = this.userSocketStorage.clients.get(unblockedId);
+    if (unblockedSocketId !== undefined) {
       this.userGateway.emitUnblocked(unblockedSocketId, unblockerId);
     }
   }
@@ -189,13 +178,8 @@ export class UserService {
       return false;
     }
     await this.userRelationshipStorage.sendFriendRequest(senderId, receiverId);
-    if (this.activityManager.getActivity(receiverId)) {
-      const receiverSocketId = this.userSocketStorage.clients.get(receiverId);
-      if (receiverSocketId === undefined) {
-        throw new InternalServerErrorException(
-          'Failed to find socketId of a user',
-        );
-      }
+    const receiverSocketId = this.userSocketStorage.clients.get(receiverId);
+    if (receiverSocketId !== undefined) {
       this.userGateway.emitFriendRequest(receiverSocketId, senderId);
     }
     return true;
@@ -213,13 +197,8 @@ export class UserService {
       deletedId,
     );
     await this.userRelationshipStorage.deleteFriendship(deleterId, deletedId);
-    if (this.activityManager.getActivity(deletedId)) {
-      const deletedSocketId = this.userSocketStorage.clients.get(deletedId);
-      if (deletedSocketId === undefined) {
-        throw new InternalServerErrorException(
-          'Failed to find socketId of a user',
-        );
-      }
+    const deletedSocketId = this.userSocketStorage.clients.get(deletedId);
+    if (deletedSocketId !== undefined) {
       switch (prevRelationship) {
         case 'friend':
           this.userGateway.emitFriendRemoved(deletedSocketId, deleterId);
@@ -239,17 +218,18 @@ export class UserService {
    * @param acceptedId 친구 요청을 수락 당하는 유저 id
    */
   async acceptFriendRequest(accepterId: UserId, acceptedId: UserId) {
+    if (
+      this.userRelationshipStorage.getRelationship(accepterId, acceptedId) ===
+      'friend'
+    ) {
+      return;
+    }
     await this.userRelationshipStorage.acceptFriendRequest(
       accepterId,
       acceptedId,
     );
-    if (this.activityManager.getActivity(acceptedId)) {
-      const acceptedSocketId = this.userSocketStorage.clients.get(acceptedId);
-      if (acceptedSocketId === undefined) {
-        throw new InternalServerErrorException(
-          'Failed to find socketId of a user',
-        );
-      }
+    const acceptedSocketId = this.userSocketStorage.clients.get(acceptedId);
+    if (acceptedSocketId !== undefined) {
       this.userGateway.emitFriendAccepted(acceptedSocketId, accepterId);
     }
   }

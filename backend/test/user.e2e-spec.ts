@@ -13,6 +13,12 @@ import { BannedMembers } from '../src/entity/banned-members.entity';
 import { BlockedUsers } from '../src/entity/blocked-users.entity';
 import { ChannelMembers } from '../src/entity/channel-members.entity';
 import { Channels } from '../src/entity/channels.entity';
+import {
+  FriendAcceptedDto,
+  FriendCancelledDto,
+  FriendDeclinedDto,
+  FriendRemovedDto,
+} from '../src/user/dto/user-gateway.dto';
 import { Friends } from '../src/entity/friends.entity';
 import { Messages } from '../src/entity/messages.entity';
 import { UserId } from '../src/util/type';
@@ -29,6 +35,7 @@ import {
   generateBlockedUsers,
   generateFriends,
 } from './generate-mock-data';
+import { timeout } from './chats-gateway.e2e-spec';
 
 process.env.NODE_ENV = 'development';
 
@@ -272,6 +279,13 @@ describe('UserController - /user (e2e)', () => {
       return request(app.getHttpServer())
         .delete(`/user/${blockedId}/friend`)
         .set('x-user-id', blockerId.toString())
+        .expect(404);
+    });
+
+    it('should throw NOT FOUND when the user tries to accept a non-existing request', () => {
+      return request(app.getHttpServer())
+        .patch(`/user/${userIds[0]}/friend`)
+        .set('x-user-id', userIds[1].toString())
         .expect(404);
     });
 
@@ -571,7 +585,7 @@ describe('UserController - /user (e2e)', () => {
 
   /*****************************************************************************
    *                                                                           *
-   * SECTION : Put /user/:userId/friend                                        *
+   * SECTION : PUT /user/:userId/friend                                        *
    *                                                                           *
    ****************************************************************************/
 
@@ -593,16 +607,203 @@ describe('UserController - /user (e2e)', () => {
     });
 
     it('should not resend the friend request (200)', async () => {
-      const responseOne = await request(app.getHttpServer())
-        .put(`/user/${userIds[1]}/friend`)
-        .set('x-user-id', userIds[0].toString());
-      const responseTwo = await request(app.getHttpServer())
-        .put(`/user/${userIds[1]}/friend`)
-        .set('x-user-id', userIds[0].toString());
+      const [wsMessage, responseOne] = await Promise.all([
+        timeout(
+          1000,
+          new Promise((resolve) =>
+            clientSockets[1].on('friendRequest', (data) => resolve(data)),
+          ),
+        ),
+        request(app.getHttpServer())
+          .put(`/user/${userIds[1]}/friend`)
+          .set('x-user-id', userIds[0].toString()),
+      ]);
+      expect(wsMessage).toEqual({
+        requestedBy: userIds[0],
+      });
       expect(responseOne.status).toEqual(201);
       expect(responseOne.body).toEqual({});
-      expect(responseTwo.status).toEqual(200);
-      expect(responseTwo.body).toEqual({});
+      const [wsError, responseTwo] = await Promise.allSettled([
+        timeout(
+          1000,
+          new Promise((resolve) => {
+            clientSockets[1].on('friendRequest', (data) => resolve(data));
+          }),
+        ),
+        request(app.getHttpServer())
+          .put(`/user/${userIds[1]}/friend`)
+          .set('x-user-id', userIds[0].toString()),
+      ]);
+      expect(wsError.status).toEqual('rejected');
+      if (responseTwo.status === 'rejected') {
+        fail();
+      }
+      expect(responseTwo.value.status).toEqual(200);
+      expect(responseTwo.value.body).toEqual({});
+    });
+  });
+
+  /*****************************************************************************
+   *                                                                           *
+   * SECTION : DELETE /user/:userId/friend                                     *
+   *                                                                           *
+   ****************************************************************************/
+
+  describe('DELETE /user/:userId/friend', () => {
+    it('should cancel a friend request (200)', async () => {
+      const friendEntities = generateFriends(
+        usersEntities.slice(index, index + 2),
+      );
+      friendEntities[0].isAccepted = false;
+      await dataSource.manager.save(Friends, friendEntities);
+      await userRelationshipStorage.load(userIds[0]);
+      const [wsMessage, response] = await Promise.all([
+        new Promise((resolve) =>
+          clientSockets[1].on('friendCancelled', (data: FriendCancelledDto) =>
+            resolve(data),
+          ),
+        ),
+        request(app.getHttpServer())
+          .delete(`/user/${userIds[1]}/friend`)
+          .set('x-user-id', userIds[0].toString()),
+      ]);
+      expect(wsMessage).toEqual({
+        cancelledBy: userIds[0],
+      });
+      expect(response.status).toEqual(200);
+      expect(response.body).toEqual({});
+    });
+
+    it('should decline friendship (200)', async () => {
+      const friendEntities = generateFriends(
+        usersEntities.slice(index, index + 2),
+      );
+      friendEntities[0].isAccepted = false;
+      await dataSource.manager.save(Friends, friendEntities);
+      await userRelationshipStorage.load(userIds[1]);
+      const [wsMessage, response] = await Promise.all([
+        new Promise((resolve) =>
+          clientSockets[0].on('friendDeclined', (data: FriendDeclinedDto) =>
+            resolve(data),
+          ),
+        ),
+        request(app.getHttpServer())
+          .delete(`/user/${userIds[0]}/friend`)
+          .set('x-user-id', userIds[1].toString()),
+      ]);
+      expect(wsMessage).toEqual({
+        declinedBy: userIds[1],
+      });
+      expect(response.status).toEqual(200);
+      expect(response.body).toEqual({});
+    });
+
+    it('should remove friendship (200)', async () => {
+      const friendEntities = generateFriends(
+        usersEntities.slice(index, index + 2),
+      );
+      friendEntities[0].isAccepted = true;
+      await dataSource.manager.save(Friends, friendEntities);
+      await userRelationshipStorage.load(userIds[0]);
+      const [wsMessage, response] = await Promise.all([
+        new Promise((resolve) =>
+          clientSockets[1].on('friendRemoved', (data: FriendRemovedDto) =>
+            resolve(data),
+          ),
+        ),
+        request(app.getHttpServer())
+          .delete(`/user/${userIds[1]}/friend`)
+          .set('x-user-id', userIds[0].toString()),
+      ]);
+      expect(wsMessage).toEqual({
+        removedBy: userIds[0],
+      });
+      expect(response.status).toEqual(200);
+      expect(response.body).toEqual({});
+    });
+
+    it('should remove friendship by receiver (200)', async () => {
+      const friendEntities = generateFriends(
+        usersEntities.slice(index, index + 2),
+      );
+      friendEntities[0].isAccepted = true;
+      await dataSource.manager.save(Friends, friendEntities);
+      await userRelationshipStorage.load(userIds[1]);
+      const [wsMessage, response] = await Promise.all([
+        new Promise((resolve) =>
+          clientSockets[0].on('friendRemoved', (data: FriendRemovedDto) =>
+            resolve(data),
+          ),
+        ),
+        request(app.getHttpServer())
+          .delete(`/user/${userIds[0]}/friend`)
+          .set('x-user-id', userIds[1].toString()),
+      ]);
+      expect(wsMessage).toEqual({
+        removedBy: userIds[1],
+      });
+      expect(response.status).toEqual(200);
+      expect(response.body).toEqual({});
+    });
+  });
+
+  /*****************************************************************************
+   *                                                                           *
+   * SECTION : PATCH /user/:userId/friend                                      *
+   *                                                                           *
+   ****************************************************************************/
+
+  describe('PATCH /user/:userId/friend', () => {
+    it('should accept a friend request (200)', async () => {
+      const friendEntities = generateFriends(
+        usersEntities.slice(index, index + 2),
+      );
+      friendEntities[0].isAccepted = false;
+      await dataSource.manager.save(Friends, friendEntities);
+      await userRelationshipStorage.load(userIds[1]);
+      const [wsMessage, response] = await Promise.all([
+        new Promise((resolve) =>
+          clientSockets[0].on('friendAccepted', (data: FriendAcceptedDto) =>
+            resolve(data),
+          ),
+        ),
+        request(app.getHttpServer())
+          .patch(`/user/${userIds[0]}/friend`)
+          .set('x-user-id', userIds[1].toString()),
+      ]);
+      expect(wsMessage).toEqual({
+        newFriendId: userIds[1],
+      });
+      expect(response.status).toEqual(200);
+      expect(response.body).toEqual({});
+    });
+
+    it('should not resend a WS event when the request is accepted again', async () => {
+      const friendEntities = generateFriends(
+        usersEntities.slice(index, index + 2),
+      );
+      friendEntities[0].isAccepted = true;
+      await dataSource.manager.save(Friends, friendEntities);
+      await userRelationshipStorage.load(userIds[1]);
+      const [wsError, response] = await Promise.allSettled([
+        timeout(
+          1000,
+          new Promise((resolve) =>
+            clientSockets[0]
+              .timeout(1000)
+              .on('friendAccepted', (data: FriendAcceptedDto) => resolve(data)),
+          ),
+        ),
+        request(app.getHttpServer())
+          .patch(`/user/${userIds[0]}/friend`)
+          .set('x-user-id', userIds[1].toString()),
+      ]);
+      expect(wsError.status).toBe('rejected');
+      if (response.status === 'rejected') {
+        fail();
+      }
+      expect(response.value.status).toEqual(200);
+      expect(response.value.body).toEqual({});
     });
   });
 });

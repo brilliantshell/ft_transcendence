@@ -359,7 +359,7 @@ describe('UserStatusModule (e2e)', () => {
   });
 });
 
-async function timeout<T>(ms: number, promise: Promise<T>): Promise<T> {
+export async function timeout<T>(ms: number, promise: Promise<T>): Promise<T> {
   return new Promise((resolve, reject) => {
     const timer = setTimeout(() => {
       reject('timeout');
