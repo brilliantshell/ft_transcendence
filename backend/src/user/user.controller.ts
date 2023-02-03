@@ -46,8 +46,8 @@ export class UserController {
 
   @Delete(':userId/block')
   @UseGuards(SelfCheckGuard, UserExistGuard, BlockedUserGuard, DeleteBlockGuard)
-  async deleteBlock(@Req() req: RelationshipRequest) {
-    await this.userService.deleteBlock(req.user.userId, req.targetId);
+  deleteBlock(@Req() req: RelationshipRequest) {
+    this.userService.deleteBlock(req.user.userId, req.targetId);
   }
 
   /*****************************************************************************
@@ -114,8 +114,8 @@ export class UserController {
     BlockedUserGuard,
     DeleteFriendGuard,
   )
-  async deleteFriendship(@Req() req: RelationshipRequest) {
-    await this.userService.deleteFriendship(req.user.userId, req.targetId);
+  deleteFriendship(@Req() req: RelationshipRequest) {
+    this.userService.deleteFriendship(req.user.userId, req.targetId);
   }
 
   @Patch(':userId/friend')
@@ -125,8 +125,8 @@ export class UserController {
     BlockedUserGuard,
     AcceptFriendGuard,
   )
-  async updateFriendship(@Req() req: RelationshipRequest) {
-    await this.userService.acceptFriendRequest(req.user.userId, req.targetId);
+  updateFriendship(@Req() req: RelationshipRequest) {
+    this.userService.acceptFriendRequest(req.user.userId, req.targetId);
   }
 
   /*****************************************************************************
@@ -161,7 +161,7 @@ export class UserController {
 
   @Get(':userId/info')
   @UseGuards(UserExistGuard)
-  async findProfile(@Req() req: RelationshipRequest) {
-    return await this.userService.findProfile(req.user.userId, req.targetId);
+  findProfile(@Req() req: RelationshipRequest) {
+    return this.userService.findProfile(req.user.userId, req.targetId);
   }
 }
