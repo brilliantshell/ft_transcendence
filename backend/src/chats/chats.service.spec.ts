@@ -34,6 +34,7 @@ import {
   generateMessages,
   generateUsers,
 } from '../../test/generate-mock-data';
+import { ValidateNewChannelPipe } from './pipe/validate-new-channel.pipe';
 
 const TEST_DB = 'test_db_chat_service';
 const ENTITIES = [BannedMembers, ChannelMembers, Channels, Messages, Users];
@@ -241,11 +242,14 @@ describe('ChatsService', () => {
   describe('createChannel', () => {
     it('should create new channel', async () => {
       const userId = usersEntities[0].userId;
-      const newChannelData: CreateChannelDto = {
+      let newChannelData: CreateChannelDto = {
         channelName: 'newChannel',
         password: '1q2w3e4r',
         accessMode: 'protected',
       };
+      newChannelData = await new ValidateNewChannelPipe().transform(
+        newChannelData,
+      );
       const newChannelId = await service.createChannel(userId, newChannelData);
       expect(channelStorage.getUser(userId).has(newChannelId)).toBeTruthy();
       expect(channelStorage.getUserRole(newChannelId, userId)).toBe('owner');
@@ -259,18 +263,18 @@ describe('ChatsService', () => {
       expect(newChannelInfo.accessMode).toBe(newChannel.accessMode);
       expect(newChannelInfo.modifiedAt).toEqual(newChannel.modifiedAt);
       expect(
-        compare(newChannelData.password, newChannel.password.toString()),
+        compare('1q2w3e4r', newChannel.password.toString()),
       ).resolves.toBeTruthy();
     });
 
     it('should not create new channel if no password given when protected room', async () => {
-      const userId = usersEntities[0].userId;
       const newChannelData: CreateChannelDto = {
         channelName: 'newChannel',
         accessMode: 'protected',
       };
-      expect(async () =>
-        service.createChannel(userId, newChannelData),
+      expect(
+        async () =>
+          await new ValidateNewChannelPipe().transform(newChannelData),
       ).rejects.toThrow(BadRequestException);
     });
   });
@@ -349,10 +353,13 @@ describe('ChatsService', () => {
     });
     it('should join user to the public channel', async () => {
       const userId = usersEntities[0].userId;
-      const newChannelData: CreateChannelDto = {
+      let newChannelData: CreateChannelDto = {
         channelName: 'newChannel',
         accessMode: 'public',
       };
+      newChannelData = await new ValidateNewChannelPipe().transform(
+        newChannelData,
+      );
       const newChannelId = await service.createChannel(userId, newChannelData);
       const anotherUserId = usersEntities[1].userId;
       await service.joinChannel(newChannelId, anotherUserId, false);
@@ -368,11 +375,14 @@ describe('ChatsService', () => {
 
     it('should join user to the protected channel', async () => {
       const userId = usersEntities[0].userId;
-      const newChannelData: CreateChannelDto = {
+      let newChannelData: CreateChannelDto = {
         channelName: 'newChannel',
         password: '1q2w3e4r',
         accessMode: 'protected',
       };
+      newChannelData = await new ValidateNewChannelPipe().transform(
+        newChannelData,
+      );
       const newChannelId = await service.createChannel(userId, newChannelData);
       const anotherUserId = usersEntities[1].userId;
       await service.joinChannel(newChannelId, anotherUserId, false, '1q2w3e4r');
@@ -388,11 +398,14 @@ describe('ChatsService', () => {
 
     it('should throw when user attempt to join the protected channel with incorrect or no password', async () => {
       const userId = usersEntities[0].userId;
-      const newChannelData: CreateChannelDto = {
+      let newChannelData: CreateChannelDto = {
         channelName: 'newChannel2',
         password: 'trickyPassword',
         accessMode: 'protected',
       };
+      newChannelData = await new ValidateNewChannelPipe().transform(
+        newChannelData,
+      );
       const newChannelId = await service.createChannel(userId, newChannelData);
       const anotherUserId = usersEntities[1].userId;
       expect(async () =>
@@ -405,11 +418,14 @@ describe('ChatsService', () => {
 
     it('should add user to the protected channel by invitation without password ', async () => {
       const userId = usersEntities[0].userId;
-      const newChannelData: CreateChannelDto = {
+      let newChannelData: CreateChannelDto = {
         channelName: 'newChannel',
         password: 'password',
         accessMode: 'protected',
       };
+      newChannelData = await new ValidateNewChannelPipe().transform(
+        newChannelData,
+      );
       const newChannelId = await service.createChannel(userId, newChannelData);
       const anotherUserId = usersEntities[1].userId;
       await service.joinChannel(newChannelId, anotherUserId, true);
@@ -425,10 +441,13 @@ describe('ChatsService', () => {
 
     it('should not add user to the private channel', async () => {
       const userId = usersEntities[0].userId;
-      const newChannelData: CreateChannelDto = {
+      let newChannelData: CreateChannelDto = {
         channelName: 'newChannel',
         accessMode: 'private',
       };
+      newChannelData = await new ValidateNewChannelPipe().transform(
+        newChannelData,
+      );
       const newChannelId = await service.createChannel(userId, newChannelData);
       const anotherUserId = usersEntities[1].userId;
       expect(async () =>
@@ -438,10 +457,13 @@ describe('ChatsService', () => {
 
     it('should add user to the private channel by invitation', async () => {
       const userId = usersEntities[0].userId;
-      const newChannelData: CreateChannelDto = {
+      let newChannelData: CreateChannelDto = {
         channelName: 'newChannel',
         accessMode: 'private',
       };
+      newChannelData = await new ValidateNewChannelPipe().transform(
+        newChannelData,
+      );
       const newChannelId = await service.createChannel(userId, newChannelData);
       const anotherUserId = usersEntities[1].userId;
       await service.joinChannel(newChannelId, anotherUserId, true);
@@ -457,10 +479,13 @@ describe('ChatsService', () => {
 
     it('should not add banned user to the channel', async () => {
       const userId = usersEntities[0].userId;
-      const newChannelData: CreateChannelDto = {
+      let newChannelData: CreateChannelDto = {
         channelName: 'newChannel',
         accessMode: 'public',
       };
+      newChannelData = await new ValidateNewChannelPipe().transform(
+        newChannelData,
+      );
       const newChannelId = await service.createChannel(userId, newChannelData);
       const anotherUserId = usersEntities[1].userId;
       await dataSource.getRepository(BannedMembers).insert({
@@ -486,11 +511,14 @@ describe('ChatsService', () => {
     });
     it('should leave channel (not owner)', async () => {
       const userId = usersEntities[0].userId;
-      const newChannelData: CreateChannelDto = {
+      let newChannelData: CreateChannelDto = {
         channelName: 'newChannel',
         password: 'password',
         accessMode: 'protected',
       };
+      newChannelData = await new ValidateNewChannelPipe().transform(
+        newChannelData,
+      );
       const newChannelId = await service.createChannel(userId, newChannelData);
       const anotherUserId = usersEntities[1].userId;
       await service.joinChannel(newChannelId, anotherUserId, true);
@@ -508,11 +536,14 @@ describe('ChatsService', () => {
 
     it('should leave channel (owner)', async () => {
       const userId = usersEntities[0].userId;
-      const newChannelData: CreateChannelDto = {
+      let newChannelData: CreateChannelDto = {
         channelName: 'newChannel2',
         password: 'trickyPassword',
         accessMode: 'protected',
       };
+      newChannelData = await new ValidateNewChannelPipe().transform(
+        newChannelData,
+      );
       const newChannelId = await service.createChannel(userId, newChannelData);
       const anotherUserId = usersEntities[1].userId;
       await service.joinChannel(newChannelId, anotherUserId, true);
@@ -527,11 +558,14 @@ describe('ChatsService', () => {
     it('should leave channel (owner, already existed channel)', async () => {
       const targetChannel = channelsEntities[7];
       const userId = targetChannel.ownerId;
-      const newChannelData: CreateChannelDto = {
+      let newChannelData: CreateChannelDto = {
         channelName: 'newChannel2',
         password: 'trickyPassword',
         accessMode: 'protected',
       };
+      newChannelData = await new ValidateNewChannelPipe().transform(
+        newChannelData,
+      );
       const newChannelId = await service.createChannel(userId, newChannelData);
       const anotherUserId = usersEntities[1].userId;
       await service.joinChannel(newChannelId, anotherUserId, true);
@@ -672,10 +706,13 @@ describe('ChatsService', () => {
 
     it('should create message and then notify new message arrived', async () => {
       const userId = usersEntities[1].userId;
-      const newChannelData: CreateChannelDto = {
+      let newChannelData: CreateChannelDto = {
         channelName: 'newChannel',
         accessMode: 'private',
       };
+      newChannelData = await new ValidateNewChannelPipe().transform(
+        newChannelData,
+      );
       const newChannelId = await service.createChannel(userId, newChannelData);
       const anotherUserId = usersEntities[2].userId;
       activityManager.setActivity(userId, `chatRooms-${newChannelId}`);
@@ -714,10 +751,13 @@ describe('ChatsService', () => {
       // user create channel and send message
       // another user is already loaded and join the channel
       const userId = usersEntities[1].userId;
-      const newChannelData: CreateChannelDto = {
+      let newChannelData: CreateChannelDto = {
         channelName: 'newChannel',
         accessMode: 'private',
       };
+      newChannelData = await new ValidateNewChannelPipe().transform(
+        newChannelData,
+      );
       const newChannelId = await service.createChannel(userId, newChannelData);
       const anotherUserId = usersEntities[2].userId;
       activityManager.setActivity(userId, `chatRooms-${newChannelId}`);
@@ -743,10 +783,13 @@ describe('ChatsService', () => {
 
     it('should execute role command (executor : owner)', async () => {
       const ownerId = usersEntities[1].userId;
-      const newChannelData: CreateChannelDto = {
+      let newChannelData: CreateChannelDto = {
         channelName: 'newChannel',
         accessMode: 'private',
       };
+      newChannelData = await new ValidateNewChannelPipe().transform(
+        newChannelData,
+      );
       const newChannelId = await service.createChannel(ownerId, newChannelData);
       const anotherUserId = usersEntities[2].userId;
 
@@ -775,10 +818,13 @@ describe('ChatsService', () => {
 
     it('should execute role command (executor : owner & admin)', async () => {
       const ownerId = usersEntities[1].userId;
-      const newChannelData: CreateChannelDto = {
+      let newChannelData: CreateChannelDto = {
         channelName: 'newChannel',
         accessMode: 'private',
       };
+      newChannelData = await new ValidateNewChannelPipe().transform(
+        newChannelData,
+      );
       const newChannelId = await service.createChannel(ownerId, newChannelData);
       const memberId = usersEntities[2].userId;
       const adminId = usersEntities[3].userId;
@@ -799,10 +845,13 @@ describe('ChatsService', () => {
 
     it('should not execute role command (executor : member)', async () => {
       const ownerId = usersEntities[1].userId;
-      const newChannelData: CreateChannelDto = {
+      let newChannelData: CreateChannelDto = {
         channelName: 'newChannel',
         accessMode: 'private',
       };
+      newChannelData = await new ValidateNewChannelPipe().transform(
+        newChannelData,
+      );
       const newChannelId = await service.createChannel(ownerId, newChannelData);
       const memberId = usersEntities[2].userId;
       const adminId = usersEntities[3].userId;
@@ -836,10 +885,13 @@ describe('ChatsService', () => {
 
     it('should throw if a user attempt to execute command with invalid permission (member -> owner) ', async () => {
       const ownerId = usersEntities[1].userId;
-      const newChannelData: CreateChannelDto = {
+      let newChannelData: CreateChannelDto = {
         channelName: 'newChannel',
         accessMode: 'private',
       };
+      newChannelData = await new ValidateNewChannelPipe().transform(
+        newChannelData,
+      );
       const newChannelId = await service.createChannel(ownerId, newChannelData);
       const anotherUserId = usersEntities[2].userId;
       await service.joinChannel(newChannelId, anotherUserId, true);
@@ -856,10 +908,13 @@ describe('ChatsService', () => {
 
     it('should throw if attempt to execute command with invalid permission (admin -> owner) ', async () => {
       const ownerId = usersEntities[1].userId;
-      const newChannelData: CreateChannelDto = {
+      let newChannelData: CreateChannelDto = {
         channelName: 'newChannel',
         accessMode: 'private',
       };
+      newChannelData = await new ValidateNewChannelPipe().transform(
+        newChannelData,
+      );
       const newChannelId = await service.createChannel(ownerId, newChannelData);
       const anotherUserId = usersEntities[2].userId;
       await service.joinChannel(newChannelId, anotherUserId, true);
@@ -885,10 +940,13 @@ describe('ChatsService', () => {
 
     it('should execute mute command (admin -> member)', async () => {
       const ownerId = usersEntities[1].userId;
-      const newChannelData: CreateChannelDto = {
+      let newChannelData: CreateChannelDto = {
         channelName: 'newChannel',
         accessMode: 'private',
       };
+      newChannelData = await new ValidateNewChannelPipe().transform(
+        newChannelData,
+      );
       const newChannelId = await service.createChannel(ownerId, newChannelData);
       const memberId = usersEntities[2].userId;
       const adminId = usersEntities[3].userId;
@@ -923,10 +981,13 @@ describe('ChatsService', () => {
 
     it('should not execute mute command if given time is invalid', async () => {
       const ownerId = usersEntities[1].userId;
-      const newChannelData: CreateChannelDto = {
+      let newChannelData: CreateChannelDto = {
         channelName: 'newChannel',
         accessMode: 'private',
       };
+      newChannelData = await new ValidateNewChannelPipe().transform(
+        newChannelData,
+      );
       const newChannelId = await service.createChannel(ownerId, newChannelData);
       const memberId = usersEntities[2].userId;
       const adminId = usersEntities[3].userId;
@@ -948,10 +1009,13 @@ describe('ChatsService', () => {
 
     it('should not execute mute command (admin -> owner)', async () => {
       const ownerId = usersEntities[1].userId;
-      const newChannelData: CreateChannelDto = {
+      let newChannelData: CreateChannelDto = {
         channelName: 'newChannel',
         accessMode: 'private',
       };
+      newChannelData = await new ValidateNewChannelPipe().transform(
+        newChannelData,
+      );
       const newChannelId = await service.createChannel(ownerId, newChannelData);
       const memberId = usersEntities[2].userId;
       const adminId = usersEntities[3].userId;
@@ -973,10 +1037,13 @@ describe('ChatsService', () => {
 
     it('should execute ban command (admin -> member)', async () => {
       const ownerId = usersEntities[1].userId;
-      const newChannelData: CreateChannelDto = {
+      let newChannelData: CreateChannelDto = {
         channelName: 'newChannel',
         accessMode: 'private',
       };
+      newChannelData = await new ValidateNewChannelPipe().transform(
+        newChannelData,
+      );
       const newChannelId = await service.createChannel(ownerId, newChannelData);
       const memberId = usersEntities[2].userId;
       const adminId = usersEntities[3].userId;
@@ -1009,10 +1076,13 @@ describe('ChatsService', () => {
 
     it('should throw when command is out of form', async () => {
       const ownerId = usersEntities[1].userId;
-      const newChannelData: CreateChannelDto = {
+      let newChannelData: CreateChannelDto = {
         channelName: 'newChannel',
         accessMode: 'private',
       };
+      newChannelData = await new ValidateNewChannelPipe().transform(
+        newChannelData,
+      );
       const newChannelId = await service.createChannel(ownerId, newChannelData);
       const memberId = usersEntities[2].userId;
       const adminId = usersEntities[3].userId;

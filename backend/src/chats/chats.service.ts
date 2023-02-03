@@ -56,13 +56,14 @@ export class ChatsService {
     if (this.channelStorage.getChannels().size === 0) {
       return { joinedChannels: [], otherChannels: [] };
     }
+    // FIXME : Delete when AuthGuard is implemented
     const userChannelMap = this.channelStorage.getUser(userId);
     if (!userChannelMap) {
       throw new BadRequestException('Invalid Request');
     }
     return {
-      joinedChannels: await this.getJoinedChannels(userChannelMap),
-      otherChannels: await this.getChannelsExceptJoined(userChannelMap),
+      joinedChannels: await this.getJoinedChannels(userId, userChannelMap),
+      otherChannels: await this.getChannelsExceptJoined(userId, userChannelMap),
     };
   }
 
@@ -75,19 +76,13 @@ export class ChatsService {
    */
   // NOTE : WS 이벤트 emit 해야 할 수 있음
   async createChannel(userId: UserId, channel: CreateChannelDto) {
-    const { channelName, accessMode } = channel;
-    const password = channel.password ?? null;
-    if (accessMode === 'protected' && !password) {
-      throw new BadRequestException('Password is required');
-    }
-    if (accessMode !== 'protected' && password) {
-      throw new BadRequestException('Password should not be included');
-    }
+    const { channelName, accessMode, password } = channel;
+
     return await this.channelStorage.addChannel(
       accessMode as AccessMode,
       userId,
       channelName,
-      accessMode === 'protected' ? await hash(password, 10) : null,
+      password,
     );
   }
 
@@ -128,6 +123,7 @@ export class ChatsService {
     isInvited: boolean,
     password: string = null,
   ) {
+    // NODE: validation 이후 지울게 많아보임
     const channelInfo = this.channelStorage.getChannel(channelId);
     if (!channelInfo) {
       throw new NotFoundException('Channel not found');
@@ -149,7 +145,9 @@ export class ChatsService {
         ).password.toString();
       } catch (e) {
         this.logger.error(e);
-        throw new InternalServerErrorException('Internal Server Error');
+        throw new InternalServerErrorException(
+          `Failed to get channel(${channelId}) password`,
+        );
       }
       if (!password || !(await compare(password, channelPassword))) {
         throw new ForbiddenException('Password is incorrect');
@@ -287,6 +285,7 @@ export class ChatsService {
    * @returns 접속한 채널 목록
    */
   private async getJoinedChannels(
+    userId: UserId,
     userChannelMap: Map<ChannelId, UserChannelStatus>,
   ) {
     return await Promise.all(
@@ -318,7 +317,9 @@ export class ChatsService {
         }),
     ).catch((e) => {
       this.logger.error(e);
-      throw e;
+      throw new InternalServerErrorException(
+        `Failed to get joined channels for user (id: ${userId})`,
+      );
     });
   }
 
@@ -329,6 +330,7 @@ export class ChatsService {
    * @returns 접속한 채널과 private 채널을 제외한 모든 채널 목록
    */
   private async getChannelsExceptJoined(
+    userId: UserId,
     userChannelMap: Map<ChannelId, UserChannelStatus>,
   ) {
     return (
@@ -357,7 +359,9 @@ export class ChatsService {
           }),
       ).catch((e) => {
         this.logger.error(e);
-        throw e;
+        throw new InternalServerErrorException(
+          `Fail to get channels except joined for user (id: ${userId})`,
+        );
       })
     ).sort((a, b) => a.channelName.localeCompare(b.channelName));
   }
@@ -391,7 +395,7 @@ export class ChatsService {
       });
     } catch (e) {
       this.logger.error(e);
-      throw new InternalServerErrorException('Fail to create message');
+      throw new InternalServerErrorException('Failed to create message');
     }
     this.chatsGateway.emitNewMessage(senderId, channelId, contents, createdAt);
     for (const id of this.channelStorage

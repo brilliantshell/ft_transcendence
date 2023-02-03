@@ -21,10 +21,10 @@ import {
   destroyDataSources,
 } from './db-resource-manager';
 import {
-  generateUsers,
   generateChannels,
   generateChannelMembers,
   generateMessages,
+  generateUsers,
 } from './generate-mock-data';
 
 process.env.NODE_ENV = 'development';

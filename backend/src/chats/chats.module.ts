@@ -10,8 +10,8 @@ import { UserStatusModule } from '../user-status/user-status.module';
 
 @Module({
   imports: [TypeOrmModule.forFeature([Channels, Messages]), UserStatusModule],
+  controllers: [ChatsController],
   providers: [ChatsGateway, ChatsService],
   exports: [ChatsGateway],
-  controllers: [ChatsController],
 })
 export class ChatsModule {}

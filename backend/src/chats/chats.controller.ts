@@ -21,9 +21,10 @@ import {
   CreateChannelDto,
   JoinChannelDto,
 } from './dto/chats.dto';
-import { MockAuthGuard } from './mock-auth/mock-auth.guard';
+import { MockAuthGuard } from './guard/mock-auth.guard';
 import { Response } from 'express';
 import { VerifiedRequest } from '../util/type';
+import { ValidateNewChannelPipe } from './pipe/validate-new-channel.pipe';
 
 @UseGuards(MockAuthGuard)
 @Controller('chats')
@@ -44,7 +45,7 @@ export class ChatsController {
   @Post()
   async createChannel(
     @Req() req: VerifiedRequest,
-    @Body() createChannelDto: CreateChannelDto,
+    @Body(ValidateNewChannelPipe) createChannelDto: CreateChannelDto,
     @Res() res: Response,
   ) {
     res
