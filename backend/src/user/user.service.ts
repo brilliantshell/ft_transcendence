@@ -9,9 +9,9 @@ import { Repository } from 'typeorm';
 import { Activity, UserId } from '../util/type';
 import { ActivityManager } from '../user-status/activity.manager';
 import { ChannelStorage } from '../user-status/channel.storage';
+import { FriendListDto, UserProfileDto } from './dto/user.dto';
 import { UserGateway } from './user.gateway';
 import { UserInfoDto } from './dto/user-gateway.dto';
-import { UserProfileDto } from './dto/user.dto';
 import { UserRelationshipStorage } from '../user-status/user-relationship.storage';
 import { UserSocketStorage } from '../user-status/user-socket.storage';
 import { Users } from '../entity/users.entity';
@@ -35,38 +35,46 @@ export class UserService {
    *                                                                           *
    ****************************************************************************/
 
+  /*****************************************************************************
+   *                                                                           *
+   * SECTION : Block                                                           *
+   *                                                                           *
+   ****************************************************************************/
+
   /**
-   * @description 유저의 닉네임과 프로필 이미지 경로를 반환 & userInfo 이벤트를 송신
+   * @description 유저를 차단
    *
-   *
-   * @param requesterId 요청한 유저의 ID
-   * @param requestedId 조회 대상 유저의 ID
-   * @returns 유저의 닉네임과 프로필 이미지 경로
+   * @param blockerId 차단자 id
+   * @param blockedId 차단당할 유저 id
+   * @returns 이미 차단한 유저라면 false, 아니라면 true
    */
-  async findProfile(requesterId: UserId, targetId: UserId) {
-    let profile: UserProfileDto;
-    try {
-      profile = await this.usersRepository.findOne({
-        select: ['nickname', 'profileImage'],
-        where: { userId: targetId },
-      });
-    } catch (e) {
-      this.logger.error(e);
-      throw new InternalServerErrorException(
-        'Failed to find nickname and profileImage of a user',
-      );
+  async createBlock(blockerId: UserId, blockedId: UserId) {
+    if (
+      this.userRelationshipStorage.getRelationship(blockerId, blockedId) ===
+      'blocker'
+    ) {
+      return false;
     }
-    const requesterSocketId = this.userSocketStorage.clients.get(targetId);
-    if (requesterSocketId === undefined) {
-      throw new InternalServerErrorException(
-        'Failed to find socketId of a user',
-      );
+    await this.userRelationshipStorage.blockUser(blockerId, blockedId);
+    const blockedSocketId = this.userSocketStorage.clients.get(blockedId);
+    if (blockedSocketId !== undefined) {
+      this.userGateway.emitBlocked(blockedSocketId, blockerId);
     }
-    this.userGateway.emitUserInfo(
-      requesterSocketId,
-      this.createUserInfoDto(requesterId, targetId),
-    );
-    return profile;
+    return true;
+  }
+
+  /**
+   * @description 유저를 차단 해제
+   *
+   * @param unblockerId 차단 해제자 id
+   * @param unblockedId 차단 해제 될 유저 id
+   */
+  async deleteBlock(unblockerId: UserId, unblockedId: UserId) {
+    await this.userRelationshipStorage.unblockUser(unblockerId, unblockedId);
+    const unblockedSocketId = this.userSocketStorage.clients.get(unblockedId);
+    if (unblockedSocketId !== undefined) {
+      this.userGateway.emitUnblocked(unblockedSocketId, unblockerId);
+    }
   }
 
   /*****************************************************************************
@@ -98,66 +106,6 @@ export class UserService {
     };
   }
 
-  // TODO
-  /*****************************************************************************
-   *                                                                           *
-   * SECTION : Game                                                            *
-   *                                                                           *
-   ****************************************************************************/
-  // createGame() {}
-
-  // findGame(requesterId: UserId, peerId: UserId, gameId: GameId) {}
-
-  /*****************************************************************************
-   *                                                                           *
-   * SECTION : Block                                                           *
-   *                                                                           *
-   ****************************************************************************/
-
-  /**
-   * @description 유저를 차단
-   *
-   * @param blockerId 차단자 id
-   * @param blockedId 차단당할 유저 id
-   * @returns 이미 차단한 유저라면 false, 아니라면 true
-   */
-  async createBlock(blockerId: UserId, blockedId: UserId) {
-    const prevRelationship = this.userRelationshipStorage.getRelationship(
-      blockerId,
-      blockedId,
-    );
-    await this.userRelationshipStorage.blockUser(blockerId, blockedId);
-    if (this.activityManager.getActivity(blockedId)) {
-      const blockedSocketId = this.userSocketStorage.clients.get(blockedId);
-      if (blockedSocketId === undefined) {
-        throw new InternalServerErrorException(
-          'Failed to find socketId of a user',
-        );
-      }
-      this.userGateway.emitBlocked(blockedSocketId, blockerId);
-    }
-    return prevRelationship !== 'blocker';
-  }
-
-  /**
-   * @description 유저를 차단 해제
-   *
-   * @param unblockerId 차단 해제자 id
-   * @param unblockedId 차단 해제 될 유저 id
-   */
-  async deleteBlock(unblockerId: UserId, unblockedId: UserId) {
-    await this.userRelationshipStorage.unblockUser(unblockerId, unblockedId);
-    if (this.activityManager.getActivity(unblockedId)) {
-      const unblockedSocketId = this.userSocketStorage.clients.get(unblockedId);
-      if (unblockedSocketId === undefined) {
-        throw new InternalServerErrorException(
-          'Failed to find socketId of a user',
-        );
-      }
-      this.userGateway.emitUnblocked(unblockedSocketId, unblockerId);
-    }
-  }
-
   /*****************************************************************************
    *                                                                           *
    * SECTION : Friend                                                          *
@@ -170,7 +118,7 @@ export class UserService {
    * @param userId 유저 id
    * @returns 친구 목록
    */
-  findFriends(userId: UserId) {
+  findFriends(userId: UserId): FriendListDto {
     return { friends: this.userRelationshipStorage.getFriends(userId) };
   }
 
@@ -182,21 +130,18 @@ export class UserService {
    * @returns 이미 친구 추가가 있다면 false, 아니라면 true
    */
   async createFriendRequest(senderId: UserId, receiverId: UserId) {
-    const prevRelationship = this.userRelationshipStorage.getRelationship(
-      senderId,
-      receiverId,
-    );
-    await this.userRelationshipStorage.sendFriendRequest(senderId, receiverId);
-    if (this.activityManager.getActivity(receiverId)) {
-      const receiverSocketId = this.userSocketStorage.clients.get(receiverId);
-      if (receiverSocketId === undefined) {
-        throw new InternalServerErrorException(
-          'Failed to find socketId of a user',
-        );
-      }
-      this.userGateway.emitPendingFriendRequest(receiverSocketId, true);
+    if (
+      this.userRelationshipStorage.getRelationship(senderId, receiverId) ===
+      'pendingSender'
+    ) {
+      return false;
     }
-    return prevRelationship === null;
+    await this.userRelationshipStorage.sendFriendRequest(senderId, receiverId);
+    const receiverSocketId = this.userSocketStorage.clients.get(receiverId);
+    if (receiverSocketId !== undefined) {
+      this.userGateway.emitFriendRequest(receiverSocketId, senderId);
+    }
+    return true;
   }
 
   /**
@@ -211,13 +156,8 @@ export class UserService {
       deletedId,
     );
     await this.userRelationshipStorage.deleteFriendship(deleterId, deletedId);
-    if (this.activityManager.getActivity(deletedId)) {
-      const deletedSocketId = this.userSocketStorage.clients.get(deletedId);
-      if (deletedSocketId === undefined) {
-        throw new InternalServerErrorException(
-          'Failed to find socketId of a user',
-        );
-      }
+    const deletedSocketId = this.userSocketStorage.clients.get(deletedId);
+    if (deletedSocketId !== undefined) {
       switch (prevRelationship) {
         case 'friend':
           this.userGateway.emitFriendRemoved(deletedSocketId, deleterId);
@@ -237,19 +177,68 @@ export class UserService {
    * @param acceptedId 친구 요청을 수락 당하는 유저 id
    */
   async acceptFriendRequest(accepterId: UserId, acceptedId: UserId) {
+    if (
+      this.userRelationshipStorage.getRelationship(accepterId, acceptedId) ===
+      'friend'
+    ) {
+      return;
+    }
     await this.userRelationshipStorage.acceptFriendRequest(
       accepterId,
       acceptedId,
     );
-    if (this.activityManager.getActivity(acceptedId)) {
-      const acceptedSocketId = this.userSocketStorage.clients.get(acceptedId);
-      if (acceptedSocketId === undefined) {
-        throw new InternalServerErrorException(
-          'Failed to find socketId of a user',
-        );
-      }
+    const acceptedSocketId = this.userSocketStorage.clients.get(acceptedId);
+    if (acceptedSocketId !== undefined) {
       this.userGateway.emitFriendAccepted(acceptedSocketId, accepterId);
     }
+  }
+
+  // TODO
+  /*****************************************************************************
+   *                                                                           *
+   * SECTION : Game                                                            *
+   *                                                                           *
+   ****************************************************************************/
+
+  // createGame() {}
+
+  // findGame(requesterId: UserId, peerId: UserId, gameId: GameId) {}
+
+  /*****************************************************************************
+   *                                                                           *
+   * SECTION : UserProfile                                                     *
+   *                                                                           *
+   ****************************************************************************/
+
+  /**
+   * @description 유저의 닉네임과 프로필 이미지 경로를 반환 & userInfo 이벤트를 송신
+   *
+   *
+   * @param requesterId 요청한 유저의 ID
+   * @param requestedId 조회 대상 유저의 ID
+   * @returns 유저의 닉네임과 프로필 이미지 경로
+   */
+  async findProfile(requesterId: UserId, targetId: UserId) {
+    let profile: UserProfileDto;
+    try {
+      profile = await this.usersRepository.findOne({
+        select: ['nickname', 'profileImage'],
+        where: { userId: targetId },
+      });
+    } catch (e) {
+      this.logger.error(e);
+      throw new InternalServerErrorException(
+        'Failed to find nickname and profileImage of a user',
+      );
+    }
+    const requesterSocketId = this.userSocketStorage.clients.get(requesterId);
+    if (requesterSocketId !== undefined) {
+      this.userGateway.emitUserInfo(
+        requesterSocketId,
+        this.createUserInfoDto(requesterId, targetId),
+      );
+    }
+    return profile;
   }
 
   /*****************************************************************************

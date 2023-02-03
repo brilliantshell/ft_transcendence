@@ -20,8 +20,9 @@ import {
   generateUsers,
   generateChannels,
 } from './generate-mock-data';
+import { timeout } from './util';
 
-describe('UserStatusModule (e2e)', () => {
+describe('ChatsGateway (e2e)', () => {
   let app: INestApplication;
   let chatsGateway: ChatsGateway;
 
@@ -358,21 +359,3 @@ describe('UserStatusModule (e2e)', () => {
       .catch((err) => expect(err).toBe('timeout'));
   });
 });
-
-async function timeout<T>(ms: number, promise: Promise<T>): Promise<T> {
-  return new Promise((resolve, reject) => {
-    const timer = setTimeout(() => {
-      reject('timeout');
-    }, ms);
-    promise.then(
-      (value) => {
-        clearTimeout(timer);
-        resolve(value);
-      },
-      (err) => {
-        clearTimeout(timer);
-        reject(err);
-      },
-    );
-  });
-}

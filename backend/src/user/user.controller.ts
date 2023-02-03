@@ -2,45 +2,29 @@ import {
   Controller,
   Delete,
   Get,
-  Param,
+  HttpStatus,
   Patch,
   Post,
   Put,
   Req,
+  Res,
   UseGuards,
 } from '@nestjs/common';
-import { Request } from 'express';
+import { Response } from 'express';
 
 import { AcceptFriendGuard } from './guard/accept-friend.guard';
 import { BlockedUserGuard } from './guard/blocked-user.guard';
 import { CreateFriendRequestGuard } from './guard/create-friend-request.guard';
 import { DeleteFriendGuard } from './guard/delete-friend.guard';
 import { DeleteBlockGuard } from './guard/delete-block.guard';
+import { RelationshipRequest, VerifiedRequest } from '../util/type';
+import { SelfCheckGuard } from './guard/self-check.guard';
 import { UserExistGuard } from './guard/user-exist.guard';
-import { UserId, VerifiedRequest } from '../util/type';
 import { UserService } from './user.service';
 
 @Controller('user')
 export class UserController {
   constructor(private readonly userService: UserService) {}
-
-  @Get(':userId/info')
-  @UseGuards(UserExistGuard)
-  findProfile(@Req() req: Request, @Param(':userId') userId: UserId) {}
-
-  /*****************************************************************************
-   *                                                                           *
-   * SECTION : Game                                                            *
-   *                                                                           *
-   ****************************************************************************/
-
-  @Post(':userId/game')
-  @UseGuards(UserExistGuard, BlockedUserGuard)
-  createGame(@Req() req: Request, @Param(':userId') userId: UserId) {}
-
-  @Get(':userId/game/:gameId')
-  @UseGuards(UserExistGuard, BlockedUserGuard)
-  findGame(@Req() req: Request, @Param(':userId') userId: UserId) {}
 
   /*****************************************************************************
    *                                                                           *
@@ -49,12 +33,41 @@ export class UserController {
    ****************************************************************************/
 
   @Put(':userId/block')
-  @UseGuards(UserExistGuard, BlockedUserGuard)
-  createBlock(@Req() req: Request, @Param(':userId') userId: UserId) {}
+  @UseGuards(SelfCheckGuard, UserExistGuard, BlockedUserGuard)
+  async createBlock(@Req() req: RelationshipRequest, @Res() res: Response) {
+    res
+      .status(
+        (await this.userService.createBlock(req.user.userId, req.targetId))
+          ? 201
+          : 200,
+      )
+      .end();
+  }
 
   @Delete(':userId/block')
-  @UseGuards(UserExistGuard, BlockedUserGuard, DeleteBlockGuard)
-  deleteBlock(@Req() req: Request, @Param(':userId') userId: UserId) {}
+  @UseGuards(SelfCheckGuard, UserExistGuard, BlockedUserGuard, DeleteBlockGuard)
+  async deleteBlock(@Req() req: RelationshipRequest) {
+    await this.userService.deleteBlock(req.user.userId, req.targetId);
+  }
+
+  /*****************************************************************************
+   *                                                                           *
+   * SECTION : DM                                                              *
+   *                                                                           *
+   ****************************************************************************/
+
+  @Put(':userId/dm')
+  @UseGuards(SelfCheckGuard, UserExistGuard)
+  async createDm(@Req() req: RelationshipRequest, @Res() res: Response) {
+    const { dmId, isNew } = await this.userService.createDm(
+      req.user.userId,
+      req.targetId,
+    );
+    res
+      .status(isNew ? HttpStatus.CREATED : HttpStatus.OK)
+      .set('location', `/chats/${dmId}`)
+      .end();
+  }
 
   /*****************************************************************************
    *                                                                           *
@@ -64,22 +77,91 @@ export class UserController {
 
   @Get('friends')
   findFriends(@Req() req: VerifiedRequest) {
-    // return this.userService.findFriends(
-    //   process.env.NODE_ENV === 'development'
-    //     ? Math.floor(Number(req.headers['x-user-id']))
-    //     : req.user.userId,
-    // );
+    return this.userService.findFriends(
+      process.env.NODE_ENV === 'development'
+        ? Math.floor(Number(req.headers['x-user-id']))
+        : req.user.userId,
+    );
   }
 
   @Put(':userId/friend')
-  @UseGuards(UserExistGuard, BlockedUserGuard, CreateFriendRequestGuard)
-  createFriendRequest(@Req() req: Request, @Param(':userId') userId: UserId) {}
+  @UseGuards(
+    SelfCheckGuard,
+    UserExistGuard,
+    BlockedUserGuard,
+    CreateFriendRequestGuard,
+  )
+  async createFriendRequest(
+    @Req() req: RelationshipRequest,
+    @Res() res: Response,
+  ) {
+    res
+      .status(
+        (await this.userService.createFriendRequest(
+          req.user.userId,
+          req.targetId,
+        ))
+          ? HttpStatus.CREATED
+          : HttpStatus.OK,
+      )
+      .end();
+  }
 
   @Delete(':userId/friend')
-  @UseGuards(UserExistGuard, BlockedUserGuard, DeleteFriendGuard)
-  deleteFriendship(@Req() req: Request, @Param(':userId') userId: UserId) {}
+  @UseGuards(
+    SelfCheckGuard,
+    UserExistGuard,
+    BlockedUserGuard,
+    DeleteFriendGuard,
+  )
+  async deleteFriendship(@Req() req: RelationshipRequest) {
+    await this.userService.deleteFriendship(req.user.userId, req.targetId);
+  }
 
   @Patch(':userId/friend')
-  @UseGuards(UserExistGuard, BlockedUserGuard, AcceptFriendGuard)
-  updateFriendship(@Req() req: Request, @Param(':userId') userId: UserId) {}
+  @UseGuards(
+    SelfCheckGuard,
+    UserExistGuard,
+    BlockedUserGuard,
+    AcceptFriendGuard,
+  )
+  async updateFriendship(@Req() req: RelationshipRequest) {
+    await this.userService.acceptFriendRequest(req.user.userId, req.targetId);
+  }
+
+  /*****************************************************************************
+   *                                                                           *
+   * TODO : Game                                                               *
+   *                                                                           *
+   ****************************************************************************/
+
+  @Post(':userId/game')
+  @UseGuards(SelfCheckGuard, UserExistGuard, BlockedUserGuard)
+  createGame(@Req() req: RelationshipRequest) {}
+
+  @Get(':userId/game/:gameId')
+  @UseGuards(SelfCheckGuard, UserExistGuard, BlockedUserGuard)
+  findGame(@Req() req: RelationshipRequest) {}
+
+  /*****************************************************************************
+   *                                                                           *
+   * SECTION : UserProfile                                                     *
+   *                                                                           *
+   ****************************************************************************/
+
+  @Get('id')
+  findId(@Req() req: VerifiedRequest) {
+    return {
+      userId:
+        process.env.NODE_ENV === 'development'
+          ? Math.floor(Number(req.headers['x-user-id']))
+          : req.user.userId,
+    };
+  }
+
+  @Get(':userId/info')
+  @UseGuards(UserExistGuard)
+  async findProfile(@Req() req: RelationshipRequest) {
+    return await this.userService.findProfile(req.user.userId, req.targetId);
+  }
 }

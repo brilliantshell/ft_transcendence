@@ -84,7 +84,7 @@ describe('UserService', () => {
         emitUserInfo: (socketId: SocketId, userInfo: UserInfoDto) => undefined,
         emitBlocked: (socketId: SocketId, blockerId: UserId) => undefined,
         emitUnblocked: (socketId: SocketId, unblockerId: UserId) => undefined,
-        emitPendingFriendRequest: (socketId: SocketId, isPending: boolean) =>
+        emitFriendRequest: (socketId: SocketId, requestedBy: UserId) =>
           undefined,
         emitFriendCancelled: (socketId: SocketId, cancelledBy: UserId) =>
           undefined,
@@ -251,7 +251,7 @@ describe('UserService', () => {
   describe('Friend', () => {
     it('should send a friend requst (both are logged in)', async () => {
       const [senderId, receiverId] = userIds;
-      const spy = jest.spyOn(userGateway, 'emitPendingFriendRequest');
+      const spy = jest.spyOn(userGateway, 'emitFriendRequest');
       expect(
         await service.createFriendRequest(senderId, receiverId),
       ).toBeTruthy();
@@ -263,7 +263,7 @@ describe('UserService', () => {
       ).toEqual('pendingReceiver');
       expect(spy).toHaveBeenCalledWith(
         userSocketStorage.clients.get(receiverId),
-        true,
+        senderId,
       );
     });
 
@@ -272,7 +272,7 @@ describe('UserService', () => {
       userSocketStorage.clients.delete(receiverId);
       userRelationshipStorage.unload(receiverId);
       activityManager.deleteActivity(receiverId);
-      const spy = jest.spyOn(userGateway, 'emitPendingFriendRequest');
+      const spy = jest.spyOn(userGateway, 'emitFriendRequest');
       expect(
         await service.createFriendRequest(senderId, receiverId),
       ).toBeTruthy();
