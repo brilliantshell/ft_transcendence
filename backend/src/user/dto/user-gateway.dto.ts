@@ -19,8 +19,8 @@ export interface FriendCancelledDto {
   cancelledBy: UserId;
 }
 
-export interface PendingFriendRequestDto {
-  isPending: boolean;
+export interface FriendRequestDto {
+  requestedBy: UserId;
 }
 
 export interface FriendRemovedDto {

@@ -13,7 +13,7 @@ import {
   FriendCancelledDto,
   FriendDeclinedDto,
   FriendRemovedDto,
-  PendingFriendRequestDto,
+  FriendRequestDto,
   UnblockedDto,
 } from '../src/user/dto/user-gateway.dto';
 import { BlockedUsers } from '../src/entity/blocked-users.entity';
@@ -45,7 +45,7 @@ enum Relationships {
 const ONLINE = true;
 const OFFLINE = false;
 
-describe.skip('UserStatusModule (e2e)', () => {
+describe.skip('UserGateway (e2e)', () => {
   let app: INestApplication;
   let usersEntities: Users[];
   let gateway: UserGateway;
@@ -301,16 +301,13 @@ describe.skip('UserStatusModule (e2e)', () => {
     });
 
     it('should notifiy a user when there is a new friend request', async () => {
-      gateway.emitPendingFriendRequest(receiverSocket.id, true);
-      const { isPending } = await new Promise<PendingFriendRequestDto>(
-        (resolve) => {
-          receiverSocket.on(
-            'pendingFriendRequest',
-            (data: PendingFriendRequestDto) => resolve(data),
-          );
-        },
-      );
-      expect(isPending).toBeTruthy();
+      gateway.emitFriendRequest(receiverSocket.id, senderId);
+      const { requestedBy } = await new Promise<FriendRequestDto>((resolve) => {
+        receiverSocket.on('friendRequest', (data: FriendRequestDto) =>
+          resolve(data),
+        );
+      });
+      expect(requestedBy).toBeTruthy();
     });
 
     it('should let the user know that he is no longer friend to another user', async () => {
