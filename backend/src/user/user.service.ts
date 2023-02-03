@@ -35,76 +35,6 @@ export class UserService {
    *                                                                           *
    ****************************************************************************/
 
-  /**
-   * @description 유저의 닉네임과 프로필 이미지 경로를 반환 & userInfo 이벤트를 송신
-   *
-   *
-   * @param requesterId 요청한 유저의 ID
-   * @param requestedId 조회 대상 유저의 ID
-   * @returns 유저의 닉네임과 프로필 이미지 경로
-   */
-  async findProfile(requesterId: UserId, targetId: UserId) {
-    let profile: UserProfileDto;
-    try {
-      profile = await this.usersRepository.findOne({
-        select: ['nickname', 'profileImage'],
-        where: { userId: targetId },
-      });
-    } catch (e) {
-      this.logger.error(e);
-      throw new InternalServerErrorException(
-        'Failed to find nickname and profileImage of a user',
-      );
-    }
-    const requesterSocketId = this.userSocketStorage.clients.get(requesterId);
-    if (requesterSocketId !== undefined) {
-      this.userGateway.emitUserInfo(
-        requesterSocketId,
-        this.createUserInfoDto(requesterId, targetId),
-      );
-    }
-    return profile;
-  }
-
-  /*****************************************************************************
-   *                                                                           *
-   * SECTION : DM                                                              *
-   *                                                                           *
-   ****************************************************************************/
-
-  /**
-   * @description DM 채널을 생성, 해당 채널의 id 및 신규 여부 반환
-   *
-   * @param ownerId DM 채널의 생성자 id
-   * @param peerId DM 채널의 상대방 id
-   * @returns DM 채널의 id 및 신규 여부
-   */
-  async createDm(ownerId: UserId, peerId: UserId) {
-    const channels = this.channelStorage.getUser(ownerId);
-    for (const [channelId] of channels) {
-      if (
-        this.userRelationshipStorage.isBlockedDm(channelId) !== undefined &&
-        this.channelStorage.getChannel(channelId).userRoleMap.has(peerId)
-      ) {
-        return { dmId: channelId, isNew: false };
-      }
-    }
-    return {
-      dmId: await this.channelStorage.addDm(ownerId, peerId),
-      isNew: true,
-    };
-  }
-
-  // TODO
-  /*****************************************************************************
-   *                                                                           *
-   * SECTION : Game                                                            *
-   *                                                                           *
-   ****************************************************************************/
-  // createGame() {}
-
-  // findGame(requesterId: UserId, peerId: UserId, gameId: GameId) {}
-
   /*****************************************************************************
    *                                                                           *
    * SECTION : Block                                                           *
@@ -145,6 +75,35 @@ export class UserService {
     if (unblockedSocketId !== undefined) {
       this.userGateway.emitUnblocked(unblockedSocketId, unblockerId);
     }
+  }
+
+  /*****************************************************************************
+   *                                                                           *
+   * SECTION : DM                                                              *
+   *                                                                           *
+   ****************************************************************************/
+
+  /**
+   * @description DM 채널을 생성, 해당 채널의 id 및 신규 여부 반환
+   *
+   * @param ownerId DM 채널의 생성자 id
+   * @param peerId DM 채널의 상대방 id
+   * @returns DM 채널의 id 및 신규 여부
+   */
+  async createDm(ownerId: UserId, peerId: UserId) {
+    const channels = this.channelStorage.getUser(ownerId);
+    for (const [channelId] of channels) {
+      if (
+        this.userRelationshipStorage.isBlockedDm(channelId) !== undefined &&
+        this.channelStorage.getChannel(channelId).userRoleMap.has(peerId)
+      ) {
+        return { dmId: channelId, isNew: false };
+      }
+    }
+    return {
+      dmId: await this.channelStorage.addDm(ownerId, peerId),
+      isNew: true,
+    };
   }
 
   /*****************************************************************************
@@ -232,6 +191,54 @@ export class UserService {
     if (acceptedSocketId !== undefined) {
       this.userGateway.emitFriendAccepted(acceptedSocketId, accepterId);
     }
+  }
+
+  // TODO
+  /*****************************************************************************
+   *                                                                           *
+   * SECTION : Game                                                            *
+   *                                                                           *
+   ****************************************************************************/
+
+  // createGame() {}
+
+  // findGame(requesterId: UserId, peerId: UserId, gameId: GameId) {}
+
+  /*****************************************************************************
+   *                                                                           *
+   * SECTION : UserProfile                                                     *
+   *                                                                           *
+   ****************************************************************************/
+
+  /**
+   * @description 유저의 닉네임과 프로필 이미지 경로를 반환 & userInfo 이벤트를 송신
+   *
+   *
+   * @param requesterId 요청한 유저의 ID
+   * @param requestedId 조회 대상 유저의 ID
+   * @returns 유저의 닉네임과 프로필 이미지 경로
+   */
+  async findProfile(requesterId: UserId, targetId: UserId) {
+    let profile: UserProfileDto;
+    try {
+      profile = await this.usersRepository.findOne({
+        select: ['nickname', 'profileImage'],
+        where: { userId: targetId },
+      });
+    } catch (e) {
+      this.logger.error(e);
+      throw new InternalServerErrorException(
+        'Failed to find nickname and profileImage of a user',
+      );
+    }
+    const requesterSocketId = this.userSocketStorage.clients.get(requesterId);
+    if (requesterSocketId !== undefined) {
+      this.userGateway.emitUserInfo(
+        requesterSocketId,
+        this.createUserInfoDto(requesterId, targetId),
+      );
+    }
+    return profile;
   }
 
   /*****************************************************************************

@@ -10,15 +10,17 @@ import waitForExpect from 'wait-for-expect';
 import { ActivityManager } from '../src/user-status/activity.manager';
 import { AppModule } from '../src/app.module';
 import { BannedMembers } from '../src/entity/banned-members.entity';
-import { BlockedUsers } from '../src/entity/blocked-users.entity';
-import { ChannelMembers } from '../src/entity/channel-members.entity';
-import { Channels } from '../src/entity/channels.entity';
 import {
+  BlockedDto,
   FriendAcceptedDto,
   FriendCancelledDto,
   FriendDeclinedDto,
   FriendRemovedDto,
+  UnblockedDto,
 } from '../src/user/dto/user-gateway.dto';
+import { BlockedUsers } from '../src/entity/blocked-users.entity';
+import { ChannelMembers } from '../src/entity/channel-members.entity';
+import { Channels } from '../src/entity/channels.entity';
 import { Friends } from '../src/entity/friends.entity';
 import { Messages } from '../src/entity/messages.entity';
 import { UserId } from '../src/util/type';
@@ -804,6 +806,94 @@ describe('UserController - /user (e2e)', () => {
       }
       expect(response.value.status).toEqual(200);
       expect(response.value.body).toEqual({});
+    });
+  });
+
+  /*****************************************************************************
+   *                                                                           *
+   * SECTION : PUT /user/:userId/block                                         *
+   *                                                                           *
+   ****************************************************************************/
+
+  describe('PUT /user/:userId/block', () => {
+    it('should block a user (201)', async () => {
+      const [wsMessage, response] = await Promise.all([
+        new Promise((resolve) =>
+          clientSockets[1].on('blocked', (data: BlockedDto) => resolve(data)),
+        ),
+        request(app.getHttpServer())
+          .put(`/user/${userIds[1]}/block`)
+          .set('x-user-id', userIds[0].toString()),
+      ]);
+      expect(wsMessage).toEqual({
+        blockedBy: userIds[0],
+      });
+      expect(response.status).toEqual(201);
+      expect(response.body).toEqual({});
+    });
+
+    it('should not resend blocked event (200)', async () => {
+      const [wsMessage, responseOne] = await Promise.all([
+        new Promise((resolve) =>
+          clientSockets[1].on('blocked', (data: BlockedDto) => resolve(data)),
+        ),
+        request(app.getHttpServer())
+          .put(`/user/${userIds[1]}/block`)
+          .set('x-user-id', userIds[0].toString()),
+      ]);
+      expect(wsMessage).toEqual({
+        blockedBy: userIds[0],
+      });
+      expect(responseOne.status).toEqual(201);
+      expect(responseOne.body).toEqual({});
+      const [wsError, responseTwo] = await Promise.allSettled([
+        timeout(
+          1000,
+          new Promise((resolve) =>
+            clientSockets[1].on('blocked', (data: BlockedDto) => resolve(data)),
+          ),
+        ),
+        request(app.getHttpServer())
+          .put(`/user/${userIds[1]}/block`)
+          .set('x-user-id', userIds[0].toString()),
+      ]);
+      expect(wsError.status).toBe('rejected');
+      if (responseTwo.status === 'rejected') {
+        fail();
+      }
+      expect(responseTwo.value.status).toEqual(200);
+      expect(responseTwo.value.body).toEqual({});
+    });
+  });
+
+  /*****************************************************************************
+   *                                                                           *
+   * SECTION : DELETE /user/:userId/block                                      *
+   *                                                                           *
+   ****************************************************************************/
+
+  describe('DELETE /user/:userId/block', () => {
+    it('should unblock a user (200)', async () => {
+      const blockEntities = generateBlockedUsers(
+        usersEntities.slice(index, index + 2),
+      );
+      await dataSource.manager.save(BlockedUsers, blockEntities);
+      await userRelationshipStorage.load(userIds[0]);
+      const [wsMessage, response] = await Promise.all([
+        new Promise((resolve) =>
+          clientSockets[1].on('unblocked', (data: UnblockedDto) =>
+            resolve(data),
+          ),
+        ),
+        request(app.getHttpServer())
+          .delete(`/user/${userIds[1]}/block`)
+          .set('x-user-id', userIds[0].toString()),
+      ]);
+      expect(wsMessage).toEqual({
+        unblockedBy: userIds[0],
+      });
+      expect(response.status).toEqual(200);
+      expect(response.body).toEqual({});
     });
   });
 });

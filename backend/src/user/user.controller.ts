@@ -12,7 +12,7 @@ import {
   Res,
   UseGuards,
 } from '@nestjs/common';
-import { Request, Response } from 'express';
+import { Response } from 'express';
 
 import { AcceptFriendGuard } from './guard/accept-friend.guard';
 import { BlockedUserGuard } from './guard/blocked-user.guard';
@@ -28,32 +28,6 @@ import { UserService } from './user.service';
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
-  @Get(':userId/info')
-  @UseGuards(UserExistGuard)
-  async findProfile(
-    @Req() req: VerifiedRequest,
-    @Param('userId', ParseIntPipe) targetId: UserId,
-  ) {
-    return await this.userService.findProfile(req.user.userId, targetId);
-  }
-
-  /*****************************************************************************
-   *                                                                           *
-   * SECTION : Game                                                            *
-   *                                                                           *
-   ****************************************************************************/
-
-  @Post(':userId/game')
-  @UseGuards(SelfCheckGuard, UserExistGuard, BlockedUserGuard)
-  createGame(@Req() req: Request, @Param('userId') userId: UserId) {}
-
-  @Get(':userId/game/:gameId')
-  @UseGuards(SelfCheckGuard, UserExistGuard, BlockedUserGuard)
-  findGame(
-    @Req() req: Request,
-    @Param() params: { userId: UserId; gameId: number },
-  ) {}
-
   /*****************************************************************************
    *                                                                           *
    * SECTION : Block                                                           *
@@ -62,11 +36,34 @@ export class UserController {
 
   @Put(':userId/block')
   @UseGuards(SelfCheckGuard, UserExistGuard, BlockedUserGuard)
-  createBlock(@Req() req: Request, @Param('userId') userId: UserId) {}
+  async createBlock(
+    @Req() req: VerifiedRequest,
+    @Param('userId', ParseIntPipe) targetId: UserId,
+    @Res() res: Response,
+  ) {
+    res
+      .status(
+        (await this.userService.createBlock(req.user.userId, targetId))
+          ? 201
+          : 200,
+      )
+      .end();
+  }
 
   @Delete(':userId/block')
   @UseGuards(SelfCheckGuard, UserExistGuard, BlockedUserGuard, DeleteBlockGuard)
-  deleteBlock(@Req() req: Request, @Param('userId') userId: UserId) {}
+  async deleteBlock(
+    @Req() req: VerifiedRequest,
+    @Param('userId', ParseIntPipe) targetId: UserId,
+  ) {
+    await this.userService.deleteBlock(req.user.userId, targetId);
+  }
+
+  /*****************************************************************************
+   *                                                                           *
+   * SECTION : DM                                                              *
+   *                                                                           *
+   ****************************************************************************/
 
   /*****************************************************************************
    *                                                                           *
@@ -130,5 +127,38 @@ export class UserController {
     @Param('userId', ParseIntPipe) targetId: UserId,
   ) {
     await this.userService.acceptFriendRequest(req.user.userId, targetId);
+  }
+
+  // TODO
+  /*****************************************************************************
+   *                                                                           *
+   * SECTION : Game                                                            *
+   *                                                                           *
+   ****************************************************************************/
+
+  @Post(':userId/game')
+  @UseGuards(SelfCheckGuard, UserExistGuard, BlockedUserGuard)
+  createGame(@Req() req: VerifiedRequest, @Param('userId') userId: UserId) {}
+
+  @Get(':userId/game/:gameId')
+  @UseGuards(SelfCheckGuard, UserExistGuard, BlockedUserGuard)
+  findGame(
+    @Req() req: VerifiedRequest,
+    @Param() params: { userId: UserId; gameId: number },
+  ) {}
+
+  /*****************************************************************************
+   *                                                                           *
+   * SECTION : UserProfile                                                     *
+   *                                                                           *
+   ****************************************************************************/
+
+  @Get(':userId/info')
+  @UseGuards(UserExistGuard)
+  async findProfile(
+    @Req() req: VerifiedRequest,
+    @Param('userId', ParseIntPipe) targetId: UserId,
+  ) {
+    return await this.userService.findProfile(req.user.userId, targetId);
   }
 }
