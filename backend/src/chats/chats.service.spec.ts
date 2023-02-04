@@ -543,10 +543,6 @@ describe('ChatsService', () => {
       const channelId = Array.from(channelStorage.getChannels()).find(
         (v) => v[1].userRoleMap.size > 3,
       )[0];
-      const [userId] = channelStorage
-        .getChannels()
-        .get(channelId)
-        .userRoleMap.keys();
       if (!channelId) {
         return console.log('FIND CHANNEL MESSAGES TEST SKIPPED!!!');
       }
@@ -560,7 +556,7 @@ describe('ChatsService', () => {
           const { createdAt, contents, senderId } = v;
           return { senderId, contents, createdAt: createdAt.toMillis() };
         });
-      const ret = await service.findChannelMessages(channelId, userId, 0, 3);
+      const ret = await service.findChannelMessages(channelId, 0, 3);
       expect(ret).toEqual({ messages: [...messagesDto.slice(0, 3)] });
       await dataSource.getRepository(Messages).remove(messages);
     });
@@ -574,10 +570,6 @@ describe('ChatsService', () => {
           'FIND CHANNEL MESSAGES WITT MAX SIZE TEST SKIPPED!!!',
         );
       }
-      const [userId] = channelStorage
-        .getChannels()
-        .get(channelId)
-        .userRoleMap.keys();
       const messages = generateMessages(
         channelMembersEntities.filter((v) => v.channelId === channelId),
       );
@@ -588,13 +580,7 @@ describe('ChatsService', () => {
           const { createdAt, contents, senderId } = v;
           return { senderId, contents, createdAt: createdAt.toMillis() };
         });
-      const ret = await service.findChannelMessages(
-        channelId,
-        userId,
-        0,
-        // BigInt('9223372036854775806') javascript change the number to 9223372036854766000
-        21474836499923,
-      );
+      const ret = await service.findChannelMessages(channelId, 0, 10001);
       expect(ret).toEqual({ messages: [...messagesDto] });
       await dataSource.getRepository(Messages).remove(messages);
     });
@@ -603,10 +589,6 @@ describe('ChatsService', () => {
       const channelId = Array.from(channelStorage.getChannels()).find(
         (v) => v[1].userRoleMap.size > 3,
       )[0];
-      const [userId] = channelStorage
-        .getChannels()
-        .get(channelId)
-        .userRoleMap.keys();
       if (!channelId) {
         return console.log(
           'FIND CHANNEL MESSAGES WITH BIG OFFSET TEST SKIPPED!!!',
@@ -616,12 +598,7 @@ describe('ChatsService', () => {
         channelMembersEntities.filter((v) => v.channelId === channelId),
       );
       await dataSource.getRepository(Messages).insert(messages);
-      const ret = await service.findChannelMessages(
-        channelId,
-        userId,
-        99999999999999,
-        3,
-      );
+      const ret = await service.findChannelMessages(channelId, 2147483648, 3);
       expect(ret).toEqual({ messages: [] });
       await dataSource.getRepository(Messages).remove(messages);
     });
@@ -675,7 +652,12 @@ describe('ChatsService', () => {
 
       await service.joinChannel(newChannelId, anotherUserId, true);
       const msg = { message: 'hello message!' };
-      await service.controlMessage(newChannelId, userId, msg.message);
+      await service.controlMessage(
+        newChannelId,
+        userId,
+        msg.message,
+        DateTime.now(),
+      );
       expect(newMessageSpy).toBeCalledWith(
         userId,
         newChannelId,
@@ -702,40 +684,6 @@ describe('ChatsService', () => {
       });
     });
 
-    it('should not create message when muted user sends message', async () => {
-      // user create channel and send message
-      // another user is already loaded and join the channel
-      const userId = usersEntities[1].userId;
-      let newChannelData: CreateChannelDto = {
-        channelName: 'newChannel',
-        accessMode: 'private',
-      };
-      newChannelData = await new ValidateNewChannelPipe().transform(
-        newChannelData,
-      );
-      const newChannelId = await service.createChannel(userId, newChannelData);
-      const anotherUserId = usersEntities[2].userId;
-      activityManager.setActivity(userId, `chatRooms-${newChannelId}`);
-      activityManager.setActivity(anotherUserId, `chatRooms-${newChannelId}`);
-
-      await service.joinChannel(newChannelId, anotherUserId, true);
-      const msg = { message: 'hello message!' };
-      await channelStorage.updateMuteStatus(
-        newChannelId,
-        userId,
-        anotherUserId,
-        DateTime.now().plus({ days: 1 }),
-      );
-      expect(
-        async () =>
-          await service.controlMessage(
-            newChannelId,
-            anotherUserId,
-            msg.message,
-          ),
-      ).rejects.toThrow(ForbiddenException);
-    });
-
     it('should execute role command (executor : owner)', async () => {
       const ownerId = usersEntities[1].userId;
       let newChannelData: CreateChannelDto = {
@@ -750,7 +698,12 @@ describe('ChatsService', () => {
 
       await service.joinChannel(newChannelId, anotherUserId, true);
       let msg = { message: `/role ${anotherUserId} admin` };
-      await service.controlMessage(newChannelId, ownerId, msg.message);
+      await service.controlMessage(
+        newChannelId,
+        ownerId,
+        msg.message,
+        DateTime.now(),
+      );
       expect(channelStorage.getUserRole(newChannelId, anotherUserId)).toBe(
         'admin',
       );
@@ -760,7 +713,12 @@ describe('ChatsService', () => {
         'admin',
       );
       msg = { message: `/role ${anotherUserId} member` };
-      await service.controlMessage(newChannelId, ownerId, msg.message);
+      await service.controlMessage(
+        newChannelId,
+        ownerId,
+        msg.message,
+        DateTime.now(),
+      );
       expect(channelStorage.getUserRole(newChannelId, anotherUserId)).toBe(
         'member',
       );
@@ -788,12 +746,22 @@ describe('ChatsService', () => {
       await service.joinChannel(newChannelId, memberId, true);
 
       let msg = { message: `/role ${adminId} admin` };
-      await service.controlMessage(newChannelId, ownerId, msg.message);
+      await service.controlMessage(
+        newChannelId,
+        ownerId,
+        msg.message,
+        DateTime.now(),
+      );
       expect(channelStorage.getUserRole(newChannelId, adminId)).toBe('admin');
       expect(roleChangedSpy).toBeCalledWith(adminId, newChannelId, 'admin');
 
       msg = { message: `/role ${memberId} admin` };
-      await service.controlMessage(newChannelId, adminId, msg.message);
+      await service.controlMessage(
+        newChannelId,
+        adminId,
+        msg.message,
+        DateTime.now(),
+      );
       expect(channelStorage.getUserRole(newChannelId, memberId)).toBe('admin');
       expect(roleChangedSpy).toBeCalledWith(memberId, newChannelId, 'admin');
     });
@@ -815,26 +783,46 @@ describe('ChatsService', () => {
       await service.joinChannel(newChannelId, memberId, true);
 
       let msg = { message: `/role ${adminId} admin` };
-      await service.controlMessage(newChannelId, ownerId, msg.message);
+      await service.controlMessage(
+        newChannelId,
+        ownerId,
+        msg.message,
+        DateTime.now(),
+      );
       expect(channelStorage.getUserRole(newChannelId, adminId)).toBe('admin');
       expect(roleChangedSpy).toBeCalledWith(adminId, newChannelId, 'admin');
 
       msg = { message: `/role ${adminId} member` };
       expect(
         async () =>
-          await service.controlMessage(newChannelId, memberId, msg.message),
+          await service.controlMessage(
+            newChannelId,
+            memberId,
+            msg.message,
+            DateTime.now(),
+          ),
       ).rejects.toThrow(ForbiddenException);
 
       msg = { message: `/role ${adminId} owner` };
       expect(
         async () =>
-          await service.controlMessage(newChannelId, memberId, msg.message),
+          await service.controlMessage(
+            newChannelId,
+            memberId,
+            msg.message,
+            DateTime.now(),
+          ),
       ).rejects.toThrow(BadRequestException);
 
       msg = { message: `/role ${ownerId} admin` };
       expect(
         async () =>
-          await service.controlMessage(newChannelId, memberId, msg.message),
+          await service.controlMessage(
+            newChannelId,
+            memberId,
+            msg.message,
+            DateTime.now(),
+          ),
       ).rejects.toThrow(ForbiddenException);
     });
 
@@ -857,6 +845,7 @@ describe('ChatsService', () => {
             newChannelId,
             anotherUserId,
             msg.message,
+            DateTime.now(),
           ),
       ).rejects.toThrow(ForbiddenException);
     });
@@ -880,6 +869,7 @@ describe('ChatsService', () => {
             newChannelId,
             anotherUserId,
             msg.message,
+            DateTime.now(),
           ),
       ).rejects.toThrow(ForbiddenException);
       msg = { message: `/ban ${ownerId} 42` };
@@ -889,6 +879,7 @@ describe('ChatsService', () => {
             newChannelId,
             anotherUserId,
             msg.message,
+            DateTime.now(),
           ),
       ).rejects.toThrow(ForbiddenException);
     });
@@ -910,12 +901,22 @@ describe('ChatsService', () => {
       await service.joinChannel(newChannelId, memberId, true);
 
       let msg = { message: `/role ${adminId} admin` };
-      await service.controlMessage(newChannelId, ownerId, msg.message);
+      await service.controlMessage(
+        newChannelId,
+        ownerId,
+        msg.message,
+        DateTime.now(),
+      );
       expect(channelStorage.getUserRole(newChannelId, adminId)).toBe('admin');
       expect(roleChangedSpy).toBeCalledWith(adminId, newChannelId, 'admin');
 
       msg = { message: `/mute ${memberId} 5` };
-      await service.controlMessage(newChannelId, ownerId, msg.message);
+      await service.controlMessage(
+        newChannelId,
+        ownerId,
+        msg.message,
+        DateTime.now(),
+      );
       expect(
         Math.round(
           DateTime.now()
@@ -951,14 +952,24 @@ describe('ChatsService', () => {
       await service.joinChannel(newChannelId, memberId, true);
 
       let msg = { message: `/role ${adminId} admin` };
-      await service.controlMessage(newChannelId, ownerId, msg.message);
+      await service.controlMessage(
+        newChannelId,
+        ownerId,
+        msg.message,
+        DateTime.now(),
+      );
       expect(channelStorage.getUserRole(newChannelId, adminId)).toBe('admin');
       expect(roleChangedSpy).toBeCalledWith(adminId, newChannelId, 'admin');
 
       msg = { message: `/mute ${memberId} -5` };
       expect(
         async () =>
-          await service.controlMessage(newChannelId, ownerId, msg.message),
+          await service.controlMessage(
+            newChannelId,
+            ownerId,
+            msg.message,
+            DateTime.now(),
+          ),
       ).rejects.toThrow(BadRequestException);
     });
 
@@ -979,14 +990,24 @@ describe('ChatsService', () => {
       await service.joinChannel(newChannelId, memberId, true);
 
       let msg = { message: `/role ${adminId} admin` };
-      await service.controlMessage(newChannelId, ownerId, msg.message);
+      await service.controlMessage(
+        newChannelId,
+        ownerId,
+        msg.message,
+        DateTime.now(),
+      );
       expect(channelStorage.getUserRole(newChannelId, adminId)).toBe('admin');
       expect(roleChangedSpy).toBeCalledWith(adminId, newChannelId, 'admin');
 
       msg = { message: `/mute ${ownerId} 5` };
       expect(
         async () =>
-          await service.controlMessage(newChannelId, adminId, msg.message),
+          await service.controlMessage(
+            newChannelId,
+            adminId,
+            msg.message,
+            DateTime.now(),
+          ),
       ).rejects.toThrow(ForbiddenException);
     });
 
@@ -1007,12 +1028,22 @@ describe('ChatsService', () => {
       await service.joinChannel(newChannelId, memberId, true);
 
       let msg = { message: `/role ${adminId} admin` };
-      await service.controlMessage(newChannelId, ownerId, msg.message);
+      await service.controlMessage(
+        newChannelId,
+        ownerId,
+        msg.message,
+        DateTime.now(),
+      );
       expect(channelStorage.getUserRole(newChannelId, adminId)).toBe('admin');
       expect(roleChangedSpy).toBeCalledWith(adminId, newChannelId, 'admin');
 
       msg = { message: `/ban ${memberId} 5` };
-      await service.controlMessage(newChannelId, adminId, msg.message);
+      await service.controlMessage(
+        newChannelId,
+        adminId,
+        msg.message,
+        DateTime.now(),
+      );
       expect(
         Math.round(
           DateTime.now()
@@ -1045,7 +1076,12 @@ describe('ChatsService', () => {
       const msg = { message: `/ba ${adminId} admin` };
       expect(
         async () =>
-          await service.controlMessage(newChannelId, ownerId, msg.message),
+          await service.controlMessage(
+            newChannelId,
+            ownerId,
+            msg.message,
+            DateTime.now(),
+          ),
       ).rejects.toThrow(BadRequestException);
     });
   });

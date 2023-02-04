@@ -165,27 +165,27 @@ export class ChatsService {
   }
 
   /**
-   * @description 채널의 메시지를 최신순으로 offset 부터 size만큼 반환
+   * @description 채널의 메시지를 최신순으로 offset 부터 limit만큼 반환
    *
    * @param channelId 요청한 채널의 Id
    * @param userId 요청한 유저의 Id
    * @param offset 시작 인덱스
-   * @param size 반환할 메시지의 수
+   * @param limit 반환할 메시지의 최대 개수
    * @returns 요청한 채널의 메시지 목록
    */
-  // NOTE : offset, size 가 음수일 경우는 pipe 단계에서 걸러진다 가정
+  // NOTE : offset, limit 가 음수일 경우는 pipe 단계에서 걸러진다 가정
   async findChannelMessages(
     channelId: ChannelId,
-    userId: UserId,
     offset: number,
-    size: number,
+    limit: number,
   ) {
     try {
       const messages = (
         await this.messagesRepository.find({
+          where: { channelId },
           order: { createdAt: 'ASC' as any },
           skip: offset,
-          take: size as any,
+          take: limit,
           select: ['senderId', 'contents', 'createdAt'],
         })
       ).map((message) => {
@@ -216,16 +216,12 @@ export class ChatsService {
     channelId: ChannelId,
     senderId: UserId,
     contents: string,
+    createdAt: DateTime,
   ) {
-    const now = DateTime.now();
-    if (this.channelStorage.getUser(senderId).get(channelId).muteEndAt > now) {
-      throw new ForbiddenException('You are muted');
-    }
-    // check readonly
     if (contents.startsWith('/')) {
       return await this.executeCommand(channelId, senderId, contents);
     }
-    await this.createMessage(channelId, senderId, contents, now);
+    await this.createMessage(channelId, senderId, contents, createdAt);
   }
 
   /*****************************************************************************
@@ -233,31 +229,6 @@ export class ChatsService {
    * SECTION : Private Methods                                                 *
    *                                                                           *
    ****************************************************************************/
-
-  /*****************************************************************************
-   *                                                                           *
-   * SECTION : Validate parameters                                             *
-   *                                                                           *
-   ****************************************************************************/
-
-  // /**
-  //  * @description 유효한 채널 정보를 반환, 유효하지 않은 경우 exception
-  //  *
-  //  * @param userId 요청한 유저의 Id
-  //  * @param channelId 요청한 채널의 Id
-  //  * @returns 유효한 채널 정보
-  //  */
-  // // FIXME: guard 나 pipe 생각해보기
-  // private validateChannelInfo(userId: UserId, channelId: ChannelId) {
-  //   const channelInfo = this.channelStorage.getChannel(channelId);
-  //   // if (channelInfo === undefined) {
-  //   //   throw new NotFoundException('Channel not found');
-  //   // }
-  //   // if (!channelInfo.userRoleMap.has(userId)) {
-  //   //   throw new ForbiddenException('You are not a member of this channel');
-  //   // }
-  //   return channelInfo;
-  // }
 
   /*****************************************************************************
    *                                                                           *

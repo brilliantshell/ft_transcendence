@@ -695,8 +695,50 @@ describe('UserController (e2e)', () => {
         .expect(400);
     });
 
+    it('GET /chats/:channelId/message?range=INT_MAX + 1,1 (invalid) ', async () => {
+      const channel = channelsEntities.find((c) => c.dmPeerId !== null);
+      const messages = generateMessages(
+        channelMembersEntities.filter((c) => c.channelId === channel.channelId),
+      );
+      const MAX_MESSAGE = 10000;
+      const [offset, size] = [2147483648, MAX_MESSAGE + 1];
+      await dataSource.getRepository(Messages).insert(messages);
+      return request(app.getHttpServer())
+        .get(`/chats/${channel.channelId}/message`)
+        .query({ range: `${offset},${size}` })
+        .set('x-user-id', channel.ownerId.toString())
+        .expect(400);
+    });
+
+    it('GET /chats/:channelId/message?range=negative,1 (invalid) ', async () => {
+      const channel = channelsEntities.find((c) => c.dmPeerId !== null);
+      const messages = generateMessages(
+        channelMembersEntities.filter((c) => c.channelId === channel.channelId),
+      );
+      const MAX_MESSAGE = 10000;
+      const [offset, size] = [-3, MAX_MESSAGE + 1];
+      await dataSource.getRepository(Messages).insert(messages);
+      return request(app.getHttpServer())
+        .get(`/chats/${channel.channelId}/message`)
+        .query({ range: `${offset},${size}` })
+        .set('x-user-id', channel.ownerId.toString())
+        .expect(400);
+    });
+
     it('POST /chats/:channelId/message (valid DTO)', async () => {
       const channel = channelsEntities.find((c) => c.dmPeerId !== null);
+      return request(app.getHttpServer())
+        .post(`/chats/${channel.channelId}/message`)
+        .set('x-user-id', channel.ownerId.toString())
+        .send({
+          message: 'test message',
+        })
+        .expect(201);
+    });
+
+    it('POST /chats/:channelId/message (valid DTO), muted member', async () => {
+      const channel = channelsEntities.find((c) => c.dmPeerId !== null);
+      console.error('TODO: 여기부터 에러란다');
       return request(app.getHttpServer())
         .post(`/chats/${channel.channelId}/message`)
         .set('x-user-id', channel.ownerId.toString())

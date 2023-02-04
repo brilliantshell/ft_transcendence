@@ -32,7 +32,7 @@ export class JoinChannelGuard implements CanActivate {
     const { channelId, userId } = context
       .switchToHttp()
       .getRequest<Request>().params;
-    if (!/^[1-9][0-9]{4,5}$/.test(userId)) {
+    if (typeof userId !== 'string' || !/^[1-9][0-9]{4,5}$/.test(userId)) {
       throw new BadRequestException('userId must be between 10000 and 999999');
     }
     const safeUserId = Math.floor(Number(userId));

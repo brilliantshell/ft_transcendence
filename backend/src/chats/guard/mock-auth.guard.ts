@@ -8,7 +8,7 @@ export class MockAuthGuard implements CanActivate {
     if (!userId || isNaN(userId)) {
       return false;
     }
-    req.user = { userId: Number(userId) };
+    req.user = { userId: Math.floor(Number(userId)) };
     return true;
   }
 }

@@ -76,10 +76,3 @@ export class JoinChannelDto {
   })
   password: string;
 }
-
-// TODO: range validation
-// export class FindChannelMessageQueryDto {
-//   @IsArray({ each: true })
-//   @Length(2, 2)
-//   range: number[];
-// }
