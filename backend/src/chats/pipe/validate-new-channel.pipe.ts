@@ -1,15 +1,17 @@
-import {
-  ArgumentMetadata,
-  BadRequestException,
-  Injectable,
-  PipeTransform,
-} from '@nestjs/common';
+import { BadRequestException, Injectable, PipeTransform } from '@nestjs/common';
 import { hash } from 'bcrypt';
+
 import { CreateChannelDto } from '../dto/chats.dto';
 
 @Injectable()
 export class ValidateNewChannelPipe implements PipeTransform {
   async transform(value: CreateChannelDto) {
+    const password = this.validate(value);
+    value.password = password === undefined ? null : await hash(password, 10);
+    return value;
+  }
+
+  private validate(value: CreateChannelDto) {
     const { accessMode, password } = value;
     if (accessMode === 'protected' && !password) {
       throw new BadRequestException(
@@ -21,8 +23,6 @@ export class ValidateNewChannelPipe implements PipeTransform {
         'Password is not allowed for public channel',
       );
     }
-    value.password = password === undefined ? null : await hash(password, 10);
-
-    return value;
+    return password;
   }
 }
