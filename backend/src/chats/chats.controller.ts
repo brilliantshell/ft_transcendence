@@ -25,6 +25,19 @@ import { MockAuthGuard } from './guard/mock-auth.guard';
 import { Response } from 'express';
 import { VerifiedRequest } from '../util/type';
 import { ValidateNewChannelPipe } from './pipe/validate-new-channel.pipe';
+import { ChannelExistGuard } from './guard/channel-exist.guard';
+import { MemberExistGuard } from './guard/member-exist.guard';
+import { JoinChannelGuard } from './guard/join-channel.guard';
+
+/**
+[] 존재하지 않는 channelId 로 요청시 404 응답하는 Guard 구현
+[] 채널의 member 가 요청을 보내야 하는 상황에서 userId 의 유저가 멤버가 아닐 시 403 응답하는 Guard 구현
+[] 채널 입장 시 userId 유저의 Ban 여부 검증하여 403 응답하는 Guard 구현
+[] 채널 입장 시 userId 유저가 이미 채널 멤버인 경우 409 응답하는 Guard 혹은 Pipe 구현
+[] 채널 메시지를 GET 하는 요청 시 query string 으로 오는 range 의 유효성을 검증하는 pipe 구현
+[] 채널에 메시지 전송한 유저가 Mute 상태일 시 403 응답하는 Guard 구현
+[] 채널에 메시지 전송 시 message 인지 command 인지 구분하여 데이터를 변환해주는 pipe 혹은 interceptor 구현
+ */
 
 @UseGuards(MockAuthGuard)
 @Controller('chats')
@@ -67,14 +80,13 @@ export class ChatsController {
    ****************************************************************************/
 
   @Get(':channelId')
-  findChannelMembers(
-    @Req() req: VerifiedRequest,
-    @Param('channelId', ParseIntPipe) channelId: number,
-  ) {
-    return this.chatsService.findChannelMembers(channelId, req.user.userId);
+  @UseGuards(ChannelExistGuard, MemberExistGuard)
+  findChannelMembers(@Param('channelId', ParseIntPipe) channelId: number) {
+    return this.chatsService.findChannelMembers(channelId);
   }
 
   @Post(':channelId/user/:userId')
+  @UseGuards(ChannelExistGuard, JoinChannelGuard)
   joinChannel(
     @Req() req: VerifiedRequest,
     @Param('channelId', ParseIntPipe) channelId: number,
@@ -90,6 +102,7 @@ export class ChatsController {
   }
 
   @Delete(':channelId/user')
+  @UseGuards(ChannelExistGuard, MemberExistGuard)
   leaveChannel(
     @Req() req: VerifiedRequest,
     @Param('channelId', ParseIntPipe) channelId: number,
@@ -104,6 +117,7 @@ export class ChatsController {
    ****************************************************************************/
 
   @Get(':channelId/message')
+  @UseGuards(ChannelExistGuard, MemberExistGuard)
   findChannelMessages(
     @Req() req: VerifiedRequest,
     @Param('channelId', ParseIntPipe) channelId: number,
@@ -130,6 +144,7 @@ export class ChatsController {
   }
 
   @Post(':channelId/message')
+  @UseGuards(ChannelExistGuard, MemberExistGuard)
   controlMessage(
     @Req() req: VerifiedRequest,
     @Param('channelId', ParseIntPipe) channelId: number,

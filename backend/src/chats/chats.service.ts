@@ -9,7 +9,7 @@ import {
 import { DateTime } from 'luxon';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { hash, compare } from 'bcrypt';
+import { compare } from 'bcrypt';
 
 import { AccessMode, Channels } from '../entity/channels.entity';
 import { ActivityManager } from '../user-status/activity.manager';
@@ -99,10 +99,10 @@ export class ChatsService {
    * @param userId 요청한 유저의 Id
    * @returns 채널의 멤버 목록 및 DM 차단 여부
    */
-  findChannelMembers(channelId: ChannelId, userId: UserId) {
-    const channelInfo = this.validateChannelInfo(userId, channelId);
+  findChannelMembers(channelId: ChannelId) {
+    const userRoleMap = this.channelStorage.getChannel(channelId).userRoleMap;
     const channelMembers: Array<{ id: UserId; role: UserRole }> = [];
-    for (const [userId, role] of channelInfo.userRoleMap) {
+    for (const [userId, role] of userRoleMap) {
       channelMembers.push({ id: userId, role });
     }
     const dm = this.userRelationshipStorage.isBlockedDm(channelId);
@@ -123,16 +123,7 @@ export class ChatsService {
     isInvited: boolean,
     password: string = null,
   ) {
-    // NODE: validation 이후 지울게 많아보임
-    const channelInfo = this.channelStorage.getChannel(channelId);
-    if (!channelInfo) {
-      throw new NotFoundException('Channel not found');
-    }
-    const banEndAt = await this.channelStorage.getBanEndAt(channelId, userId);
-    if (banEndAt > DateTime.now()) {
-      throw new ForbiddenException('You are banned');
-    }
-    const accessMode = channelInfo.accessMode;
+    const { accessMode } = this.channelStorage.getChannel(channelId);
     if (accessMode === 'public' || isInvited) {
       await this.channelStorage.addUserToChannel(channelId, userId);
       return this.chatsGateway.emitMemberJoin(userId, channelId);
@@ -165,7 +156,6 @@ export class ChatsService {
    * @param userId 나갈 유저의 Id
    */
   async leaveChannel(channelId: ChannelId, userId: UserId) {
-    this.validateChannelInfo(userId, channelId);
     await this.channelStorage.deleteUserFromChannel(channelId, userId);
     return this.chatsGateway.emitMemberLeft(
       userId,
@@ -190,7 +180,6 @@ export class ChatsService {
     offset: number,
     size: number,
   ) {
-    this.validateChannelInfo(userId, channelId);
     try {
       const messages = (
         await this.messagesRepository.find({
@@ -228,8 +217,6 @@ export class ChatsService {
     senderId: UserId,
     contents: string,
   ) {
-    // FIXME : 요청한 유저가 load 되지 않았을 수 있음
-    this.validateChannelInfo(senderId, channelId);
     const now = DateTime.now();
     if (this.channelStorage.getUser(senderId).get(channelId).muteEndAt > now) {
       throw new ForbiddenException('You are muted');
@@ -253,24 +240,24 @@ export class ChatsService {
    *                                                                           *
    ****************************************************************************/
 
-  /**
-   * @description 유효한 채널 정보를 반환, 유효하지 않은 경우 exception
-   *
-   * @param userId 요청한 유저의 Id
-   * @param channelId 요청한 채널의 Id
-   * @returns 유효한 채널 정보
-   */
-  // FIXME: guard 나 pipe 생각해보기
-  private validateChannelInfo(userId: UserId, channelId: ChannelId) {
-    const channelInfo = this.channelStorage.getChannel(channelId);
-    if (channelInfo === undefined) {
-      throw new NotFoundException('Channel not found');
-    }
-    if (!channelInfo.userRoleMap.has(userId)) {
-      throw new ForbiddenException('You are not a member of this channel');
-    }
-    return channelInfo;
-  }
+  // /**
+  //  * @description 유효한 채널 정보를 반환, 유효하지 않은 경우 exception
+  //  *
+  //  * @param userId 요청한 유저의 Id
+  //  * @param channelId 요청한 채널의 Id
+  //  * @returns 유효한 채널 정보
+  //  */
+  // // FIXME: guard 나 pipe 생각해보기
+  // private validateChannelInfo(userId: UserId, channelId: ChannelId) {
+  //   const channelInfo = this.channelStorage.getChannel(channelId);
+  //   // if (channelInfo === undefined) {
+  //   //   throw new NotFoundException('Channel not found');
+  //   // }
+  //   // if (!channelInfo.userRoleMap.has(userId)) {
+  //   //   throw new ForbiddenException('You are not a member of this channel');
+  //   // }
+  //   return channelInfo;
+  // }
 
   /*****************************************************************************
    *                                                                           *

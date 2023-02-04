@@ -295,7 +295,7 @@ describe('ChatsService', () => {
             .userRoleMap.get(v.memberId),
         };
       });
-      expect(service.findChannelMembers(channelId, memberData[0].id)).toEqual({
+      expect(service.findChannelMembers(channelId)).toEqual({
         channelMembers: memberData,
         isReadonlyDm: null,
       });
@@ -313,34 +313,10 @@ describe('ChatsService', () => {
           role: channelStorage.getChannel(channelId).userRoleMap.get(id),
         };
       });
-      expect(service.findChannelMembers(channelId, memberData[0].id)).toEqual({
+      expect(service.findChannelMembers(channelId)).toEqual({
         channelMembers: memberData,
         isReadonlyDm: userRelationshipStorage.isBlockedDm(channelId),
       });
-    });
-
-    it('should throw Not Found exception when channel not found', () => {
-      expect(() =>
-        service.findChannelMembers(424242, usersEntities[0].userId),
-      ).toThrow(NotFoundException);
-    });
-
-    it('should throw Forbidden exception when a user is not member of the channel', async () => {
-      const channel = channelsEntities.find((v) => v.dmPeerId === null);
-      const channelId = channel.channelId;
-      const channelMemberIds = channelMembersEntities
-        .filter((v) => v.channelId === channelId)
-        .map((v) => v.memberId);
-      const nonChannelMember = usersEntities.find(
-        (v) => !channelMemberIds.includes(v.userId),
-      );
-      if (!nonChannelMember) {
-        return console.log('FIND NON CHANNEL MEMBER TEST SKIPPED!!!');
-      }
-      const nonChannelMemberId = nonChannelMember.userId;
-      expect(() =>
-        service.findChannelMembers(channelId, nonChannelMemberId),
-      ).toThrow(ForbiddenException);
     });
   });
 
@@ -475,27 +451,6 @@ describe('ChatsService', () => {
       expect(channelStorage.getUserRole(newChannelId, anotherUserId)).toBe(
         'member',
       );
-    });
-
-    it('should not add banned user to the channel', async () => {
-      const userId = usersEntities[0].userId;
-      let newChannelData: CreateChannelDto = {
-        channelName: 'newChannel',
-        accessMode: 'public',
-      };
-      newChannelData = await new ValidateNewChannelPipe().transform(
-        newChannelData,
-      );
-      const newChannelId = await service.createChannel(userId, newChannelData);
-      const anotherUserId = usersEntities[1].userId;
-      await dataSource.getRepository(BannedMembers).insert({
-        channelId: newChannelId,
-        memberId: anotherUserId,
-        endAt: DateTime.now().plus({ days: 1 }),
-      });
-      expect(async () =>
-        service.joinChannel(newChannelId, anotherUserId, true),
-      ).rejects.toThrow(ForbiddenException);
     });
   });
 
@@ -1069,9 +1024,6 @@ describe('ChatsService', () => {
       ).toBe(-5);
 
       expect(memberLeftSpy).toBeCalledWith(memberId, newChannelId, false);
-      expect(
-        async () => await service.joinChannel(newChannelId, memberId, true),
-      ).rejects.toThrow(ForbiddenException);
     });
 
     it('should throw when command is out of form', async () => {
