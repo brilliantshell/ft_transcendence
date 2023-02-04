@@ -15,7 +15,7 @@ import { AccessMode, Channels } from '../entity/channels.entity';
 import { ActivityManager } from '../user-status/activity.manager';
 import { AllChannelsDto, CreateChannelDto } from './dto/chats.dto';
 import { ChannelStorage } from '../user-status/channel.storage';
-import { ChannelId, UserChannelStatus, UserId } from '../util/type';
+import { ChannelId, UserChannelStatus, UserId, UserRole } from '../util/type';
 import { ChatsGateway } from './chats.gateway';
 import { Messages } from '../entity/messages.entity';
 import { UserRelationshipStorage } from '../user-status/user-relationship.storage';
@@ -53,14 +53,13 @@ export class ChatsService {
    * @returns 채널 목록
    */
   async findAllChannels(userId: UserId): Promise<AllChannelsDto> {
-    const userChannelMap = this.channelStorage.getUser(userId);
     if (this.channelStorage.getChannels().size === 0) {
       return { joinedChannels: [], otherChannels: [] };
     }
+    const userChannelMap = this.channelStorage.getUser(userId);
     if (!userChannelMap) {
       throw new BadRequestException('Invalid Request');
     }
-
     return {
       joinedChannels: await this.getJoinedChannels(userChannelMap),
       otherChannels: await this.getChannelsExceptJoined(userChannelMap),
@@ -78,22 +77,18 @@ export class ChatsService {
   async createChannel(userId: UserId, channel: CreateChannelDto) {
     const { channelName, accessMode } = channel;
     const password = channel.password ?? null;
-    if (
-      (accessMode === 'protected' && !password) ||
-      (accessMode !== 'protected' && password)
-    ) {
+    if (accessMode === 'protected' && !password) {
       throw new BadRequestException('Password is required');
     }
-    try {
-      return await this.channelStorage.addChannel(
-        accessMode as AccessMode,
-        userId,
-        channelName,
-        accessMode === 'protected' ? await hash(password, 10) : null,
-      );
-    } catch (err) {
-      throw err;
+    if (accessMode !== 'protected' && password) {
+      throw new BadRequestException('Password should not be included');
     }
+    return await this.channelStorage.addChannel(
+      accessMode as AccessMode,
+      userId,
+      channelName,
+      accessMode === 'protected' ? await hash(password, 10) : null,
+    );
   }
 
   /*****************************************************************************
@@ -110,12 +105,11 @@ export class ChatsService {
    * @returns 채널의 멤버 목록 및 DM 차단 여부
    */
   findChannelMembers(channelId: ChannelId, userId: UserId) {
-    const channelInfo = this.getValidChannelInfo(userId, channelId);
-    const channelMembers = Array.from(channelInfo.userRoleMap).map(
-      ([userId, role]) => {
-        return { id: userId, role };
-      },
-    );
+    const channelInfo = this.validateChannelInfo(userId, channelId);
+    const channelMembers: Array<{ id: UserId; role: UserRole }> = [];
+    for (const [userId, role] of channelInfo.userRoleMap) {
+      channelMembers.push({ id: userId, role });
+    }
     const dm = this.userRelationshipStorage.isBlockedDm(channelId);
     return { channelMembers, isReadonlyDm: dm === undefined ? null : dm };
   }
@@ -134,19 +128,29 @@ export class ChatsService {
     isInvited: boolean,
     password: string = null,
   ) {
+    const channelInfo = this.channelStorage.getChannel(channelId);
+    if (!channelInfo) {
+      throw new NotFoundException('Channel not found');
+    }
     const banEndAt = await this.channelStorage.getBanEndAt(channelId, userId);
     if (banEndAt > DateTime.now()) {
       throw new ForbiddenException('You are banned');
     }
-    const accessMode = this.channelStorage.getChannel(channelId).accessMode;
+    const accessMode = channelInfo.accessMode;
     if (accessMode === 'public' || isInvited) {
       await this.channelStorage.addUserToChannel(channelId, userId);
       return this.chatsGateway.emitMemberJoin(userId, channelId);
     }
     if (accessMode === 'protected') {
-      const channelPassword = (
-        await this.channelsRepository.findOneBy({ channelId })
-      ).password.toString();
+      let channelPassword: string;
+      try {
+        channelPassword = (
+          await this.channelsRepository.findOneBy({ channelId })
+        ).password.toString();
+      } catch (e) {
+        this.logger.error(e);
+        throw new InternalServerErrorException('Internal Server Error');
+      }
       if (!password || !(await compare(password, channelPassword))) {
         throw new ForbiddenException('Password is incorrect');
       }
@@ -163,7 +167,7 @@ export class ChatsService {
    * @param userId 나갈 유저의 Id
    */
   async leaveChannel(channelId: ChannelId, userId: UserId) {
-    this.getValidChannelInfo(userId, channelId);
+    this.validateChannelInfo(userId, channelId);
     await this.channelStorage.deleteUserFromChannel(channelId, userId);
     return this.chatsGateway.emitMemberLeft(
       userId,
@@ -177,7 +181,7 @@ export class ChatsService {
    *
    * @param channelId 요청한 채널의 Id
    * @param userId 요청한 유저의 Id
-   * @param begin 시작 인덱스
+   * @param offset 시작 인덱스
    * @param size 반환할 메시지의 수
    * @returns 요청한 채널의 메시지 목록
    */
@@ -188,16 +192,14 @@ export class ChatsService {
     offset: number,
     size: number,
   ) {
-    this.getValidChannelInfo(userId, channelId);
+    this.validateChannelInfo(userId, channelId);
     try {
       const messages = (
         await this.messagesRepository.find({
-          order: {
-            createdAt: 'ASC' as any,
-          },
+          order: { createdAt: 'ASC' as any },
           skip: offset,
           take: size as any,
-          select: { senderId: true, contents: true, createdAt: true as any },
+          select: ['senderId', 'contents', 'createdAt'],
         })
       ).map((message) => {
         const { senderId, contents, createdAt } = message;
@@ -223,16 +225,18 @@ export class ChatsService {
    * @param contents 메시지 내용
    */
   // NOTE : message length 는 pipe 단계에서 걸러진다 가정
-  async manageMessage(
+  async controlMessage(
     channelId: ChannelId,
     senderId: UserId,
     contents: string,
   ) {
-    this.getValidChannelInfo(senderId, channelId);
+    // FIXME : 요청한 유저가 load 되지 않았을 수 있음
+    this.validateChannelInfo(senderId, channelId);
     const now = DateTime.now();
     if (this.channelStorage.getUser(senderId).get(channelId).muteEndAt > now) {
       throw new ForbiddenException('You are muted');
     }
+    // check readonly
     if (contents.startsWith('/')) {
       return await this.executeCommand(channelId, senderId, contents);
     }
@@ -259,7 +263,7 @@ export class ChatsService {
    * @returns 유효한 채널 정보
    */
   // FIXME: guard 나 pipe 생각해보기
-  private getValidChannelInfo(userId: UserId, channelId: ChannelId) {
+  private validateChannelInfo(userId: UserId, channelId: ChannelId) {
     const channelInfo = this.channelStorage.getChannel(channelId);
     if (channelInfo === undefined) {
       throw new NotFoundException('Channel not found');
@@ -312,8 +316,9 @@ export class ChatsService {
               this.userRelationshipStorage.isBlockedDm(channelId) !== undefined,
           };
         }),
-    ).catch((err) => {
-      throw err;
+    ).catch((e) => {
+      this.logger.error(e);
+      throw e;
     });
   }
 
@@ -350,8 +355,9 @@ export class ChatsService {
               accessMode: channel.accessMode as 'public' | 'protected',
             };
           }),
-      ).catch((err) => {
-        throw err;
+      ).catch((e) => {
+        this.logger.error(e);
+        throw e;
       })
     ).sort((a, b) => a.channelName.localeCompare(b.channelName));
   }
@@ -416,8 +422,7 @@ export class ChatsService {
         contents,
       ) === false
     ) {
-      // TODO: format 안맞으면 에러를 던질지 메시지로 쏴줄지 생각해보기
-      // TODO: 정규식 패턴 검증을 밖에서 할지 생각해보기
+      // FIXME: 정규식 패턴 검증을 밖에서 할지 생각해보기
       throw new BadRequestException('Invalid command');
     }
     const [command, id, arg] = contents.split(' ');
