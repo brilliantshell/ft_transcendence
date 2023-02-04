@@ -1,8 +1,5 @@
 #root {
   text-align: center;
-}
-
-.aaa {
   display: grid;
   height: 100vh;
   grid-template: minmax(3rem, auto) 1fr / minmax(5rem, auto) 1fr;
