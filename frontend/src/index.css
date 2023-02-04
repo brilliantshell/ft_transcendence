@@ -1,70 +1,66 @@
-:root {
-  font-family: Inter, Avenir, Helvetica, Arial, sans-serif;
-  font-size: 16px;
-  line-height: 24px;
-  font-weight: 400;
+/* css reset by google.com */
 
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
-
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  -webkit-text-size-adjust: 100%;
+html,
+body,
+h1,
+input,
+select {
+  font-family: 'Apple SD Gothic Neo', arial, sans-serif;
 }
-
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
+body,
+h1 {
+  font-size: 14px;
 }
-a:hover {
-  color: #535bf2;
+h1 {
+  font-weight: normal;
+  margin: 0;
+  padding: 0;
 }
-
+h3 {
+  font-weight: normal;
+  margin: 0;
+  padding: 0;
+  font-size: 20px;
+  line-height: 1.3;
+}
 body {
   margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
+  background: #fff;
+  color: #202124;
 }
-
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
+a {
+  color: #1a0dab;
+  text-decoration: none;
+  -webkit-tap-highlight-color: rgba(0, 0, 0, 0.1);
 }
-
+a:visited {
+  color: #609;
+}
+a:hover {
+  text-decoration: underline;
+}
+cite,
+cite a:link,
+cite a:visited {
+  color: #202124;
+  font-style: normal;
+}
 button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
-  cursor: pointer;
-  transition: border-color 0.25s;
+  margin: 0;
 }
-button:hover {
-  border-color: #646cff;
+ol li {
+  list-style: none;
 }
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
+ol,
+ul,
+li {
+  margin: 0;
+  padding: 0;
 }
-
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
-  a:hover {
-    color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
-  }
+input {
+  font-size: 14px;
+}
+em {
+  font-weight: bold;
+  font-style: normal;
 }
