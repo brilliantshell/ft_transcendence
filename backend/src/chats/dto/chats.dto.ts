@@ -1,4 +1,6 @@
 import {
+  IsNumber,
+  IsObject,
   IsOptional,
   IsString,
   IsStrongPassword,
@@ -58,10 +60,31 @@ export class CreateChannelDto {
   accessMode: 'public' | 'protected' | 'private';
 }
 
-export class ControlMessageDto {
+// export class ControlMessageDto {
+//   @IsString()
+//   @Length(1, 4096)
+//   message: string;
+// }
+
+export class MessageDto {
   @IsString()
   @Length(1, 4096)
   message: string;
+
+  private commandDto: CommandDto;
+  set command(commandDto: CommandDto) {
+    this.commandDto = commandDto;
+  }
+
+  get command(): CommandDto {
+    return this.commandDto;
+  }
+}
+
+class CommandDto {
+  command: string;
+  targetId: number;
+  args: string;
 }
 
 export class JoinChannelDto {

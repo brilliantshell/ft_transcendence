@@ -15,9 +15,10 @@ import {
 
 import { ChatsService } from './chats.service';
 import {
-  ControlMessageDto,
+  // ControlMessageDto,
   CreateChannelDto,
   JoinChannelDto,
+  MessageDto,
 } from './dto/chats.dto';
 import { MockAuthGuard } from './guard/mock-auth.guard';
 import { Response } from 'express';
@@ -27,7 +28,8 @@ import { ChannelExistGuard } from './guard/channel-exist.guard';
 import { MemberExistGuard } from './guard/member-exist.guard';
 import { JoinChannelGuard } from './guard/join-channel.guard';
 import { ValidateRangePipe } from './pipe/validate-range.pipe';
-import { MemberMessagingGuard } from './member-messaging/member-messaging.guard';
+import { MemberMessagingGuard } from './guard/member-messaging.guard';
+import { MessageTransformPipe } from './message-transform/message-transform.pipe';
 
 /**
 [x] 존재하지 않는 channelId 로 요청시 404 응답하는 Guard 구현
@@ -129,15 +131,33 @@ export class ChatsController {
   @Post(':channelId/message')
   @UseGuards(ChannelExistGuard, MemberExistGuard, MemberMessagingGuard)
   controlMessage(
-    @Req() req: /* VerifiedRequest */ any,
+    @Req() req: /* VerifiedRequest */ any, // TODO : CreatedAt 의 처리 방식 결정 후 수정
     @Param('channelId', ParseIntPipe) channelId: number,
-    @Body() controlMessageDto: ControlMessageDto,
+    @Body(MessageTransformPipe) controlMessageDto: MessageDto,
   ) {
-    return this.chatsService.controlMessage(
-      channelId,
-      req.user.userId,
-      controlMessageDto.message,
-      req.createdAt,
-    );
+    console.log('commandDto', controlMessageDto);
+
+    controlMessageDto.command === undefined
+      ? this.chatsService.createMessage(
+          channelId,
+          req.user.userId,
+          controlMessageDto.message,
+          req.createdAt,
+        )
+      : this.chatsService.executeCommand(
+          channelId,
+          req.user.userId,
+          controlMessageDto.command.command +
+            ' ' +
+            controlMessageDto.command.targetId +
+            ' ' +
+            controlMessageDto.command.args,
+        );
+    // this.chatsService.controlMessage(
+    //   channelId,
+    //   req.user.userId,
+    //   controlMessageDto.message,
+    //   req.createdAt,
+    // );
   }
 }

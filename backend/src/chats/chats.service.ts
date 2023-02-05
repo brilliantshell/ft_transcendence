@@ -338,7 +338,7 @@ export class ChatsService {
    * @param contents 메시지 내용
    * @param createdAt 메시지 생성 시간
    */
-  private async createMessage(
+  async createMessage(
     channelId: ChannelId,
     senderId: UserId,
     contents: string,
@@ -374,11 +374,12 @@ export class ChatsService {
    * @param contents 명령 내용
    */
   // NOTE:  { message : "/command [targetId] [time]|[role]" } 와 같은 형식으로 명령어가 온다고 가정
-  private async executeCommand(
+  async executeCommand(
     channelId: ChannelId,
     senderId: UserId,
     contents: string,
   ) {
+    console.log(contents);
     if (
       /^\/((role \d{5,6} (admin|member))|((ban|mute) \d{5,6} \d{1,4}))$/.test(
         contents,
@@ -422,6 +423,11 @@ export class ChatsService {
           senderId,
           targetId,
           minutes,
+        );
+        console.log(
+          (
+            await this.channelStorage.getBanEndAt(channelId, targetId)
+          ).toString(),
         );
         return this.chatsGateway.emitMemberLeft(targetId, channelId, false);
       }

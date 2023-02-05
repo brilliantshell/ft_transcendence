@@ -534,6 +534,7 @@ export class ChannelStorage implements OnModuleInit {
         });
         await this.deleteUserFromChannel(channelId, memberId);
       });
+      console.log('user banned!', channelId, memberId, banEndAt.toString());
     } catch (e) {
       this.logger.error(e);
       if (e instanceof ForbiddenException || e instanceof BadRequestException) {
