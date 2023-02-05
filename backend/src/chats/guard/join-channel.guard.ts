@@ -62,15 +62,6 @@ export class JoinChannelGuard implements CanActivate {
   }
 
   private async checkBanned(channelId: ChannelId, userId: UserId) {
-    console.log(
-      channelId,
-      'in ',
-      userId,
-      'ban end at',
-      (await this.channelStorage.getBanEndAt(channelId, userId)).toString(),
-      'now',
-      DateTime.now().toString(),
-    );
     if (
       (await this.channelStorage.getBanEndAt(channelId, userId)) >
       DateTime.now()

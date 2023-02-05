@@ -1,6 +1,4 @@
 import {
-  IsNumber,
-  IsObject,
   IsOptional,
   IsString,
   IsStrongPassword,
@@ -71,20 +69,8 @@ export class MessageDto {
   @Length(1, 4096)
   message: string;
 
-  private commandDto: CommandDto;
-  set command(commandDto: CommandDto) {
-    this.commandDto = commandDto;
-  }
-
-  get command(): CommandDto {
-    return this.commandDto;
-  }
-}
-
-class CommandDto {
-  command: string;
-  targetId: number;
-  args: string;
+  @IsOptional()
+  command?: [kind: string, targetId: number, args: string];
 }
 
 export class JoinChannelDto {

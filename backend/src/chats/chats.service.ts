@@ -201,27 +201,80 @@ export class ChatsService {
 
   /*****************************************************************************
    *                                                                           *
-   * SECTION : Receive Message                                                 *
+   * SECTION : Handling new message                                            *
    *                                                                           *
    ****************************************************************************/
+
   /**
-   * @description 채널에 메시지를 생성하거나 명령어를 실행
+   * @description 채널에 메시지를 생성
    *
-   * @param channelId 메시지를 보낼 채널의 Id
    * @param senderId 메시지를 보낸 유저의 Id
+   * @param channelId 메시지를 보낸 채널의 Id
    * @param contents 메시지 내용
+   * @param createdAt 메시지 생성 시간
    */
-  // NOTE : message length 는 pipe 단계에서 걸러진다 가정
-  async controlMessage(
+  async createMessage(
     channelId: ChannelId,
     senderId: UserId,
     contents: string,
     createdAt: DateTime,
   ) {
-    if (contents.startsWith('/')) {
-      return await this.executeCommand(channelId, senderId, contents);
+    try {
+      await this.messagesRepository.insert({
+        senderId,
+        channelId,
+        contents,
+        createdAt,
+      });
+    } catch (e) {
+      this.logger.error(e);
+      throw new InternalServerErrorException('Failed to create message');
     }
-    await this.createMessage(channelId, senderId, contents, createdAt);
+    this.chatsGateway.emitNewMessage(senderId, channelId, contents, createdAt);
+    for (const id of this.channelStorage
+      .getChannel(channelId)
+      .userRoleMap.keys()) {
+      const currentUi = this.activityManager.getActivity(id);
+      if (currentUi !== null && currentUi !== `chatRooms-${channelId}`) {
+        this.channelStorage.updateUnseenCount(channelId, id);
+      }
+    }
+  }
+
+  /**
+   * @description 메시지로 명령어가 들어왔을 때 명령어를 실행
+   *
+   * @param senderId 명령을 보낸 유저의 Id
+   * @param channelId 명령을 보낸 채널의 Id
+   * @param contents 명령 내용
+   */
+  // NOTE:  { message : "/command [targetId] [time]|[role]" } 와 같은 형식으로 명령어가 온다고 가정
+  async executeCommand(
+    channelId: ChannelId,
+    senderId: UserId,
+    command: [string, number, string],
+    createdAt: DateTime,
+  ) {
+    const [kind, targetId, arg] = command;
+    if (this.channelStorage.getUserRole(channelId, targetId) === null) {
+      throw new NotFoundException(
+        'Target member is not a member of this channel',
+      );
+    }
+    this.checkRole(channelId, senderId, targetId);
+    if (kind === 'role') {
+      const role = arg as 'admin' | 'member';
+      await this.channelStorage.updateUserRole(channelId, targetId, role);
+      return this.chatsGateway.emitRoleChanged(targetId, channelId, role);
+    } else if (kind === 'mute') {
+      const minutes = createdAt.plus({ minutes: Number(arg) });
+      await this.channelStorage.updateMuteStatus(channelId, targetId, minutes);
+      return this.chatsGateway.emitMuted(targetId, channelId, minutes);
+    } else {
+      const minutes = createdAt.plus({ minutes: Number(arg) });
+      await this.channelStorage.banUser(channelId, senderId, targetId, minutes);
+      return this.chatsGateway.emitMemberLeft(targetId, channelId, false);
+    }
   }
 
   /*****************************************************************************
@@ -326,113 +379,21 @@ export class ChatsService {
 
   /*****************************************************************************
    *                                                                           *
-   * SECTION : Handling new message                                            *
+   * SECTION : Check permission to execute command                             *
    *                                                                           *
-   ****************************************************************************/
+   *****************************************************************************/
 
-  /**
-   * @description 채널에 메시지를 생성
-   *
-   * @param senderId 메시지를 보낸 유저의 Id
-   * @param channelId 메시지를 보낸 채널의 Id
-   * @param contents 메시지 내용
-   * @param createdAt 메시지 생성 시간
-   */
-  async createMessage(
-    channelId: ChannelId,
-    senderId: UserId,
-    contents: string,
-    createdAt: DateTime,
-  ) {
-    try {
-      await this.messagesRepository.insert({
-        senderId,
-        channelId,
-        contents,
-        createdAt,
-      });
-    } catch (e) {
-      this.logger.error(e);
-      throw new InternalServerErrorException('Failed to create message');
-    }
-    this.chatsGateway.emitNewMessage(senderId, channelId, contents, createdAt);
-    for (const id of this.channelStorage
-      .getChannel(channelId)
-      .userRoleMap.keys()) {
-      const currentUi = this.activityManager.getActivity(id);
-      if (currentUi !== null && currentUi !== `chatRooms-${channelId}`) {
-        this.channelStorage.updateUnseenCount(channelId, id);
-      }
-    }
-  }
-
-  /**
-   * @description 메시지로 명령어가 들어왔을 때 명령어를 실행
-   *
-   * @param senderId 명령을 보낸 유저의 Id
-   * @param channelId 명령을 보낸 채널의 Id
-   * @param contents 명령 내용
-   */
-  // NOTE:  { message : "/command [targetId] [time]|[role]" } 와 같은 형식으로 명령어가 온다고 가정
-  async executeCommand(
-    channelId: ChannelId,
-    senderId: UserId,
-    contents: string,
-  ) {
-    console.log(contents);
+  private checkRole(channelId: ChannelId, senderId: UserId, targetId: UserId) {
+    const userRoles = { member: 0, admin: 1, owner: 2 };
+    const senderRole = this.channelStorage.getUserRole(channelId, senderId);
+    const targetRole = this.channelStorage.getUserRole(channelId, targetId);
     if (
-      /^\/((role \d{5,6} (admin|member))|((ban|mute) \d{5,6} \d{1,4}))$/.test(
-        contents,
-      ) === false
+      !senderRole ||
+      !targetRole ||
+      senderRole === 'member' ||
+      userRoles[senderRole] <= userRoles[targetRole]
     ) {
-      // FIXME: 정규식 패턴 검증을 밖에서 할지 생각해보기
-      throw new BadRequestException('Invalid command');
-    }
-    const [command, id, arg] = contents.split(' ');
-    const targetId = Number(id);
-    if (this.channelStorage.getUserRole(channelId, targetId) === null) {
-      throw new NotFoundException(
-        'Target member is not a member of this channel',
-      );
-    }
-    switch (command) {
-      case '/role': {
-        const role = arg as 'admin' | 'member';
-        await this.channelStorage.updateUserRole(
-          channelId,
-          senderId,
-          targetId,
-          role,
-        );
-        return this.chatsGateway.emitRoleChanged(targetId, channelId, role);
-      }
-      case '/mute': {
-        const minutes = DateTime.now().plus({ minutes: Number(arg) });
-        await this.channelStorage.updateMuteStatus(
-          channelId,
-          senderId,
-          targetId,
-          minutes,
-        );
-        return this.chatsGateway.emitMuted(targetId, channelId, minutes);
-      }
-      case '/ban': {
-        const minutes = DateTime.now().plus({ minutes: Number(arg) });
-        await this.channelStorage.banUser(
-          channelId,
-          senderId,
-          targetId,
-          minutes,
-        );
-        console.log(
-          (
-            await this.channelStorage.getBanEndAt(channelId, targetId)
-          ).toString(),
-        );
-        return this.chatsGateway.emitMemberLeft(targetId, channelId, false);
-      }
-      default:
-        throw new BadRequestException('Invalid command');
+      throw new ForbiddenException(`You don't have permission to do this`);
     }
   }
 }

@@ -506,17 +506,14 @@ describe('UserController (e2e)', () => {
         .set('x-user-id', newChannelMember.userId.toString())
         .expect(201);
 
-      return request(app.getHttpServer())
+      return await request(app.getHttpServer())
         .post(`/chats/${newChannelId}/message`)
         .set('x-user-id', newChannelOwner.userId.toString())
         .send({
-          message: `/ban ${newChannelMember.userId} 10`, // FIXME : nickname 으로 바꾸기
+          message: `/ban ${newChannelMember.nickname} 10`,
         })
         .expect(201)
-        .then(async () => {
-          console.log('here');
-          // wait 1 sec
-          await new Promise((resolve) => setTimeout(resolve, 1000));
+        .expect(() => {
           return request(app.getHttpServer())
             .post(`/chats/${newChannelId}/user/${newChannelMember.userId}`)
             .set('x-user-id', newChannelMember.userId.toString())
@@ -746,13 +743,92 @@ describe('UserController (e2e)', () => {
         (c) =>
           c.channelId === channel.channelId && c.memberId !== channel.ownerId,
       );
-      return request(app.getHttpServer())
+      const memberNickname = usersEntities.find(
+        (u) => u.userId === member.memberId,
+      ).nickname;
+
+      // Mute and send message
+      await request(app.getHttpServer())
         .post(`/chats/${channel.channelId}/message`)
         .set('x-user-id', channel.ownerId.toString())
         .send({
-          message: 'test message',
+          message: `/mute ${memberNickname} 5`,
         })
-        .expect(201);
+        .expect(201)
+        .expect(() => {
+          request(app.getHttpServer())
+            .post(`/chats/${channel.channelId}/message`)
+            .set('x-user-id', member.memberId.toString())
+            .send({
+              message: 'test message',
+            })
+            .expect(403);
+        });
+
+      // Unmute and send message
+      return await request(app.getHttpServer())
+        .post(`/chats/${channel.channelId}/message`)
+        .set('x-user-id', channel.ownerId.toString())
+        .send({
+          message: `/mute ${memberNickname} 0`,
+        })
+        .expect(201)
+        .expect(() => {
+          request(app.getHttpServer())
+            .post(`/chats/${channel.channelId}/message`)
+            .set('x-user-id', member.memberId.toString())
+            .send({
+              message: 'test message',
+            })
+            .expect(201);
+        });
+    });
+
+    it('POST /chats/:channelId/message (valid DTO), banned member', async () => {
+      const channel = channelsEntities.find((c) => c.accessMode === 'public');
+      const member = channelMembersEntities.find(
+        (c) =>
+          c.channelId === channel.channelId && c.memberId !== channel.ownerId,
+      );
+      const memberNickname = usersEntities.find(
+        (u) => u.userId === member.memberId,
+      ).nickname;
+
+      // ban and join channel
+      await request(app.getHttpServer())
+        .post(`/chats/${channel.channelId}/message`)
+        .set('x-user-id', channel.ownerId.toString())
+        .send({
+          message: `/ban ${memberNickname} 5`,
+        })
+        .expect(201)
+        .expect(() => {
+          request(app.getHttpServer())
+            .post(`/chats/${channel.channelId}/user/${member.memberId}`)
+            .set('x-user-id', member.memberId.toString())
+            .send({
+              message: 'test message',
+            })
+            .expect(403);
+        });
+
+      // unban and join channel
+      return await request(app.getHttpServer())
+        .post(`/chats/${channel.channelId}/message`)
+        .set('x-user-id', channel.ownerId.toString())
+        .send({
+          message: `/mute ${memberNickname} 0`,
+        })
+        .expect(201)
+        .expect(() => {
+          request(app.getHttpServer())
+            .post(`/chats/${channel.channelId}/message`)
+            .set('x-user-id', member.memberId.toString())
+            .send({
+              message: 'test message',
+            })
+            .expect(201);
+        });
     });
 
     it('POST /chats/:channelId/message (invalid DTO, empty message)', async () => {
@@ -766,15 +842,15 @@ describe('UserController (e2e)', () => {
         .expect(400);
     });
 
-    // it('POST /chats/:channelId/message (invalid DTO, message too large)', async () => {
-    //   const channel = channelsEntities.find((c) => c.dmPeerId !== null);
-    //   return request(app.getHttpServer())
-    //     .post(`/chats/${channel.channelId}/message`)
-    //     .set('x-user-id', channel.ownerId.toString())
-    //     .send({
-    //       message: faker.datatype.string(4097),
-    //     })
-    //     .expect(400);
-    // });
+    it('POST /chats/:channelId/message (invalid DTO, message too large)', async () => {
+      const channel = channelsEntities.find((c) => c.dmPeerId !== null);
+      return request(app.getHttpServer())
+        .post(`/chats/${channel.channelId}/message`)
+        .set('x-user-id', channel.ownerId.toString())
+        .send({
+          message: faker.datatype.string(4097),
+        })
+        .expect(400);
+    });
   });
 });

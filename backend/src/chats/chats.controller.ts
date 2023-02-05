@@ -14,12 +14,7 @@ import {
 } from '@nestjs/common';
 
 import { ChatsService } from './chats.service';
-import {
-  // ControlMessageDto,
-  CreateChannelDto,
-  JoinChannelDto,
-  MessageDto,
-} from './dto/chats.dto';
+import { CreateChannelDto, JoinChannelDto, MessageDto } from './dto/chats.dto';
 import { MockAuthGuard } from './guard/mock-auth.guard';
 import { Response } from 'express';
 import { VerifiedRequest } from '../util/type';
@@ -30,16 +25,6 @@ import { JoinChannelGuard } from './guard/join-channel.guard';
 import { ValidateRangePipe } from './pipe/validate-range.pipe';
 import { MemberMessagingGuard } from './guard/member-messaging.guard';
 import { MessageTransformPipe } from './message-transform/message-transform.pipe';
-
-/**
-[x] 존재하지 않는 channelId 로 요청시 404 응답하는 Guard 구현
-[x] 채널의 member 가 요청을 보내야 하는 상황에서 userId 의 유저가 멤버가 아닐 시 403 응답하는 Guard 구현
-[x] 채널 입장 시 userId 유저의 Ban 여부 검증하여 403 응답하는 Guard 구현
-[x] 채널 입장 시 userId 유저가 이미 채널 멤버인 경우 409 응답하는 Guard 혹은 Pipe 구현
-[x] 채널 메시지를 GET 하는 요청 시 query string 으로 오는 range 의 유효성을 검증하는 pipe 구현
-[x] 채널에 메시지 전송한 유저가 Mute 상태일 시 403 응답하는 Guard 구현
-[] 채널에 메시지 전송 시 message 인지 command 인지 구분하여 데이터를 변환해주는 pipe 혹은 interceptor 구현
- */
 
 @UseGuards(MockAuthGuard)
 @Controller('chats')
@@ -135,8 +120,6 @@ export class ChatsController {
     @Param('channelId', ParseIntPipe) channelId: number,
     @Body(MessageTransformPipe) controlMessageDto: MessageDto,
   ) {
-    console.log('commandDto', controlMessageDto);
-
     controlMessageDto.command === undefined
       ? this.chatsService.createMessage(
           channelId,
@@ -147,17 +130,8 @@ export class ChatsController {
       : this.chatsService.executeCommand(
           channelId,
           req.user.userId,
-          controlMessageDto.command.command +
-            ' ' +
-            controlMessageDto.command.targetId +
-            ' ' +
-            controlMessageDto.command.args,
+          controlMessageDto.command,
+          req.createdAt,
         );
-    // this.chatsService.controlMessage(
-    //   channelId,
-    //   req.user.userId,
-    //   controlMessageDto.message,
-    //   req.createdAt,
-    // );
   }
 }

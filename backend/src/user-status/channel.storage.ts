@@ -378,19 +378,8 @@ export class ChannelStorage implements OnModuleInit {
    * @param memberId 유저 id
    * @param role 변경할 role
    */
-  async updateUserRole(
-    channelId: ChannelId,
-    adminId: UserId,
-    memberId: UserId,
-    role: UserRole,
-  ) {
+  async updateUserRole(channelId: ChannelId, memberId: UserId, role: UserRole) {
     try {
-      this.checkRole(
-        channelId,
-        adminId,
-        memberId,
-        `User(${adminId}) is not allowed to update user(${memberId})'s role`,
-      );
       await this.channelMembersRepository.update(
         { channelId, memberId },
         { isAdmin: role === 'admin' },
@@ -417,22 +406,10 @@ export class ChannelStorage implements OnModuleInit {
    */
   async updateMuteStatus(
     channelId: ChannelId,
-    adminId: UserId,
     memberId: UserId,
     endAt: DateTime,
   ) {
     try {
-      this.checkRole(
-        channelId,
-        adminId,
-        memberId,
-        `User(${adminId}) is not allowed to update user(${memberId})'s mute status`,
-      );
-      if (endAt < DateTime.now()) {
-        throw new BadRequestException(
-          `Mute end time(${endAt.toISO()}) must be after now`,
-        );
-      }
       await this.channelMembersRepository.update(
         { channelId, memberId },
         { muteEndAt: endAt },
@@ -515,17 +492,6 @@ export class ChannelStorage implements OnModuleInit {
     banEndAt: DateTime,
   ) {
     try {
-      this.checkRole(
-        channelId,
-        adminId,
-        memberId,
-        `User(${adminId}) is not allowed to ban user(${memberId})`,
-      );
-      if (banEndAt < DateTime.now()) {
-        throw new BadRequestException(
-          `Ban end time(${banEndAt.toISO()}) must be after now`,
-        );
-      }
       await this.dataSource.manager.transaction(async (manager) => {
         await manager.insert(BannedMembers, {
           channelId,
@@ -534,7 +500,6 @@ export class ChannelStorage implements OnModuleInit {
         });
         await this.deleteUserFromChannel(channelId, memberId);
       });
-      console.log('user banned!', channelId, memberId, banEndAt.toString());
     } catch (e) {
       this.logger.error(e);
       if (e instanceof ForbiddenException || e instanceof BadRequestException) {
@@ -603,33 +568,6 @@ export class ChannelStorage implements OnModuleInit {
     viewedAt: DateTime,
   ) {
     return { channelId, isAdmin, muteEndAt: 'epoch', viewedAt, memberId };
-  }
-
-  /**
-   * @description 채팅방 멤버 간 권한 비교
-   *
-   * @param channelId 채팅방 id
-   * @param adminId 관리자 id
-   * @param memberId 멤버 id
-   * @param errorMessage 에러 메시지
-   */
-  private checkRole(
-    channelId: ChannelId,
-    adminId: UserId,
-    memberId: UserId,
-    errorMessage: string,
-  ) {
-    const userRoles = { member: 0, admin: 1, owner: 2 };
-    const adminRole = this.getUserRole(channelId, adminId);
-    const memberRole = this.getUserRole(channelId, memberId);
-    if (
-      !adminRole ||
-      !memberRole ||
-      adminRole === 'member' ||
-      userRoles[adminRole] <= userRoles[memberRole]
-    ) {
-      throw new ForbiddenException(errorMessage);
-    }
   }
 
   /**
