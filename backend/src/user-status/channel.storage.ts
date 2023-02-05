@@ -400,7 +400,6 @@ export class ChannelStorage implements OnModuleInit {
    * @description 채팅방에서 유저의 mute 상태 업데이트
    *
    * @param channelId 채팅방 id
-   * @param adminId 유저 id
    * @param memberId 유저 id
    * @param endTime mute 상태 해제 시간
    */

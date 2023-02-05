@@ -14,17 +14,17 @@ import {
 } from '@nestjs/common';
 
 import { ChatsService } from './chats.service';
-import { CreateChannelDto, JoinChannelDto, MessageDto } from './dto/chats.dto';
-import { MockAuthGuard } from './guard/mock-auth.guard';
-import { Response } from 'express';
-import { VerifiedRequest } from '../util/type';
-import { ValidateNewChannelPipe } from './pipe/validate-new-channel.pipe';
 import { ChannelExistGuard } from './guard/channel-exist.guard';
-import { MemberExistGuard } from './guard/member-exist.guard';
+import { CreateChannelDto, JoinChannelDto, MessageDto } from './dto/chats.dto';
 import { JoinChannelGuard } from './guard/join-channel.guard';
-import { ValidateRangePipe } from './pipe/validate-range.pipe';
+import { MockAuthGuard } from './guard/mock-auth.guard';
+import { MemberExistGuard } from './guard/member-exist.guard';
 import { MemberMessagingGuard } from './guard/member-messaging.guard';
-import { MessageTransformPipe } from './message-transform/message-transform.pipe';
+import { MessageTransformPipe } from './pipe/message-transform.pipe';
+import { Response } from 'express';
+import { ValidateNewChannelPipe } from './pipe/validate-new-channel.pipe';
+import { ValidateRangePipe } from './pipe/validate-range.pipe';
+import { VerifiedRequest } from '../util/type';
 
 @UseGuards(MockAuthGuard)
 @Controller('chats')

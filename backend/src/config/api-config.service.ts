@@ -15,7 +15,7 @@ export class ApiConfigService {
       password: this.configService.get('DB_PASSWORD'),
       database: this.configService.get('DB_NAME'),
       autoLoadEntities: true,
-      // synchronize: true,
+      synchronize: true,
     };
   }
 }

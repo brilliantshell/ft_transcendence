@@ -4,8 +4,9 @@ import {
   ForbiddenException,
   Injectable,
 } from '@nestjs/common';
-import { VerifiedRequest } from '../../util/type';
+
 import { ChannelStorage } from '../../user-status/channel.storage';
+import { VerifiedRequest } from '../../util/type';
 
 @Injectable()
 export class MemberExistGuard implements CanActivate {

@@ -5,9 +5,9 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Request } from 'express';
 
 import { ChannelStorage } from '../../user-status/channel.storage';
+import { VerifiedRequest } from '../..//util/type';
 
 @Injectable()
 export class ChannelExistGuard implements CanActivate {
@@ -17,7 +17,9 @@ export class ChannelExistGuard implements CanActivate {
   constructor(private readonly channelStorage: ChannelStorage) {}
 
   canActivate(context: ExecutionContext): boolean {
-    const { channelId } = context.switchToHttp().getRequest<Request>().params;
+    const { channelId } = context
+      .switchToHttp()
+      .getRequest<VerifiedRequest>().params;
     const safeChannelId =
       typeof channelId === 'string' &&
       /^[1-9]\d{0,9}$/.test(channelId) &&

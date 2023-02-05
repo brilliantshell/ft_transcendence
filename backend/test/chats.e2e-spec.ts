@@ -27,8 +27,6 @@ import {
   generateUsers,
 } from './generate-mock-data';
 
-process.env.NODE_ENV = 'development';
-
 const TEST_DB = 'test_db_chats_e2e';
 const ENTITIES = [
   BannedMembers,

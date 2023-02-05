@@ -58,12 +58,6 @@ export class CreateChannelDto {
   accessMode: 'public' | 'protected' | 'private';
 }
 
-// export class ControlMessageDto {
-//   @IsString()
-//   @Length(1, 4096)
-//   message: string;
-// }
-
 export class MessageDto {
   @IsString()
   @Length(1, 4096)

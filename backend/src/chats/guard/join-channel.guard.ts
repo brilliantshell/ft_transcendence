@@ -9,14 +9,13 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
+import { DateTime } from 'luxon';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Request } from 'express';
 
-import { Users } from '../../entity/users.entity';
+import { ChannelId, UserId, VerifiedRequest } from '../../util/type';
 import { ChannelStorage } from '../../user-status/channel.storage';
-import { ChannelId, UserId } from 'src/util/type';
-import { DateTime } from 'luxon';
+import { Users } from '../../entity/users.entity';
 
 @Injectable()
 export class JoinChannelGuard implements CanActivate {
@@ -31,7 +30,7 @@ export class JoinChannelGuard implements CanActivate {
   async canActivate(context: ExecutionContext) {
     const { channelId, userId } = context
       .switchToHttp()
-      .getRequest<Request>().params;
+      .getRequest<VerifiedRequest>().params;
     if (typeof userId !== 'string' || !/^[1-9][0-9]{4,5}$/.test(userId)) {
       throw new BadRequestException('userId must be between 10000 and 999999');
     }
