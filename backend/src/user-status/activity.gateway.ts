@@ -127,6 +127,9 @@ export class ActivityGateway
       this.chatsGateway.joinRoom(clientSocket.id, room);
     }
     this.activityManager.setActivity(userId, ui);
+    if (!prevActivity) {
+      this.emitUserActivity(userId);
+    }
     // console.log(clientSocket.request.headers);
   }
 
