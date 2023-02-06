@@ -10,14 +10,6 @@ import waitForExpect from 'wait-for-expect';
 import { ActivityManager } from '../src/user-status/activity.manager';
 import { AppModule } from '../src/app.module';
 import { BannedMembers } from '../src/entity/banned-members.entity';
-import {
-  BlockedDto,
-  FriendAcceptedDto,
-  FriendCancelledDto,
-  FriendDeclinedDto,
-  FriendRemovedDto,
-  UnblockedDto,
-} from '../src/user/dto/user-gateway.dto';
 import { BlockedUsers } from '../src/entity/blocked-users.entity';
 import { ChannelId, UserId } from '../src/util/type';
 import { ChannelMembers } from '../src/entity/channel-members.entity';
@@ -25,7 +17,7 @@ import { ChannelStorage } from '../src/user-status/channel.storage';
 import { Channels } from '../src/entity/channels.entity';
 import { Friends } from '../src/entity/friends.entity';
 import { Messages } from '../src/entity/messages.entity';
-import { UserInfoDto } from '../src/user/dto/user-gateway.dto';
+import { UserActivityDto } from '../src/user/dto/user-gateway.dto';
 import { UserRelationshipStorage } from '../src/user-status/user-relationship.storage';
 import { Users } from '../src/entity/users.entity';
 import {
@@ -413,14 +405,15 @@ describe('UserModule - /user (e2e)', () => {
     it('should block a user (201)', async () => {
       const [wsMessage, response] = await Promise.all([
         new Promise((resolve) =>
-          clientSockets[1].on('blocked', (data: BlockedDto) => resolve(data)),
+          clientSockets[1].on('userRelationship', (data) => resolve(data)),
         ),
         request(app.getHttpServer())
           .put(`/user/${userIds[1]}/block`)
           .set('x-user-id', userIds[0].toString()),
       ]);
       expect(wsMessage).toEqual({
-        blockedBy: userIds[0],
+        userId: userIds[0],
+        relationship: 'blocked',
       });
       expect(response.status).toEqual(201);
       expect(response.body).toEqual({});
@@ -429,14 +422,15 @@ describe('UserModule - /user (e2e)', () => {
     it('should not resend blocked event (200)', async () => {
       const [wsMessage, responseOne] = await Promise.all([
         new Promise((resolve) =>
-          clientSockets[1].on('blocked', (data: BlockedDto) => resolve(data)),
+          clientSockets[1].on('userRelationship', (data) => resolve(data)),
         ),
         request(app.getHttpServer())
           .put(`/user/${userIds[1]}/block`)
           .set('x-user-id', userIds[0].toString()),
       ]);
       expect(wsMessage).toEqual({
-        blockedBy: userIds[0],
+        userId: userIds[0],
+        relationship: 'blocked',
       });
       expect(responseOne.status).toEqual(201);
       expect(responseOne.body).toEqual({});
@@ -444,7 +438,7 @@ describe('UserModule - /user (e2e)', () => {
         timeout(
           1000,
           new Promise((resolve) =>
-            clientSockets[1].on('blocked', (data: BlockedDto) => resolve(data)),
+            clientSockets[1].on('userRelationship', (data) => resolve(data)),
           ),
         ),
         request(app.getHttpServer())
@@ -475,16 +469,15 @@ describe('UserModule - /user (e2e)', () => {
       await userRelationshipStorage.load(userIds[0]);
       const [wsMessage, response] = await Promise.all([
         new Promise((resolve) =>
-          clientSockets[1].on('unblocked', (data: UnblockedDto) =>
-            resolve(data),
-          ),
+          clientSockets[1].on('userRelationship', (data) => resolve(data)),
         ),
         request(app.getHttpServer())
           .delete(`/user/${userIds[1]}/block`)
           .set('x-user-id', userIds[0].toString()),
       ]);
       expect(wsMessage).toEqual({
-        unblockedBy: userIds[0],
+        userId: userIds[0],
+        relationship: 'normal',
       });
       expect(response.status).toEqual(200);
       expect(response.body).toEqual({});
@@ -630,50 +623,71 @@ describe('UserModule - /user (e2e)', () => {
 
   describe('PUT /user/:userId/friend', () => {
     it('should send a friend request (201)', async () => {
-      const [wsMessage, response] = await Promise.all([
+      const [wsRelationship, wsRequestDiff, response] = await Promise.all([
         new Promise((resolve) =>
-          clientSockets[1].on('friendRequest', (data) => resolve(data)),
+          clientSockets[1].on('userRelationship', (data) => resolve(data)),
         ),
+        new Promise((resolve) => {
+          clientSockets[1].on('friendRequestDiff', (data) => resolve(data));
+        }),
         request(app.getHttpServer())
           .put(`/user/${userIds[1]}/friend`)
           .set('x-user-id', userIds[0].toString()),
       ]);
-      expect(wsMessage).toEqual({
-        requestedBy: userIds[0],
+      expect(wsRelationship).toEqual({
+        userId: userIds[0],
+        relationship: 'pendingReceiver',
       });
+      expect(wsRequestDiff).toEqual({ requestDiff: 1 });
       expect(response.status).toEqual(201);
       expect(response.body).toEqual({});
     });
 
     it('should not resend the friend request (200)', async () => {
-      const [wsMessage, responseOne] = await Promise.all([
+      const [wsRelationship, wsRequestDiff, responseOne] = await Promise.all([
         timeout(
           1000,
           new Promise((resolve) =>
-            clientSockets[1].on('friendRequest', (data) => resolve(data)),
+            clientSockets[1].on('userRelationship', (data) => resolve(data)),
           ),
         ),
-        request(app.getHttpServer())
-          .put(`/user/${userIds[1]}/friend`)
-          .set('x-user-id', userIds[0].toString()),
-      ]);
-      expect(wsMessage).toEqual({
-        requestedBy: userIds[0],
-      });
-      expect(responseOne.status).toEqual(201);
-      expect(responseOne.body).toEqual({});
-      const [wsError, responseTwo] = await Promise.allSettled([
         timeout(
           1000,
           new Promise((resolve) => {
-            clientSockets[1].on('friendRequest', (data) => resolve(data));
+            clientSockets[1].on('friendRequestDiff', (data) => resolve(data));
           }),
         ),
         request(app.getHttpServer())
           .put(`/user/${userIds[1]}/friend`)
           .set('x-user-id', userIds[0].toString()),
       ]);
-      expect(wsError.status).toEqual('rejected');
+      expect(wsRelationship).toEqual({
+        userId: userIds[0],
+        relationship: 'pendingReceiver',
+      });
+      expect(wsRequestDiff).toEqual({ requestDiff: 1 });
+      expect(responseOne.status).toEqual(201);
+      expect(responseOne.body).toEqual({});
+      const [wsErrorRelationship, wsErrorRequestDiff, responseTwo] =
+        await Promise.allSettled([
+          timeout(
+            1000,
+            new Promise((resolve) => {
+              clientSockets[1].on('userRelationship', (data) => resolve(data));
+            }),
+          ),
+          timeout(
+            1000,
+            new Promise((resolve) => {
+              clientSockets[1].on('friendRequestDiff', (data) => resolve(data));
+            }),
+          ),
+          request(app.getHttpServer())
+            .put(`/user/${userIds[1]}/friend`)
+            .set('x-user-id', userIds[0].toString()),
+        ]);
+      expect(wsErrorRelationship.status).toEqual('rejected');
+      expect(wsErrorRequestDiff.status).toEqual('rejected');
       if (responseTwo.status === 'rejected') {
         fail();
       }
@@ -698,16 +712,15 @@ describe('UserModule - /user (e2e)', () => {
       await userRelationshipStorage.load(userIds[0]);
       const [wsMessage, response] = await Promise.all([
         new Promise((resolve) =>
-          clientSockets[1].on('friendCancelled', (data: FriendCancelledDto) =>
-            resolve(data),
-          ),
+          clientSockets[1].on('userRelationship', (data) => resolve(data)),
         ),
         request(app.getHttpServer())
           .delete(`/user/${userIds[1]}/friend`)
           .set('x-user-id', userIds[0].toString()),
       ]);
       expect(wsMessage).toEqual({
-        cancelledBy: userIds[0],
+        userId: userIds[0],
+        relationship: 'normal',
       });
       expect(response.status).toEqual(200);
       expect(response.body).toEqual({});
@@ -722,16 +735,15 @@ describe('UserModule - /user (e2e)', () => {
       await userRelationshipStorage.load(userIds[1]);
       const [wsMessage, response] = await Promise.all([
         new Promise((resolve) =>
-          clientSockets[0].on('friendDeclined', (data: FriendDeclinedDto) =>
-            resolve(data),
-          ),
+          clientSockets[0].on('userRelationship', (data) => resolve(data)),
         ),
         request(app.getHttpServer())
           .delete(`/user/${userIds[0]}/friend`)
           .set('x-user-id', userIds[1].toString()),
       ]);
       expect(wsMessage).toEqual({
-        declinedBy: userIds[1],
+        userId: userIds[1],
+        relationship: 'normal',
       });
       expect(response.status).toEqual(200);
       expect(response.body).toEqual({});
@@ -746,16 +758,15 @@ describe('UserModule - /user (e2e)', () => {
       await userRelationshipStorage.load(userIds[0]);
       const [wsMessage, response] = await Promise.all([
         new Promise((resolve) =>
-          clientSockets[1].on('friendRemoved', (data: FriendRemovedDto) =>
-            resolve(data),
-          ),
+          clientSockets[1].on('userRelationship', (data) => resolve(data)),
         ),
         request(app.getHttpServer())
           .delete(`/user/${userIds[1]}/friend`)
           .set('x-user-id', userIds[0].toString()),
       ]);
       expect(wsMessage).toEqual({
-        removedBy: userIds[0],
+        userId: userIds[0],
+        relationship: 'normal',
       });
       expect(response.status).toEqual(200);
       expect(response.body).toEqual({});
@@ -770,16 +781,15 @@ describe('UserModule - /user (e2e)', () => {
       await userRelationshipStorage.load(userIds[1]);
       const [wsMessage, response] = await Promise.all([
         new Promise((resolve) =>
-          clientSockets[0].on('friendRemoved', (data: FriendRemovedDto) =>
-            resolve(data),
-          ),
+          clientSockets[0].on('userRelationship', (data) => resolve(data)),
         ),
         request(app.getHttpServer())
           .delete(`/user/${userIds[0]}/friend`)
           .set('x-user-id', userIds[1].toString()),
       ]);
       expect(wsMessage).toEqual({
-        removedBy: userIds[1],
+        userId: userIds[1],
+        relationship: 'normal',
       });
       expect(response.status).toEqual(200);
       expect(response.body).toEqual({});
@@ -802,16 +812,15 @@ describe('UserModule - /user (e2e)', () => {
       await userRelationshipStorage.load(userIds[1]);
       const [wsMessage, response] = await Promise.all([
         new Promise((resolve) =>
-          clientSockets[0].on('friendAccepted', (data: FriendAcceptedDto) =>
-            resolve(data),
-          ),
+          clientSockets[0].on('userRelationship', (data) => resolve(data)),
         ),
         request(app.getHttpServer())
           .patch(`/user/${userIds[0]}/friend`)
           .set('x-user-id', userIds[1].toString()),
       ]);
       expect(wsMessage).toEqual({
-        newFriendId: userIds[1],
+        userId: userIds[1],
+        relationship: 'friend',
       });
       expect(response.status).toEqual(200);
       expect(response.body).toEqual({});
@@ -830,7 +839,7 @@ describe('UserModule - /user (e2e)', () => {
           new Promise((resolve) =>
             clientSockets[0]
               .timeout(1000)
-              .on('friendAccepted', (data: FriendAcceptedDto) => resolve(data)),
+              .on('userRelationship', (data) => resolve(data)),
           ),
         ),
         request(app.getHttpServer())
@@ -896,8 +905,10 @@ describe('UserModule - /user (e2e)', () => {
     it('should return nickname, profileImage (HTTP) & online, normal (WS) (both are logged in)', async () => {
       const [requesterId, targetId] = userIds;
       const [wsMessage, response] = await Promise.all([
-        new Promise<UserInfoDto>((resolve) =>
-          clientSockets[0].on('userInfo', (data: UserInfoDto) => resolve(data)),
+        new Promise<UserActivityDto>((resolve) =>
+          clientSockets[0].on('userActivity', (data: UserActivityDto) =>
+            resolve(data),
+          ),
         ),
         request(app.getHttpServer())
           .get(`/user/${targetId}/info`)
@@ -906,7 +917,6 @@ describe('UserModule - /user (e2e)', () => {
       expect(wsMessage).toEqual({
         activity: 'online',
         gameId: null,
-        relationship: 'normal',
         userId: targetId,
       });
       expect(response.status).toEqual(200);
@@ -923,8 +933,10 @@ describe('UserModule - /user (e2e)', () => {
         expect(activityManager.getActivity(targetId)).toBeNull();
       });
       const [wsMessage, response] = await Promise.all([
-        new Promise<UserInfoDto>((resolve) =>
-          clientSockets[0].on('userInfo', (data: UserInfoDto) => resolve(data)),
+        new Promise<UserActivityDto>((resolve) =>
+          clientSockets[0].on('userActivity', (data: UserActivityDto) =>
+            resolve(data),
+          ),
         ),
         request(app.getHttpServer())
           .get(`/user/${targetId}/info`)
@@ -933,7 +945,6 @@ describe('UserModule - /user (e2e)', () => {
       expect(wsMessage).toEqual({
         activity: 'offline',
         gameId: null,
-        relationship: 'normal',
         userId: targetId,
       });
       expect(response.status).toEqual(200);
@@ -951,8 +962,10 @@ describe('UserModule - /user (e2e)', () => {
       await dataSource.manager.save(BlockedUsers, blockedUsersEntities);
       await userRelationshipStorage.load(requesterId);
       const [wsMessage] = await Promise.all([
-        new Promise<UserInfoDto>((resolve) =>
-          clientSockets[0].on('userInfo', (data: UserInfoDto) => resolve(data)),
+        new Promise<UserActivityDto>((resolve) =>
+          clientSockets[0].on('userActivity', (data: UserActivityDto) =>
+            resolve(data),
+          ),
         ),
         request(app.getHttpServer())
           .get(`/user/${targetId}/info`)
@@ -961,7 +974,6 @@ describe('UserModule - /user (e2e)', () => {
       expect(wsMessage).toEqual({
         activity: 'online',
         gameId: null,
-        relationship: 'blocker',
         userId: targetId,
       });
     });
@@ -978,8 +990,10 @@ describe('UserModule - /user (e2e)', () => {
         expect(activityManager.getActivity(targetId)).toBeNull();
       });
       const [wsMessage] = await Promise.all([
-        new Promise<UserInfoDto>((resolve) =>
-          clientSockets[1].on('userInfo', (data: UserInfoDto) => resolve(data)),
+        new Promise<UserActivityDto>((resolve) =>
+          clientSockets[1].on('userActivity', (data: UserActivityDto) =>
+            resolve(data),
+          ),
         ),
         request(app.getHttpServer())
           .get(`/user/${targetId}/info`)
@@ -988,7 +1002,6 @@ describe('UserModule - /user (e2e)', () => {
       expect(wsMessage).toEqual({
         activity: 'offline',
         gameId: null,
-        relationship: 'blocked',
         userId: targetId,
       });
     });
@@ -1002,8 +1015,10 @@ describe('UserModule - /user (e2e)', () => {
       await dataSource.manager.save(Friends, friendsEntities);
       await userRelationshipStorage.load(requesterId);
       const [wsMessage] = await Promise.all([
-        new Promise<UserInfoDto>((resolve) =>
-          clientSockets[0].on('userInfo', (data: UserInfoDto) => resolve(data)),
+        new Promise<UserActivityDto>((resolve) =>
+          clientSockets[0].on('userActivity', (data: UserActivityDto) =>
+            resolve(data),
+          ),
         ),
         request(app.getHttpServer())
           .get(`/user/${targetId}/info`)
@@ -1012,7 +1027,6 @@ describe('UserModule - /user (e2e)', () => {
       expect(wsMessage).toEqual({
         activity: 'online',
         gameId: null,
-        relationship: 'pendingSender',
         userId: targetId,
       });
     });
@@ -1030,8 +1044,10 @@ describe('UserModule - /user (e2e)', () => {
         expect(activityManager.getActivity(targetId)).toBeNull();
       });
       const [wsMessage] = await Promise.all([
-        new Promise<UserInfoDto>((resolve) =>
-          clientSockets[1].on('userInfo', (data: UserInfoDto) => resolve(data)),
+        new Promise<UserActivityDto>((resolve) =>
+          clientSockets[1].on('userActivity', (data: UserActivityDto) =>
+            resolve(data),
+          ),
         ),
         request(app.getHttpServer())
           .get(`/user/${targetId}/info`)
@@ -1040,7 +1056,6 @@ describe('UserModule - /user (e2e)', () => {
       expect(wsMessage).toEqual({
         activity: 'offline',
         gameId: null,
-        relationship: 'pendingReceiver',
         userId: targetId,
       });
     });
@@ -1054,8 +1069,10 @@ describe('UserModule - /user (e2e)', () => {
       await dataSource.manager.save(Friends, friendsEntities);
       await userRelationshipStorage.load(requesterId);
       const [wsMessage] = await Promise.all([
-        new Promise<UserInfoDto>((resolve) =>
-          clientSockets[0].on('userInfo', (data: UserInfoDto) => resolve(data)),
+        new Promise<UserActivityDto>((resolve) =>
+          clientSockets[0].on('userActivity', (data: UserActivityDto) =>
+            resolve(data),
+          ),
         ),
         request(app.getHttpServer())
           .get(`/user/${targetId}/info`)
@@ -1064,7 +1081,6 @@ describe('UserModule - /user (e2e)', () => {
       expect(wsMessage).toEqual({
         activity: 'online',
         gameId: null,
-        relationship: 'friend',
         userId: targetId,
       });
     });
