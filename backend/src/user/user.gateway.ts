@@ -8,11 +8,6 @@ export class UserGateway {
   @WebSocketServer()
   private readonly server: Server;
 
-  /*****************************************************************************
-   *                                                                           *
-   * SECTION : Public Methods                                                 *
-   *                                                                           *
-   ****************************************************************************/
   /**
    * @description 유저가 수신한 friend request 수 변화 전달
    *
