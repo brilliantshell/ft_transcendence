@@ -244,7 +244,7 @@ export class UserService {
     } catch (e) {
       this.logger.error(e);
       throw new InternalServerErrorException(
-        'Failed to find nickname and profileImage of a user',
+        `Failed to find nickname and profileImage of a user(${requesterId})`,
       );
     }
     const requesterSocketId = this.userSocketStorage.clients.get(requesterId);
