@@ -6,12 +6,11 @@ import {
 } from '@nestjs/common';
 import { Repository } from 'typeorm';
 
-import { Activity, UserId } from '../util/type';
-import { ActivityManager } from '../user-status/activity.manager';
+import { ActivityGateway } from '../user-status/activity.gateway';
 import { ChannelStorage } from '../user-status/channel.storage';
 import { FriendListDto, UserProfileDto } from './dto/user.dto';
 import { UserGateway } from './user.gateway';
-import { UserActivityDto } from './dto/user-gateway.dto';
+import { UserId } from '../util/type';
 import { UserRelationshipStorage } from '../user-status/user-relationship.storage';
 import { UserSocketStorage } from '../user-status/user-socket.storage';
 import { Users } from '../entity/users.entity';
@@ -20,7 +19,7 @@ import { Users } from '../entity/users.entity';
 export class UserService {
   private readonly logger = new Logger(UserService.name);
   constructor(
-    private readonly activityManager: ActivityManager,
+    private readonly activityGateway: ActivityGateway,
     private readonly channelStorage: ChannelStorage,
     private readonly userGateway: UserGateway,
     private readonly userRelationshipStorage: UserRelationshipStorage,
@@ -249,10 +248,7 @@ export class UserService {
     }
     const requesterSocketId = this.userSocketStorage.clients.get(requesterId);
     if (requesterSocketId !== undefined) {
-      this.userGateway.emitUserActivity(
-        requesterSocketId,
-        this.createUserActivityDto(targetId),
-      );
+      this.activityGateway.emitUserActivity(targetId);
       this.userGateway.emitUserRelationship(
         requesterSocketId,
         targetId,
@@ -261,34 +257,5 @@ export class UserService {
       );
     }
     return profile;
-  }
-
-  /*****************************************************************************
-   *                                                                           *
-   * SECTION : Private Methods                                                 *
-   *                                                                           *
-   ****************************************************************************/
-
-  /**
-   * @description 유저의 상태 정보를 담은 UserActivityDto 를 생성
-   *
-   * @param targetId 조회 대상 유저의 id
-   * @returns
-   */
-  private createUserActivityDto(targetId: UserId): UserActivityDto {
-    let activity: Activity = 'offline';
-    const currentUi = this.activityManager.getActivity(targetId);
-    if (currentUi) {
-      activity = currentUi === 'playingGame' ? 'inGame' : 'online';
-    }
-
-    // TODO : 게임 중이라면 GameStorage 에서 gameId 가져오기
-    const gameId = null;
-
-    return {
-      activity,
-      gameId,
-      userId: targetId,
-    };
   }
 }

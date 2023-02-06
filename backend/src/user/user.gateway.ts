@@ -2,13 +2,17 @@ import { Server } from 'socket.io';
 import { WebSocketGateway, WebSocketServer } from '@nestjs/websockets';
 
 import { Relationship, SocketId, UserId } from '../util/type';
-import { UserActivityDto } from './dto/user-gateway.dto';
 
 @WebSocketGateway()
 export class UserGateway {
   @WebSocketServer()
   private readonly server: Server;
 
+  /*****************************************************************************
+   *                                                                           *
+   * SECTION : Public Methods                                                 *
+   *                                                                           *
+   ****************************************************************************/
   /**
    * @description 유저가 수신한 friend request 수 변화 전달
    *
@@ -17,16 +21,6 @@ export class UserGateway {
    */
   emitFriendRequestDiff(receiverSocketId: SocketId, requestDiff: 1 | -1) {
     this.server.to(receiverSocketId).emit('friendRequestDiff', { requestDiff });
-  }
-
-  /**
-   * @description activity 정보 전달
-   *
-   * @param requesterSocketId 요청한 유저의 socket id
-   * @param userActivity 요청한 유저의 activity & relationship 정보
-   */
-  emitUserActivity(requesterSocketId: SocketId, userActivity: UserActivityDto) {
-    this.server.to(requesterSocketId).emit('userActivity', userActivity);
   }
 
   /**

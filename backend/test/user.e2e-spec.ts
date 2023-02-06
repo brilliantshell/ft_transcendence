@@ -17,7 +17,7 @@ import { ChannelStorage } from '../src/user-status/channel.storage';
 import { Channels } from '../src/entity/channels.entity';
 import { Friends } from '../src/entity/friends.entity';
 import { Messages } from '../src/entity/messages.entity';
-import { UserActivityDto } from '../src/user/dto/user-gateway.dto';
+import { UserActivityDto } from '../src/user-status/dto/user-status.dto';
 import { UserRelationshipStorage } from '../src/user-status/user-relationship.storage';
 import { Users } from '../src/entity/users.entity';
 import {

@@ -3,12 +3,14 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { nanoid } from 'nanoid';
 
+import { ActivityGateway } from './../user-status/activity.gateway';
 import { ActivityManager } from '../user-status/activity.manager';
 import { BannedMembers } from '../entity/banned-members.entity';
 import { BlockedUsers } from '../entity/blocked-users.entity';
 import { ChannelMembers } from '../entity/channel-members.entity';
 import { ChannelStorage } from '../user-status/channel.storage';
 import { Channels } from '../entity/channels.entity';
+import { ChatsGateway } from './../chats/chats.gateway';
 import { Friends } from '../entity/friends.entity';
 import { Messages } from '../entity/messages.entity';
 import { Relationship, SocketId, UserId } from '../util/type';
@@ -18,7 +20,6 @@ import {
   destroyDataSources,
 } from '../../test/db-resource-manager';
 import { UserGateway } from './user.gateway';
-import { UserActivityDto } from './dto/user-gateway.dto';
 import { UserRelationshipStorage } from '../user-status/user-relationship.storage';
 import { UserService } from './user.service';
 import { UserSocketStorage } from '../user-status/user-socket.storage';
@@ -47,6 +48,7 @@ describe('UserService', () => {
   let userSocketStorage: UserSocketStorage;
   let channelStorage: ChannelStorage;
   let userRelationshipStorage: UserRelationshipStorage;
+  let activityGateway: ActivityGateway;
   let activityManager: ActivityManager;
   let index = 0;
 
@@ -71,12 +73,14 @@ describe('UserService', () => {
         TypeOrmModule.forFeature(ENTITIES),
       ],
       providers: [
-        UserService,
-        UserGateway,
-        UserRelationshipStorage,
-        UserSocketStorage,
+        ActivityGateway,
         ActivityManager,
         ChannelStorage,
+        ChatsGateway,
+        UserGateway,
+        UserRelationshipStorage,
+        UserService,
+        UserSocketStorage,
       ],
     })
       .overrideProvider(UserGateway)
@@ -88,9 +92,9 @@ describe('UserService', () => {
         ) => undefined,
         emitFriendRequestDiff: (socketId: SocketId, requestDiff: 1 | -1) =>
           undefined,
-        emitUserActivity: (socketId: SocketId, userActivity: UserActivityDto) =>
-          undefined,
       })
+      .overrideProvider(ActivityGateway)
+      .useValue({ emitUserActivity: (targetId: UserId) => undefined })
       .compile();
 
     await module.init();
@@ -102,6 +106,7 @@ describe('UserService', () => {
       UserRelationshipStorage,
     );
     channelStorage = module.get<ChannelStorage>(ChannelStorage);
+    activityGateway = module.get<ActivityGateway>(ActivityGateway);
     activityManager = module.get<ActivityManager>(ActivityManager);
     userIds = [usersEntities[index++].userId, usersEntities[index++].userId];
     userIds.forEach((userId) => {
@@ -135,8 +140,8 @@ describe('UserService', () => {
 
     it('should emit userActivity and userRelationship event', async () => {
       const spies = [
-        jest.spyOn(userGateway, 'emitUserActivity'),
         jest.spyOn(userGateway, 'emitUserRelationship'),
+        jest.spyOn(activityGateway, 'emitUserActivity'),
       ];
       const [requesterId, targetId] = userIds;
       await service.findProfile(requesterId, targetId);
