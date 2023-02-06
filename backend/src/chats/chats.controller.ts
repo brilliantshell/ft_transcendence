@@ -1,12 +1,10 @@
 import {
-  BadRequestException,
   Body,
   Controller,
   Delete,
   Get,
   HttpStatus,
   Param,
-  ParseArrayPipe,
   ParseIntPipe,
   Post,
   Query,
@@ -16,13 +14,16 @@ import {
 } from '@nestjs/common';
 
 import { ChatsService } from './chats.service';
-import {
-  ControlMessageDto,
-  CreateChannelDto,
-  JoinChannelDto,
-} from './dto/chats.dto';
-import { MockAuthGuard } from './mock-auth/mock-auth.guard';
+import { ChannelExistGuard } from './guard/channel-exist.guard';
+import { CreateChannelDto, JoinChannelDto, MessageDto } from './dto/chats.dto';
+import { JoinChannelGuard } from './guard/join-channel.guard';
+import { MockAuthGuard } from './guard/mock-auth.guard';
+import { MemberExistGuard } from './guard/member-exist.guard';
+import { MemberMessagingGuard } from './guard/member-messaging.guard';
+import { MessageTransformPipe } from './pipe/message-transform.pipe';
 import { Response } from 'express';
+import { ValidateNewChannelPipe } from './pipe/validate-new-channel.pipe';
+import { ValidateRangePipe } from './pipe/validate-range.pipe';
 import { VerifiedRequest } from '../util/type';
 
 @UseGuards(MockAuthGuard)
@@ -44,7 +45,7 @@ export class ChatsController {
   @Post()
   async createChannel(
     @Req() req: VerifiedRequest,
-    @Body() createChannelDto: CreateChannelDto,
+    @Body(ValidateNewChannelPipe) createChannelDto: CreateChannelDto,
     @Res() res: Response,
   ) {
     res
@@ -66,14 +67,13 @@ export class ChatsController {
    ****************************************************************************/
 
   @Get(':channelId')
-  findChannelMembers(
-    @Req() req: VerifiedRequest,
-    @Param('channelId', ParseIntPipe) channelId: number,
-  ) {
-    return this.chatsService.findChannelMembers(channelId, req.user.userId);
+  @UseGuards(ChannelExistGuard, MemberExistGuard)
+  findChannelMembers(@Param('channelId', ParseIntPipe) channelId: number) {
+    return this.chatsService.findChannelMembers(channelId);
   }
 
   @Post(':channelId/user/:userId')
+  @UseGuards(ChannelExistGuard, JoinChannelGuard)
   joinChannel(
     @Req() req: VerifiedRequest,
     @Param('channelId', ParseIntPipe) channelId: number,
@@ -89,6 +89,7 @@ export class ChatsController {
   }
 
   @Delete(':channelId/user')
+  @UseGuards(ChannelExistGuard, MemberExistGuard)
   leaveChannel(
     @Req() req: VerifiedRequest,
     @Param('channelId', ParseIntPipe) channelId: number,
@@ -103,41 +104,34 @@ export class ChatsController {
    ****************************************************************************/
 
   @Get(':channelId/message')
+  @UseGuards(ChannelExistGuard, MemberExistGuard)
   findChannelMessages(
-    @Req() req: VerifiedRequest,
     @Param('channelId', ParseIntPipe) channelId: number,
-    @Query('range', new ParseArrayPipe({ items: Number, separator: ',' }))
-    query: Array<number>,
+    @Query('range', ValidateRangePipe)
+    range: [offset: number, limit: number],
   ) {
-    // FIXME : array size of range should be 2
-    // FIXME : range validation, move to pipe or ... somewhere
-    const MAX_MESSAGE = 10000;
-    if (
-      query.length !== 2 ||
-      query[0] < 0 ||
-      query[0] > MAX_MESSAGE ||
-      query[1] > MAX_MESSAGE
-    ) {
-      throw new BadRequestException('Invalid range query');
-    }
-    return this.chatsService.findChannelMessages(
-      channelId,
-      req.user.userId,
-      query[0],
-      query[1],
-    );
+    return this.chatsService.findChannelMessages(channelId, range[0], range[1]);
   }
 
   @Post(':channelId/message')
+  @UseGuards(ChannelExistGuard, MemberExistGuard, MemberMessagingGuard)
   controlMessage(
-    @Req() req: VerifiedRequest,
+    @Req() req: /* VerifiedRequest */ any, // TODO : CreatedAt 의 처리 방식 결정 후 수정
     @Param('channelId', ParseIntPipe) channelId: number,
-    @Body() controlMessageDto: ControlMessageDto,
+    @Body(MessageTransformPipe) controlMessageDto: MessageDto,
   ) {
-    return this.chatsService.controlMessage(
-      channelId,
-      req.user.userId,
-      controlMessageDto.message,
-    );
+    controlMessageDto.command === undefined
+      ? this.chatsService.createMessage(
+          channelId,
+          req.user.userId,
+          controlMessageDto.message,
+          req.createdAt,
+        )
+      : this.chatsService.executeCommand(
+          channelId,
+          req.user.userId,
+          controlMessageDto.command,
+          req.createdAt,
+        );
   }
 }

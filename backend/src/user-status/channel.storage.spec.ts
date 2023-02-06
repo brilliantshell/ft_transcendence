@@ -4,10 +4,11 @@ import { BadRequestException, ForbiddenException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
+import { AccessMode, Channels } from '../entity/channels.entity';
 import { BannedMembers } from '../entity/banned-members.entity';
+import { BlockedUsers } from '../entity/blocked-users.entity';
 import { ChannelMembers } from '../entity/channel-members.entity';
 import { ChannelStorage } from './channel.storage';
-import { AccessMode, Channels } from '../entity/channels.entity';
 import { Messages } from '../entity/messages.entity';
 import {
   TYPEORM_SHARED_CONFIG,
@@ -24,12 +25,9 @@ import {
   generateMessages,
   generateUsers,
 } from '../../test/generate-mock-data';
-import { BlockedUsers } from '../entity/blocked-users.entity';
-import { Friends } from '../entity/friends.entity';
 
 const TEST_DB = 'test_db_channel_storage';
 const ENTITIES = [
-  Friends,
   BannedMembers,
   BlockedUsers,
   ChannelMembers,
@@ -419,7 +417,6 @@ describe('ChannelStorage', () => {
 
     await storage.updateUserRole(
       nonDmChannel.channelId,
-      nonDmChannel.ownerId,
       member.memberId,
       'admin',
     );
@@ -436,7 +433,7 @@ describe('ChannelStorage', () => {
     ).toBeTruthy();
   });
 
-  it('should throw FORBIDDEN error when  user does not have appropriate authority to change the role of another user', async () => {
+  it.skip('should throw FORBIDDEN error when  user does not have appropriate authority to change the role of another user', async () => {
     const nonDmChannels = await channelsRepository.find({
       where: { memberCount: MoreThanOrEqual(3) },
     });
@@ -454,7 +451,6 @@ describe('ChannelStorage', () => {
       async () =>
         await storage.updateUserRole(
           nonDmChannel.channelId,
-          member.memberId,
           nonDmChannel.ownerId,
           'admin',
         ),
@@ -498,7 +494,6 @@ describe('ChannelStorage', () => {
     const muteEndAt = DateTime.now().plus({ days: 1 });
     await storage.updateMuteStatus(
       nonDmChannel.channelId,
-      nonDmChannel.ownerId,
       member.memberId,
       muteEndAt,
     );
@@ -515,7 +510,8 @@ describe('ChannelStorage', () => {
     ).toEqual(muteEndAt);
   });
 
-  it(`should throw BAD REQUEST when a user's mute end time is set to the past`, async () => {
+  // skip this test because this case is not possible
+  it.skip(`should throw BAD REQUEST when a user's mute end time is set to the past`, async () => {
     const nonDmChannels = await channelsRepository.find({
       where: { memberCount: MoreThanOrEqual(3) },
     });
@@ -536,7 +532,6 @@ describe('ChannelStorage', () => {
       async () =>
         await storage.updateMuteStatus(
           nonDmChannel.channelId,
-          nonDmChannel.ownerId,
           member.memberId,
           muteEndAt,
         ),

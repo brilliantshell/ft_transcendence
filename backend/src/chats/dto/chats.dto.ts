@@ -58,10 +58,13 @@ export class CreateChannelDto {
   accessMode: 'public' | 'protected' | 'private';
 }
 
-export class ControlMessageDto {
+export class MessageDto {
   @IsString()
   @Length(1, 4096)
   message: string;
+
+  @IsOptional()
+  command?: [kind: string, targetId: number, args: string];
 }
 
 export class JoinChannelDto {
@@ -76,10 +79,3 @@ export class JoinChannelDto {
   })
   password: string;
 }
-
-// TODO: range validation
-// export class FindChannelMessageQueryDto {
-//   @IsArray({ each: true })
-//   @Length(2, 2)
-//   range: number[];
-// }

@@ -7,11 +7,15 @@ import { ChatsGateway } from './chats.gateway';
 import { ChatsService } from './chats.service';
 import { Messages } from '../entity/messages.entity';
 import { UserStatusModule } from '../user-status/user-status.module';
+import { Users } from '../entity/users.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Channels, Messages]), UserStatusModule],
+  imports: [
+    TypeOrmModule.forFeature([Channels, Messages, Users]),
+    UserStatusModule,
+  ],
+  controllers: [ChatsController],
   providers: [ChatsGateway, ChatsService],
   exports: [ChatsGateway],
-  controllers: [ChatsController],
 })
 export class ChatsModule {}
