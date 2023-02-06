@@ -130,19 +130,6 @@ export class ChatsGateway {
    ****************************************************************************/
 
   /**
-   * @description 새로운 메시지가 도착 했을 때, 해당 채팅방을 보고 있지 않은 멤버에게 알림
-   *
-   * @param channelId 채팅방의 id
-   */
-  // TODO: unseenCount 생각하기, private 로 바꿀지 생각하기
-  emitMessageArrived(channelId: ChannelId) {
-    this.server
-      .in(`chatRooms-${channelId}`)
-      .except(`chatRooms-${channelId}-active`)
-      .emit('messageArrived', { channelId });
-  }
-
-  /**
    * @description 멤버가 채팅방에서 mute 되었을 때, 해당 유저에게 알림
    *
    * @param mutedMember mute 된 멤버의 id
@@ -167,5 +154,17 @@ export class ChatsGateway {
    ****************************************************************************/
   getRoomMembers(chatRoom: string) {
     return this.server.sockets.adapter.rooms.get(chatRoom);
+  }
+
+  /**
+   * @description 새로운 메시지가 도착 했을 때, 해당 채팅방을 보고 있지 않은 멤버에게 알림
+   *
+   * @param channelId 채팅방의 id
+   */
+  private emitMessageArrived(channelId: ChannelId) {
+    this.server
+      .in(`chatRooms-${channelId}`)
+      .except(`chatRooms-${channelId}-active`)
+      .emit('messageArrived', { channelId });
   }
 }

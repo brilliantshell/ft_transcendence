@@ -179,19 +179,43 @@ describe('UserController (e2e)', () => {
         .set('x-user-id', usersEntities[0].userId.toString())
         .send({
           channelName: '400',
-          password: 'ThisIsReallyLongPWD21', // 21 characters
+          password: 'ThisIsReallyLong1', // 17 characters
           accessMode: 'protected',
         })
         .expect(400);
     });
 
-    it('POST /chats (invalid DTO with Unicode password)', async () => {
+    it('POST /chats (invalid DTO with Unicode Korean password)', async () => {
       return request(app.getHttpServer())
         .post('/chats')
         .set('x-user-id', usersEntities[0].userId.toString())
         .send({
           channelName: '400',
-          password: '왜이러는걸까요',
+          password: 'WhyDoThis하하',
+          accessMode: 'protected',
+        })
+        .expect(400);
+    });
+
+    it('POST /chats (invalid DTO with Unicode 💩 password)', async () => {
+      return request(app.getHttpServer())
+        .post('/chats')
+        .set('x-user-id', usersEntities[0].userId.toString())
+        .send({
+          channelName: '400',
+          password: 'WhyDo💩This',
+          accessMode: 'protected',
+        })
+        .expect(400);
+    });
+
+    it('POST /chats (invalid DTO with Non-English password)', async () => {
+      return request(app.getHttpServer())
+        .post('/chats')
+        .set('x-user-id', usersEntities[0].userId.toString())
+        .send({
+          channelName: '400',
+          password: 'CómoEstás',
           accessMode: 'protected',
         })
         .expect(400);
@@ -372,7 +396,7 @@ describe('UserController (e2e)', () => {
         .send({
           channelName: 'test',
           accessMode: 'protected',
-          password: 'abc1234!',
+          password: 'abc1234d',
         })
         .expect(201)
         .expect(async (res) => {
@@ -384,7 +408,7 @@ describe('UserController (e2e)', () => {
       return request(app.getHttpServer())
         .post(`/chats/${newChannelId}/user/${newChannelMember.userId}`)
         .set('x-user-id', newChannelMember.userId.toString())
-        .send({ password: 'abc1234!' })
+        .send({ password: 'abc1234d' })
         .expect(201);
     });
 
@@ -397,7 +421,7 @@ describe('UserController (e2e)', () => {
         .send({
           channelName: 'test',
           accessMode: 'protected',
-          password: 'abc1234!',
+          password: 'abc1234ABC',
         })
         .expect(201)
         .expect(async (res) => {
@@ -409,7 +433,7 @@ describe('UserController (e2e)', () => {
       return request(app.getHttpServer())
         .post(`/chats/${newChannelId}/user/${newChannelMember.userId}`)
         .set('x-user-id', newChannelMember.userId.toString())
-        .send({ password: 'Abc1234!' })
+        .send({ password: 'wrongPass' })
         .expect(403);
     });
 
@@ -422,7 +446,7 @@ describe('UserController (e2e)', () => {
         .send({
           channelName: 'test',
           accessMode: 'protected',
-          password: 'abc1234!',
+          password: 'abc1234567',
         })
         .expect(201)
         .expect(async (res) => {

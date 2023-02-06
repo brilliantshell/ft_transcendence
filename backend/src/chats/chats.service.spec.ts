@@ -54,6 +54,9 @@ describe('ChatsService', () => {
     dataSource = dataSources.dataSource;
     usersEntities = generateUsers(10);
     channelsEntities = generateChannels(usersEntities);
+    channelsEntities
+      .filter((_, index) => index & 1)
+      .forEach((c) => (c.name = generateRandomKorean(c.name.length)));
     await dataSource.getRepository(Users).save(usersEntities);
     await dataSource.getRepository(Channels).save(channelsEntities);
     channelsEntities = await dataSource.getRepository(Channels).find();
@@ -156,7 +159,9 @@ describe('ChatsService', () => {
             accessMode: channel.accessMode as 'public' | 'protected',
           };
         })
-        .sort((a, b) => a.channelName.localeCompare(b.channelName));
+        .sort((a, b) =>
+          new Intl.Collator('ko').compare(a.channelName, b.channelName),
+        );
       expect(result).toEqual({ joinedChannels, otherChannels });
     });
 
@@ -215,7 +220,9 @@ describe('ChatsService', () => {
             accessMode: channel.accessMode as 'public' | 'protected',
           };
         })
-        .sort((a, b) => a.channelName.localeCompare(b.channelName));
+        .sort((a, b) =>
+          new Intl.Collator('ko').compare(a.channelName, b.channelName),
+        );
       expect(result).toEqual({ joinedChannels, otherChannels });
     });
 
@@ -610,7 +617,8 @@ describe('ChatsService', () => {
       newMessageSpy = jest
         .spyOn(chatsGateway, 'emitNewMessage')
         .mockImplementation((userId, channelId) => {
-          chatsGateway.emitMessageArrived(channelId);
+          // NOTE : Access Private Method
+          (chatsGateway as any).emitMessageArrived(channelId);
         });
 
       memberLeftSpy = jest
@@ -625,7 +633,7 @@ describe('ChatsService', () => {
         .spyOn(chatsGateway, 'emitMuted')
         .mockImplementation(() => undefined);
       messageArrivedSpy = jest
-        .spyOn(chatsGateway, 'emitMessageArrived')
+        .spyOn(chatsGateway as any, 'emitMessageArrived') // NOTE : Access Private Method
         .mockImplementation(() => undefined);
       jest
         .spyOn(chatsGateway, 'emitMemberJoin')
@@ -968,3 +976,13 @@ describe('ChatsService', () => {
     });
   });
 });
+
+const generateRandomKorean = (length: number) => {
+  const result = [];
+  for (let i = 0; i < length; i++) {
+    result.push(
+      String.fromCharCode(Math.floor(Math.random() * 11172) + 0xac00),
+    );
+  }
+  return result.join('');
+};

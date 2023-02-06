@@ -74,7 +74,6 @@ export class ChatsService {
    * @param channel 새로 생성할 채널 정보
    * @returns 생성된 채널 Id
    */
-  // NOTE : WS 이벤트 emit 해야 할 수 있음
   async createChannel(userId: UserId, channel: CreateChannelDto) {
     const { channelName, accessMode, password } = channel;
 
@@ -84,6 +83,7 @@ export class ChatsService {
       channelName,
       password,
     );
+    // TODO: emit new channel created
   }
 
   /*****************************************************************************
@@ -101,6 +101,7 @@ export class ChatsService {
    */
   findChannelMembers(channelId: ChannelId) {
     const { userRoleMap } = this.channelStorage.getChannel(channelId);
+    // TODO: 퍼포먼스 테스트
     const channelMembers: Array<{ id: UserId; role: UserRole }> = [];
     for (const [userId, role] of userRoleMap) {
       channelMembers.push({ id: userId, role });
@@ -370,7 +371,9 @@ export class ChatsService {
           `Fail to get channels except joined for user (id: ${userId})`,
         );
       })
-    ).sort((a, b) => a.channelName.localeCompare(b.channelName));
+    ).sort((a, b) =>
+      new Intl.Collator('ko').compare(a.channelName, b.channelName),
+    );
   }
 
   /*****************************************************************************

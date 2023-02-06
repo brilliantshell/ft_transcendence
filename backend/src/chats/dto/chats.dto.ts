@@ -1,7 +1,7 @@
 import {
+  IsAlphanumeric,
   IsOptional,
   IsString,
-  IsStrongPassword,
   Length,
   Matches,
 } from 'class-validator';
@@ -41,16 +41,9 @@ export class CreateChannelDto {
   @Length(1, 128)
   channelName: string;
 
-  // FIXME : password max length 정해서 반영하기
-  @IsString()
-  @Length(8, 20)
+  @IsAlphanumeric()
+  @Length(8, 16)
   @IsOptional()
-  @IsStrongPassword({
-    minLowercase: 1,
-    minUppercase: 0,
-    minNumbers: 1,
-    minSymbols: 0,
-  })
   password?: string;
 
   @IsString()
@@ -68,14 +61,8 @@ export class MessageDto {
 }
 
 export class JoinChannelDto {
-  @IsString()
-  @Length(8, 20)
+  @IsAlphanumeric()
+  @Length(8, 16)
   @IsOptional()
-  @IsStrongPassword({
-    minLowercase: 1,
-    minUppercase: 0,
-    minNumbers: 1,
-    minSymbols: 0,
-  })
   password: string;
 }
