@@ -41,7 +41,7 @@ export class CreateChannelDto {
   @Length(1, 128)
   channelName: string;
 
-  // TODO : password max length 정하기
+  // FIXME : password max length 정해서 반영하기
   @IsString()
   @Length(8, 20)
   @IsOptional()

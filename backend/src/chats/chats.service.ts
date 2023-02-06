@@ -100,7 +100,7 @@ export class ChatsService {
    * @returns 채널의 멤버 목록 및 DM 차단 여부
    */
   findChannelMembers(channelId: ChannelId) {
-    const userRoleMap = this.channelStorage.getChannel(channelId).userRoleMap;
+    const { userRoleMap } = this.channelStorage.getChannel(channelId);
     const channelMembers: Array<{ id: UserId; role: UserRole }> = [];
     for (const [userId, role] of userRoleMap) {
       channelMembers.push({ id: userId, role });
@@ -231,14 +231,12 @@ export class ChatsService {
       throw new InternalServerErrorException('Failed to create message');
     }
     this.chatsGateway.emitNewMessage(senderId, channelId, contents, createdAt);
-    for (const id of this.channelStorage
-      .getChannel(channelId)
-      .userRoleMap.keys()) {
+    this.channelStorage.getChannel(channelId).userRoleMap.forEach((v, id) => {
       const currentUi = this.activityManager.getActivity(id);
       if (currentUi !== null && currentUi !== `chatRooms-${channelId}`) {
         this.channelStorage.updateUnseenCount(channelId, id);
       }
-    }
+    });
   }
 
   /**
