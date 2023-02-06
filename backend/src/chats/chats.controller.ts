@@ -116,22 +116,13 @@ export class ChatsController {
   @Post(':channelId/message')
   @UseGuards(ChannelExistGuard, MemberExistGuard, MemberMessagingGuard)
   controlMessage(
-    @Req() req: /* VerifiedRequest */ any, // TODO : CreatedAt 의 처리 방식 결정 후 수정
+    @Req() req: VerifiedRequest,
     @Param('channelId', ParseIntPipe) channelId: number,
     @Body(MessageTransformPipe) controlMessageDto: MessageDto,
   ) {
-    controlMessageDto.command === undefined
-      ? this.chatsService.createMessage(
-          channelId,
-          req.user.userId,
-          controlMessageDto.message,
-          req.createdAt,
-        )
-      : this.chatsService.executeCommand(
-          channelId,
-          req.user.userId,
-          controlMessageDto.command,
-          req.createdAt,
-        );
+    const { message, command } = controlMessageDto;
+    command === undefined
+      ? this.chatsService.createMessage(channelId, req.user.userId, message)
+      : this.chatsService.executeCommand(channelId, req.user.userId, command);
   }
 }

@@ -211,14 +211,13 @@ export class ChatsService {
    * @param senderId 메시지를 보낸 유저의 Id
    * @param channelId 메시지를 보낸 채널의 Id
    * @param contents 메시지 내용
-   * @param createdAt 메시지 생성 시간
    */
   async createMessage(
     channelId: ChannelId,
     senderId: UserId,
     contents: string,
-    createdAt: DateTime,
   ) {
+    const createdAt = DateTime.now();
     try {
       await this.messagesRepository.insert({
         senderId,
@@ -246,12 +245,10 @@ export class ChatsService {
    * @param channelId 명령을 보낸 채널의 Id
    * @param contents 명령 내용
    */
-  // NOTE:  { message : "/command [targetId] [time]|[role]" } 와 같은 형식으로 명령어가 온다고 가정
   async executeCommand(
     channelId: ChannelId,
     senderId: UserId,
     command: [string, number, string],
-    createdAt: DateTime,
   ) {
     const [kind, targetId, arg] = command;
     if (this.channelStorage.getUserRole(channelId, targetId) === null) {
@@ -260,16 +257,17 @@ export class ChatsService {
       );
     }
     this.checkRole(channelId, senderId, targetId);
+    const now = DateTime.now();
     if (kind === 'role') {
       const role = arg as 'admin' | 'member';
       await this.channelStorage.updateUserRole(channelId, targetId, role);
       return this.chatsGateway.emitRoleChanged(targetId, channelId, role);
     } else if (kind === 'mute') {
-      const minutes = createdAt.plus({ minutes: Number(arg) });
+      const minutes = now.plus({ minutes: Number(arg) });
       await this.channelStorage.updateMuteStatus(channelId, targetId, minutes);
       return this.chatsGateway.emitMuted(targetId, channelId, minutes);
     } else {
-      const minutes = createdAt.plus({ minutes: Number(arg) });
+      const minutes = now.plus({ minutes: Number(arg) });
       await this.channelStorage.banUser(channelId, senderId, targetId, minutes);
       return this.chatsGateway.emitMemberLeft(targetId, channelId, false);
     }

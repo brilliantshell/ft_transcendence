@@ -648,12 +648,7 @@ describe('ChatsService', () => {
 
       await service.joinChannel(newChannelId, anotherUserId, true);
       const msg = { message: 'hello message!' };
-      await service.createMessage(
-        newChannelId,
-        userId,
-        msg.message,
-        DateTime.now(),
-      );
+      await service.createMessage(newChannelId, userId, msg.message);
       expect(newMessageSpy).toBeCalledWith(
         userId,
         newChannelId,
@@ -693,12 +688,11 @@ describe('ChatsService', () => {
       const anotherUserId = usersEntities[2].userId;
 
       await service.joinChannel(newChannelId, anotherUserId, true);
-      await service.executeCommand(
-        newChannelId,
-        ownerId,
-        ['role', anotherUserId, 'admin'],
-        DateTime.now(),
-      );
+      await service.executeCommand(newChannelId, ownerId, [
+        'role',
+        anotherUserId,
+        'admin',
+      ]);
       expect(channelStorage.getUserRole(newChannelId, anotherUserId)).toBe(
         'admin',
       );
@@ -707,12 +701,11 @@ describe('ChatsService', () => {
         newChannelId,
         'admin',
       );
-      await service.executeCommand(
-        newChannelId,
-        ownerId,
-        ['role', anotherUserId, 'member'],
-        DateTime.now(),
-      );
+      await service.executeCommand(newChannelId, ownerId, [
+        'role',
+        anotherUserId,
+        'member',
+      ]);
       expect(channelStorage.getUserRole(newChannelId, anotherUserId)).toBe(
         'member',
       );
@@ -739,21 +732,19 @@ describe('ChatsService', () => {
       await service.joinChannel(newChannelId, adminId, true);
       await service.joinChannel(newChannelId, memberId, true);
 
-      await service.executeCommand(
-        newChannelId,
-        ownerId,
-        ['role', adminId, 'admin'],
-        DateTime.now(),
-      );
+      await service.executeCommand(newChannelId, ownerId, [
+        'role',
+        adminId,
+        'admin',
+      ]);
       expect(channelStorage.getUserRole(newChannelId, adminId)).toBe('admin');
       expect(roleChangedSpy).toBeCalledWith(adminId, newChannelId, 'admin');
 
-      await service.executeCommand(
-        newChannelId,
-        adminId,
-        ['role', memberId, 'admin'],
-        DateTime.now(),
-      );
+      await service.executeCommand(newChannelId, adminId, [
+        'role',
+        memberId,
+        'admin',
+      ]);
       expect(channelStorage.getUserRole(newChannelId, memberId)).toBe('admin');
       expect(roleChangedSpy).toBeCalledWith(memberId, newChannelId, 'admin');
     });
@@ -774,33 +765,30 @@ describe('ChatsService', () => {
       await service.joinChannel(newChannelId, adminId, true);
       await service.joinChannel(newChannelId, memberId, true);
 
-      await service.executeCommand(
-        newChannelId,
-        ownerId,
-        ['role', adminId, 'admin'],
-        DateTime.now(),
-      );
+      await service.executeCommand(newChannelId, ownerId, [
+        'role',
+        adminId,
+        'admin',
+      ]);
       expect(channelStorage.getUserRole(newChannelId, adminId)).toBe('admin');
       expect(roleChangedSpy).toBeCalledWith(adminId, newChannelId, 'admin');
 
       expect(
         async () =>
-          await service.executeCommand(
-            newChannelId,
-            memberId,
-            ['role', adminId, 'member'],
-            DateTime.now(),
-          ),
+          await service.executeCommand(newChannelId, memberId, [
+            'role',
+            adminId,
+            'member',
+          ]),
       ).rejects.toThrow(ForbiddenException);
 
       expect(
         async () =>
-          await service.executeCommand(
-            newChannelId,
-            memberId,
-            ['role', adminId, 'admin'],
-            DateTime.now(),
-          ),
+          await service.executeCommand(newChannelId, memberId, [
+            'role',
+            adminId,
+            'admin',
+          ]),
       ).rejects.toThrow(ForbiddenException);
     });
 
@@ -818,12 +806,11 @@ describe('ChatsService', () => {
       await service.joinChannel(newChannelId, anotherUserId, true);
       expect(
         async () =>
-          await service.executeCommand(
-            newChannelId,
-            anotherUserId,
-            ['role', ownerId, 'admin'],
-            DateTime.now(),
-          ),
+          await service.executeCommand(newChannelId, anotherUserId, [
+            'role',
+            ownerId,
+            'admin',
+          ]),
       ).rejects.toThrow(ForbiddenException);
     });
 
@@ -841,21 +828,19 @@ describe('ChatsService', () => {
       await service.joinChannel(newChannelId, anotherUserId, true);
       expect(
         async () =>
-          await service.executeCommand(
-            newChannelId,
-            anotherUserId,
-            ['role', ownerId, 'admin'],
-            DateTime.now(),
-          ),
+          await service.executeCommand(newChannelId, anotherUserId, [
+            'role',
+            ownerId,
+            'admin',
+          ]),
       ).rejects.toThrow(ForbiddenException);
       expect(
         async () =>
-          await service.executeCommand(
-            newChannelId,
-            anotherUserId,
-            ['ban', ownerId, '42'],
-            DateTime.now(),
-          ),
+          await service.executeCommand(newChannelId, anotherUserId, [
+            'ban',
+            ownerId,
+            '42',
+          ]),
       ).rejects.toThrow(ForbiddenException);
     });
 
@@ -875,21 +860,19 @@ describe('ChatsService', () => {
       await service.joinChannel(newChannelId, adminId, true);
       await service.joinChannel(newChannelId, memberId, true);
 
-      await service.executeCommand(
-        newChannelId,
-        ownerId,
-        ['role', adminId, 'admin'],
-        DateTime.now(),
-      );
+      await service.executeCommand(newChannelId, ownerId, [
+        'role',
+        adminId,
+        'admin',
+      ]);
       expect(channelStorage.getUserRole(newChannelId, adminId)).toBe('admin');
       expect(roleChangedSpy).toBeCalledWith(adminId, newChannelId, 'admin');
 
-      await service.executeCommand(
-        newChannelId,
-        ownerId,
-        ['mute', memberId, '5'],
-        DateTime.now(),
-      );
+      await service.executeCommand(newChannelId, ownerId, [
+        'mute',
+        memberId,
+        '5',
+      ]);
       expect(
         Math.round(
           DateTime.now()
@@ -924,23 +907,21 @@ describe('ChatsService', () => {
       await service.joinChannel(newChannelId, adminId, true);
       await service.joinChannel(newChannelId, memberId, true);
 
-      await service.executeCommand(
-        newChannelId,
-        ownerId,
-        ['role', adminId, 'admin'],
-        DateTime.now(),
-      );
+      await service.executeCommand(newChannelId, ownerId, [
+        'role',
+        adminId,
+        'admin',
+      ]);
       expect(channelStorage.getUserRole(newChannelId, adminId)).toBe('admin');
       expect(roleChangedSpy).toBeCalledWith(adminId, newChannelId, 'admin');
 
       expect(
         async () =>
-          await service.executeCommand(
-            newChannelId,
-            adminId,
-            ['mute', ownerId, '5'],
-            DateTime.now(),
-          ),
+          await service.executeCommand(newChannelId, adminId, [
+            'mute',
+            ownerId,
+            '5',
+          ]),
       ).rejects.toThrow(ForbiddenException);
     });
 
@@ -960,21 +941,19 @@ describe('ChatsService', () => {
       await service.joinChannel(newChannelId, adminId, true);
       await service.joinChannel(newChannelId, memberId, true);
 
-      await service.executeCommand(
-        newChannelId,
-        ownerId,
-        ['role', adminId, 'admin'],
-        DateTime.now(),
-      );
+      await service.executeCommand(newChannelId, ownerId, [
+        'role',
+        adminId,
+        'admin',
+      ]);
       expect(channelStorage.getUserRole(newChannelId, adminId)).toBe('admin');
       expect(roleChangedSpy).toBeCalledWith(adminId, newChannelId, 'admin');
 
-      await service.executeCommand(
-        newChannelId,
-        adminId,
-        ['ban', memberId, '5'],
-        DateTime.now(),
-      );
+      await service.executeCommand(newChannelId, adminId, [
+        'ban',
+        memberId,
+        '5',
+      ]);
       expect(
         Math.round(
           DateTime.now()
