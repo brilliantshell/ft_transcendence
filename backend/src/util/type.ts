@@ -44,8 +44,10 @@ export type CurrentUi =
 export type Activity = 'online' | 'offline' | 'inGame';
 
 export interface GameInfo {
-  left: UserId;
+  leftId: UserId;
+  leftNickname: string;
   right: UserId;
+  rightNickname: string;
   map: 1 | 2 | 3;
 }
 
