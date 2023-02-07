@@ -46,10 +46,14 @@ export class MessageTransformPipe implements PipeTransform {
       ).userId;
     } catch (e) {
       this.logger.error(e);
-      new InternalServerErrorException('Failed to find the user');
+      new InternalServerErrorException(
+        `Failed to find the user named ${targetNickname}`,
+      );
     }
     if (targetId === undefined) {
-      throw new NotFoundException("The user doesn't exist");
+      throw new NotFoundException(
+        `The user named ${targetNickname} doesn't exist`,
+      );
     }
     value.command = [kind.slice(1), targetId, arg];
     return value;

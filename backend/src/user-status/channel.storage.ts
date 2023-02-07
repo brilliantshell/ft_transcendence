@@ -215,7 +215,7 @@ export class ChannelStorage implements OnModuleInit {
     accessMode: AccessMode,
     owner: UserId,
     name: string,
-    password = null,
+    password: string,
   ): Promise<ChannelId> {
     let newChannel: Channels;
     try {

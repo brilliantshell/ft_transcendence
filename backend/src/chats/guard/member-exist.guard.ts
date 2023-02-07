@@ -21,8 +21,8 @@ export class MemberExistGuard implements CanActivate {
     if (!this.channelStorage.getUserRole(safeChannelId, userId)) {
       throw (await this.channelStorage.getBanEndAt(safeChannelId, userId)) >
         DateTime.now()
-        ? new ForbiddenException('This user is banned from the channel')
-        : new ForbiddenException('This user is not a member of the channel');
+        ? new ForbiddenException(`This user is banned from the channel`)
+        : new ForbiddenException(`This user is not a member of the channel`);
     }
     return true;
   }
