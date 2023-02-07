@@ -7,6 +7,7 @@ import {
   Param,
   ParseIntPipe,
   Post,
+  Put,
   Query,
   Req,
   Res,
@@ -15,6 +16,7 @@ import {
 
 import { ChatsService } from './chats.service';
 import { ChannelExistGuard } from './guard/channel-exist.guard';
+import { ChannelId, UserId, VerifiedRequest } from '../util/type';
 import { CreateChannelDto, JoinChannelDto, MessageDto } from './dto/chats.dto';
 import { JoinChannelGuard } from './guard/join-channel.guard';
 import { MockAuthGuard } from './guard/mock-auth.guard';
@@ -24,7 +26,6 @@ import { MessageTransformPipe } from './pipe/message-transform.pipe';
 import { Response } from 'express';
 import { ValidateNewChannelPipe } from './pipe/validate-new-channel.pipe';
 import { ValidateRangePipe } from './pipe/validate-range.pipe';
-import { VerifiedRequest } from '../util/type';
 
 @UseGuards(MockAuthGuard)
 @Controller('chats')
@@ -68,31 +69,35 @@ export class ChatsController {
 
   @Get(':channelId')
   @UseGuards(ChannelExistGuard, MemberExistGuard)
-  findChannelMembers(@Param('channelId', ParseIntPipe) channelId: number) {
+  findChannelMembers(@Param('channelId', ParseIntPipe) channelId: ChannelId) {
     return this.chatsService.findChannelMembers(channelId);
   }
 
-  @Post(':channelId/user/:userId')
+  @Put(':channelId/user/:userId')
   @UseGuards(ChannelExistGuard, JoinChannelGuard)
-  joinChannel(
+  // TODO add websocket
+  async joinChannel(
     @Req() req: VerifiedRequest,
-    @Param('channelId', ParseIntPipe) channelId: number,
-    @Param('userId', ParseIntPipe) userId: number,
+    @Res() res: Response,
+    @Param('channelId', ParseIntPipe) channelId: ChannelId,
+    @Param('userId', ParseIntPipe) userId: UserId,
     @Body() joinChannelDto: JoinChannelDto,
   ) {
-    return this.chatsService.joinChannel(
+    const isNewMember = await this.chatsService.joinChannel(
       channelId,
-      req.user.userId,
+      userId,
       userId !== req.user.userId,
       joinChannelDto.password || null,
     );
+    res.status(isNewMember ? HttpStatus.CREATED : HttpStatus.OK).end();
   }
 
   @Delete(':channelId/user')
+  // TODO add websocket
   @UseGuards(ChannelExistGuard, MemberExistGuard)
   leaveChannel(
     @Req() req: VerifiedRequest,
-    @Param('channelId', ParseIntPipe) channelId: number,
+    @Param('channelId', ParseIntPipe) channelId: ChannelId,
   ) {
     return this.chatsService.leaveChannel(channelId, req.user.userId);
   }
@@ -106,7 +111,7 @@ export class ChatsController {
   @Get(':channelId/message')
   @UseGuards(ChannelExistGuard, MemberExistGuard)
   findChannelMessages(
-    @Param('channelId', ParseIntPipe) channelId: number,
+    @Param('channelId', ParseIntPipe) channelId: ChannelId,
     @Query('range', ValidateRangePipe)
     range: [offset: number, limit: number],
   ) {
@@ -117,7 +122,7 @@ export class ChatsController {
   @UseGuards(ChannelExistGuard, MemberExistGuard, MemberMessagingGuard)
   controlMessage(
     @Req() req: VerifiedRequest,
-    @Param('channelId', ParseIntPipe) channelId: number,
+    @Param('channelId', ParseIntPipe) channelId: ChannelId,
     @Body(MessageTransformPipe) controlMessageDto: MessageDto,
   ) {
     const { message, command } = controlMessageDto;
