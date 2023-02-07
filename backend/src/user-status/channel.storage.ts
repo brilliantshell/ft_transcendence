@@ -215,7 +215,7 @@ export class ChannelStorage implements OnModuleInit {
     accessMode: AccessMode,
     owner: UserId,
     name: string,
-    password = null,
+    password: string,
   ): Promise<ChannelId> {
     let newChannel: Channels;
     try {
@@ -484,12 +484,7 @@ export class ChannelStorage implements OnModuleInit {
    * @param memberId 유저 id
    * @param banEndAt 추방 상태 해제 시간
    */
-  async banUser(
-    channelId: ChannelId,
-    adminId: UserId,
-    memberId: UserId,
-    banEndAt: DateTime,
-  ) {
+  async banUser(channelId: ChannelId, memberId: UserId, banEndAt: DateTime) {
     try {
       await this.dataSource.manager.transaction(async (manager) => {
         await manager.insert(BannedMembers, {

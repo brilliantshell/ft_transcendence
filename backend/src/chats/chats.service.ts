@@ -68,22 +68,27 @@ export class ChatsService {
   }
 
   /**
-   * @description 새로운 채널을 생성
+   * @description 새로운 채널을 생성 및 chats-UI 에 이벤트 전송
+   *               생성한 유저는 자동으로 채널에 참여
    *
    * @param userId 요청한 유저의 Id
    * @param channel 새로 생성할 채널 정보
    * @returns 생성된 채널 Id
    */
-  // NOTE : WS 이벤트 emit 해야 할 수 있음
   async createChannel(userId: UserId, channel: CreateChannelDto) {
     const { channelName, accessMode, password } = channel;
 
-    return await this.channelStorage.addChannel(
+    const channelId = await this.channelStorage.addChannel(
       accessMode as AccessMode,
       userId,
       channelName,
       password,
     );
+    if (accessMode !== 'private') {
+      this.chatsGateway.emitChannelCreated(channelId, channelName, accessMode);
+    }
+    this.chatsGateway.joinChannelRoom(channelId, userId);
+    return channelId;
   }
 
   /*****************************************************************************
@@ -100,7 +105,7 @@ export class ChatsService {
    * @returns 채널의 멤버 목록 및 DM 차단 여부
    */
   findChannelMembers(channelId: ChannelId) {
-    const userRoleMap = this.channelStorage.getChannel(channelId).userRoleMap;
+    const { userRoleMap } = this.channelStorage.getChannel(channelId);
     const channelMembers: Array<{ id: UserId; role: UserRole }> = [];
     for (const [userId, role] of userRoleMap) {
       channelMembers.push({ id: userId, role });
@@ -116,6 +121,7 @@ export class ChatsService {
    * @param channelId 접속할 채널 Id
    * @param isInvited 초대 여부
    * @param password 비밀번호 (protected 채널일 경우)
+   * @returns 이미 채널에 접속한 경우 false, 접속에 성공한 경우 true
    */
   async joinChannel(
     channelId: ChannelId,
@@ -123,10 +129,14 @@ export class ChatsService {
     isInvited: boolean,
     password: string = null,
   ) {
+    if (this.channelStorage.getUserRole(channelId, userId) !== null) {
+      return false;
+    }
     const { accessMode } = this.channelStorage.getChannel(channelId);
     if (accessMode === 'public' || isInvited) {
       await this.channelStorage.addUserToChannel(channelId, userId);
-      return this.chatsGateway.emitMemberJoin(userId, channelId);
+      this.chatsGateway.emitMemberJoin(userId, channelId);
+      return true;
     }
     if (accessMode === 'protected') {
       let channelPassword: string;
@@ -144,7 +154,8 @@ export class ChatsService {
         throw new ForbiddenException('Password is incorrect');
       }
       await this.channelStorage.addUserToChannel(channelId, userId);
-      return this.chatsGateway.emitMemberJoin(userId, channelId);
+      this.chatsGateway.emitMemberJoin(userId, channelId);
+      return true;
     }
     throw new ForbiddenException('Forbidden to join');
   }
@@ -173,7 +184,6 @@ export class ChatsService {
    * @param limit 반환할 메시지의 최대 개수
    * @returns 요청한 채널의 메시지 목록
    */
-  // NOTE : offset, limit 가 음수일 경우는 pipe 단계에서 걸러진다 가정
   async findChannelMessages(
     channelId: ChannelId,
     offset: number,
@@ -206,19 +216,18 @@ export class ChatsService {
    ****************************************************************************/
 
   /**
-   * @description 채널에 메시지를 생성
+   * @description 채널에 메시지를 생성 및 채널에 이벤트 전송
    *
    * @param senderId 메시지를 보낸 유저의 Id
    * @param channelId 메시지를 보낸 채널의 Id
    * @param contents 메시지 내용
-   * @param createdAt 메시지 생성 시간
    */
   async createMessage(
     channelId: ChannelId,
     senderId: UserId,
     contents: string,
-    createdAt: DateTime,
   ) {
+    const createdAt = DateTime.now();
     try {
       await this.messagesRepository.insert({
         senderId,
@@ -231,29 +240,25 @@ export class ChatsService {
       throw new InternalServerErrorException('Failed to create message');
     }
     this.chatsGateway.emitNewMessage(senderId, channelId, contents, createdAt);
-    for (const id of this.channelStorage
-      .getChannel(channelId)
-      .userRoleMap.keys()) {
+    this.channelStorage.getChannel(channelId).userRoleMap.forEach((v, id) => {
       const currentUi = this.activityManager.getActivity(id);
       if (currentUi !== null && currentUi !== `chatRooms-${channelId}`) {
         this.channelStorage.updateUnseenCount(channelId, id);
       }
-    }
+    });
   }
 
   /**
-   * @description 메시지로 명령어가 들어왔을 때 명령어를 실행
+   * @description 메시지로 명령어가 들어왔을 때 명령어를 실행 및 채널에 이벤트 전송
    *
    * @param senderId 명령을 보낸 유저의 Id
    * @param channelId 명령을 보낸 채널의 Id
    * @param contents 명령 내용
    */
-  // NOTE:  { message : "/command [targetId] [time]|[role]" } 와 같은 형식으로 명령어가 온다고 가정
   async executeCommand(
     channelId: ChannelId,
     senderId: UserId,
     command: [string, number, string],
-    createdAt: DateTime,
   ) {
     const [kind, targetId, arg] = command;
     if (this.channelStorage.getUserRole(channelId, targetId) === null) {
@@ -262,17 +267,18 @@ export class ChatsService {
       );
     }
     this.checkRole(channelId, senderId, targetId);
+    const now = DateTime.now();
     if (kind === 'role') {
       const role = arg as 'admin' | 'member';
       await this.channelStorage.updateUserRole(channelId, targetId, role);
       return this.chatsGateway.emitRoleChanged(targetId, channelId, role);
     } else if (kind === 'mute') {
-      const minutes = createdAt.plus({ minutes: Number(arg) });
+      const minutes = now.plus({ minutes: Number(arg) });
       await this.channelStorage.updateMuteStatus(channelId, targetId, minutes);
       return this.chatsGateway.emitMuted(targetId, channelId, minutes);
     } else {
-      const minutes = createdAt.plus({ minutes: Number(arg) });
-      await this.channelStorage.banUser(channelId, senderId, targetId, minutes);
+      const minutes = now.plus({ minutes: Number(arg) });
+      await this.channelStorage.banUser(channelId, targetId, minutes);
       return this.chatsGateway.emitMemberLeft(targetId, channelId, false);
     }
   }
@@ -374,7 +380,9 @@ export class ChatsService {
           `Fail to get channels except joined for user (id: ${userId})`,
         );
       })
-    ).sort((a, b) => a.channelName.localeCompare(b.channelName));
+    ).sort((a, b) =>
+      new Intl.Collator('ko').compare(a.channelName, b.channelName),
+    );
   }
 
   /*****************************************************************************
