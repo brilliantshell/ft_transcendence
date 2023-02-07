@@ -11,21 +11,21 @@ import { RelationshipRequest } from '../../util/type';
 @Injectable()
 export class AcceptFriendGuard implements CanActivate {
   canActivate(context: ExecutionContext): boolean {
-    const { relationship } = context
+    const { relationship, user } = context
       .switchToHttp()
       .getRequest() as RelationshipRequest;
     switch (relationship) {
       case null:
         throw new NotFoundException(
-          'The user had not received a friend request',
+          `The user(${user.userId}) had not received a friend request`,
         );
       case 'blocker':
         throw new BadRequestException(
-          'The user need to unblock the other user first in order to become friends',
+          `The user(${user.userId}) need to unblock the other user first in order to become friends`,
         );
       case 'pendingSender':
         throw new BadRequestException(
-          'The sender of a friend request cannot accept it',
+          `The sender(${user.userId}) of a friend request cannot accept it`,
         );
     }
     return true;

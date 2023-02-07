@@ -3,22 +3,23 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { nanoid } from 'nanoid';
 
+import { ActivityGateway } from './../user-status/activity.gateway';
 import { ActivityManager } from '../user-status/activity.manager';
 import { BannedMembers } from '../entity/banned-members.entity';
 import { BlockedUsers } from '../entity/blocked-users.entity';
 import { ChannelMembers } from '../entity/channel-members.entity';
 import { ChannelStorage } from '../user-status/channel.storage';
 import { Channels } from '../entity/channels.entity';
+import { ChatsGateway } from './../chats/chats.gateway';
 import { Friends } from '../entity/friends.entity';
 import { Messages } from '../entity/messages.entity';
+import { Relationship, SocketId, UserId } from '../util/type';
 import {
   TYPEORM_SHARED_CONFIG,
   createDataSources,
   destroyDataSources,
 } from '../../test/db-resource-manager';
 import { UserGateway } from './user.gateway';
-import { UserId, SocketId } from '../util/type';
-import { UserInfoDto } from './dto/user-gateway.dto';
 import { UserRelationshipStorage } from '../user-status/user-relationship.storage';
 import { UserService } from './user.service';
 import { UserSocketStorage } from '../user-status/user-socket.storage';
@@ -47,6 +48,7 @@ describe('UserService', () => {
   let userSocketStorage: UserSocketStorage;
   let channelStorage: ChannelStorage;
   let userRelationshipStorage: UserRelationshipStorage;
+  let activityGateway: ActivityGateway;
   let activityManager: ActivityManager;
   let index = 0;
 
@@ -71,29 +73,28 @@ describe('UserService', () => {
         TypeOrmModule.forFeature(ENTITIES),
       ],
       providers: [
-        UserService,
-        UserGateway,
-        UserRelationshipStorage,
-        UserSocketStorage,
+        ActivityGateway,
         ActivityManager,
         ChannelStorage,
+        ChatsGateway,
+        UserGateway,
+        UserRelationshipStorage,
+        UserService,
+        UserSocketStorage,
       ],
     })
       .overrideProvider(UserGateway)
       .useValue({
-        emitUserInfo: (socketId: SocketId, userInfo: UserInfoDto) => undefined,
-        emitBlocked: (socketId: SocketId, blockerId: UserId) => undefined,
-        emitUnblocked: (socketId: SocketId, unblockerId: UserId) => undefined,
-        emitFriendRequest: (socketId: SocketId, requestedBy: UserId) =>
-          undefined,
-        emitFriendCancelled: (socketId: SocketId, cancelledBy: UserId) =>
-          undefined,
-        emitFriendRemoved: (socketId: SocketId, removedBy: UserId) => undefined,
-        emitFriendAccepted: (socketId: SocketId, acceptedBy: UserId) =>
-          undefined,
-        emitFriendDeclined: (socketId: SocketId, declinedBy: UserId) =>
+        emitUserRelationship: (
+          socketId: SocketId,
+          userId: UserId,
+          relationship: Relationship | 'normal',
+        ) => undefined,
+        emitFriendRequestDiff: (socketId: SocketId, requestDiff: 1 | -1) =>
           undefined,
       })
+      .overrideProvider(ActivityGateway)
+      .useValue({ emitUserActivity: (targetId: UserId) => undefined })
       .compile();
 
     await module.init();
@@ -105,6 +106,7 @@ describe('UserService', () => {
       UserRelationshipStorage,
     );
     channelStorage = module.get<ChannelStorage>(ChannelStorage);
+    activityGateway = module.get<ActivityGateway>(ActivityGateway);
     activityManager = module.get<ActivityManager>(ActivityManager);
     userIds = [usersEntities[index++].userId, usersEntities[index++].userId];
     userIds.forEach((userId) => {
@@ -136,11 +138,15 @@ describe('UserService', () => {
       );
     });
 
-    it('should emit userInfo event', async () => {
-      const spy = jest.spyOn(userGateway, 'emitUserInfo');
+    it('should emit userActivity and userRelationship event', async () => {
+      const spies = [
+        jest.spyOn(userGateway, 'emitUserRelationship'),
+        jest.spyOn(activityGateway, 'emitUserActivity'),
+      ];
       const [requesterId, targetId] = userIds;
       await service.findProfile(requesterId, targetId);
-      expect(spy).toHaveBeenCalled();
+      expect(spies[0]).toHaveBeenCalled();
+      expect(spies[1]).toHaveBeenCalled();
     });
   });
 
@@ -175,7 +181,7 @@ describe('UserService', () => {
   describe('Block', () => {
     it('should block a user (both are logged in)', async () => {
       const [blockerId, blockedId] = userIds;
-      const spy = jest.spyOn(userGateway, 'emitBlocked');
+      const spy = jest.spyOn(userGateway, 'emitUserRelationship');
       expect(await service.createBlock(blockerId, blockedId)).toBeTruthy();
       expect(
         userRelationshipStorage.getRelationship(blockerId, blockedId),
@@ -186,6 +192,7 @@ describe('UserService', () => {
       expect(spy).toHaveBeenCalledWith(
         userSocketStorage.clients.get(blockedId),
         blockerId,
+        'blocked',
       );
     });
 
@@ -194,7 +201,7 @@ describe('UserService', () => {
       userSocketStorage.clients.delete(blockedId);
       userRelationshipStorage.unload(blockedId);
       activityManager.deleteActivity(blockedId);
-      const spy = jest.spyOn(userGateway, 'emitBlocked');
+      const spy = jest.spyOn(userGateway, 'emitUserRelationship');
       expect(await service.createBlock(blockerId, blockedId)).toBeTruthy();
       expect(
         userRelationshipStorage.getRelationship(blockerId, blockedId),
@@ -216,7 +223,7 @@ describe('UserService', () => {
       expect(
         userRelationshipStorage.getRelationship(unblockerId, unblockedId),
       ).toEqual('blocker');
-      const spy = jest.spyOn(userGateway, 'emitUnblocked');
+      const spy = jest.spyOn(userGateway, 'emitUserRelationship');
       await service.deleteBlock(unblockerId, unblockedId);
       expect(
         userRelationshipStorage.getRelationship(unblockerId, unblockedId),
@@ -227,6 +234,7 @@ describe('UserService', () => {
       expect(spy).toHaveBeenCalledWith(
         userSocketStorage.clients.get(unblockedId),
         unblockerId,
+        'normal',
       );
     });
 
@@ -239,7 +247,7 @@ describe('UserService', () => {
       expect(
         userRelationshipStorage.getRelationship(unblockerId, unblockedId),
       ).toEqual('blocker');
-      const spy = jest.spyOn(userGateway, 'emitUnblocked');
+      const spy = jest.spyOn(userGateway, 'emitUserRelationship');
       await service.deleteBlock(unblockerId, unblockedId);
       expect(
         userRelationshipStorage.getRelationship(unblockerId, unblockedId),
@@ -251,7 +259,10 @@ describe('UserService', () => {
   describe('Friend', () => {
     it('should send a friend requst (both are logged in)', async () => {
       const [senderId, receiverId] = userIds;
-      const spy = jest.spyOn(userGateway, 'emitFriendRequest');
+      const spies = [
+        jest.spyOn(userGateway, 'emitUserRelationship'),
+        jest.spyOn(userGateway, 'emitFriendRequestDiff'),
+      ];
       expect(
         await service.createFriendRequest(senderId, receiverId),
       ).toBeTruthy();
@@ -261,9 +272,14 @@ describe('UserService', () => {
       expect(
         userRelationshipStorage.getRelationship(receiverId, senderId),
       ).toEqual('pendingReceiver');
-      expect(spy).toHaveBeenCalledWith(
+      expect(spies[0]).toHaveBeenCalledWith(
         userSocketStorage.clients.get(receiverId),
         senderId,
+        'pendingReceiver',
+      );
+      expect(spies[1]).toHaveBeenCalledWith(
+        userSocketStorage.clients.get(receiverId),
+        1,
       );
     });
 
@@ -272,7 +288,10 @@ describe('UserService', () => {
       userSocketStorage.clients.delete(receiverId);
       userRelationshipStorage.unload(receiverId);
       activityManager.deleteActivity(receiverId);
-      const spy = jest.spyOn(userGateway, 'emitFriendRequest');
+      const spies = [
+        jest.spyOn(userGateway, 'emitUserRelationship'),
+        jest.spyOn(userGateway, 'emitFriendRequestDiff'),
+      ];
       expect(
         await service.createFriendRequest(senderId, receiverId),
       ).toBeTruthy();
@@ -282,7 +301,8 @@ describe('UserService', () => {
       expect(
         userRelationshipStorage.getRelationship(receiverId, senderId),
       ).toBeNull();
-      expect(spy).not.toHaveBeenCalled();
+      expect(spies[0]).not.toHaveBeenCalled();
+      expect(spies[1]).not.toHaveBeenCalled();
     });
 
     it('should return false when the friend request has been already there', async () => {
@@ -304,7 +324,10 @@ describe('UserService', () => {
       expect(
         userRelationshipStorage.getRelationship(cancelled, canceller),
       ).toEqual('pendingReceiver');
-      const spy = jest.spyOn(userGateway, 'emitFriendCancelled');
+      const spies = [
+        jest.spyOn(userGateway, 'emitUserRelationship'),
+        jest.spyOn(userGateway, 'emitFriendRequestDiff'),
+      ];
       await service.deleteFriendship(canceller, cancelled);
       expect(
         userRelationshipStorage.getRelationship(canceller, cancelled),
@@ -312,9 +335,14 @@ describe('UserService', () => {
       expect(
         userRelationshipStorage.getRelationship(cancelled, canceller),
       ).toBeNull();
-      expect(spy).toHaveBeenCalledWith(
+      expect(spies[0]).toHaveBeenCalledWith(
         userSocketStorage.clients.get(cancelled),
         canceller,
+        'normal',
+      );
+      expect(spies[1]).toHaveBeenCalledWith(
+        userSocketStorage.clients.get(cancelled),
+        -1,
       );
     });
 
@@ -327,12 +355,16 @@ describe('UserService', () => {
       expect(
         userRelationshipStorage.getRelationship(canceller, cancelled),
       ).toEqual('pendingSender');
-      const spy = jest.spyOn(userGateway, 'emitFriendCancelled');
+      const spies = [
+        jest.spyOn(userGateway, 'emitUserRelationship'),
+        jest.spyOn(userGateway, 'emitFriendRequestDiff'),
+      ];
       await service.deleteFriendship(canceller, cancelled);
       expect(
         userRelationshipStorage.getRelationship(canceller, cancelled),
       ).toBeNull();
-      expect(spy).not.toHaveBeenCalled();
+      expect(spies[0]).not.toHaveBeenCalled();
+      expect(spies[1]).not.toHaveBeenCalled();
     });
 
     it('should decline a friend request (both are logged in)', async () => {
@@ -344,7 +376,7 @@ describe('UserService', () => {
       expect(
         userRelationshipStorage.getRelationship(declined, decliner),
       ).toEqual('pendingSender');
-      const spy = jest.spyOn(userGateway, 'emitFriendDeclined');
+      const spy = jest.spyOn(userGateway, 'emitUserRelationship');
       await service.deleteFriendship(decliner, declined);
       expect(
         userRelationshipStorage.getRelationship(declined, decliner),
@@ -355,6 +387,7 @@ describe('UserService', () => {
       expect(spy).toHaveBeenCalledWith(
         userSocketStorage.clients.get(declined),
         decliner,
+        'normal',
       );
     });
 
@@ -367,7 +400,7 @@ describe('UserService', () => {
       expect(
         userRelationshipStorage.getRelationship(decliner, declined),
       ).toEqual('pendingReceiver');
-      const spy = jest.spyOn(userGateway, 'emitFriendDeclined');
+      const spy = jest.spyOn(userGateway, 'emitUserRelationship');
       await service.deleteFriendship(decliner, declined);
       expect(
         userRelationshipStorage.getRelationship(declined, decliner),
@@ -384,7 +417,7 @@ describe('UserService', () => {
       expect(
         userRelationshipStorage.getRelationship(accepted, accepter),
       ).toEqual('pendingSender');
-      const spy = jest.spyOn(userGateway, 'emitFriendAccepted');
+      const spy = jest.spyOn(userGateway, 'emitUserRelationship');
       await service.acceptFriendRequest(accepter, accepted);
       expect(
         userRelationshipStorage.getRelationship(accepted, accepter),
@@ -395,6 +428,7 @@ describe('UserService', () => {
       expect(spy).toHaveBeenCalledWith(
         userSocketStorage.clients.get(accepted),
         accepter,
+        'friend',
       );
     });
 
@@ -407,11 +441,64 @@ describe('UserService', () => {
       expect(
         userRelationshipStorage.getRelationship(accepter, accepted),
       ).toEqual('pendingReceiver');
-      const spy = jest.spyOn(userGateway, 'emitFriendAccepted');
+      const spy = jest.spyOn(userGateway, 'emitUserRelationship');
       await service.acceptFriendRequest(accepter, accepted);
       expect(
         userRelationshipStorage.getRelationship(accepter, accepted),
       ).toEqual('friend');
+      expect(spy).not.toHaveBeenCalled();
+    });
+
+    it('should remove friendship (both are logged in)', async () => {
+      const [remover, removed] = userIds;
+      await service.createFriendRequest(remover, removed);
+      expect(userRelationshipStorage.getRelationship(remover, removed)).toEqual(
+        'pendingSender',
+      );
+      expect(userRelationshipStorage.getRelationship(removed, remover)).toEqual(
+        'pendingReceiver',
+      );
+      await service.acceptFriendRequest(remover, removed);
+      expect(userRelationshipStorage.getRelationship(removed, remover)).toEqual(
+        'friend',
+      );
+      expect(userRelationshipStorage.getRelationship(remover, removed)).toEqual(
+        'friend',
+      );
+      const spy = jest.spyOn(userGateway, 'emitUserRelationship');
+      await service.deleteFriendship(remover, removed);
+      expect(
+        userRelationshipStorage.getRelationship(remover, remover),
+      ).toBeNull();
+      expect(
+        userRelationshipStorage.getRelationship(removed, remover),
+      ).toBeNull();
+      expect(spy).toHaveBeenCalledWith(
+        userSocketStorage.clients.get(removed),
+        remover,
+        'normal',
+      );
+    });
+
+    it('should remove friendship (only the remover is logged in)', async () => {
+      const [removed, remover] = userIds;
+      await service.createFriendRequest(removed, remover);
+      userSocketStorage.clients.delete(removed);
+      userRelationshipStorage.unload(removed);
+      activityManager.deleteActivity(removed);
+      expect(userRelationshipStorage.getRelationship(remover, removed)).toEqual(
+        'pendingReceiver',
+      );
+      await service.acceptFriendRequest(remover, removed);
+      expect(userRelationshipStorage.getRelationship(remover, removed)).toEqual(
+        'friend',
+      );
+      const spy = jest.spyOn(userGateway, 'emitUserRelationship');
+      await service.deleteFriendship(remover, removed);
+      expect(
+        userRelationshipStorage.getRelationship(remover, remover),
+      ).toBeNull();
+
       expect(spy).not.toHaveBeenCalled();
     });
 

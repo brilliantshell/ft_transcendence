@@ -1,7 +1,7 @@
-import { Type } from 'class-transformer';
 import { IsInt, IsString, Matches, Max, Min } from 'class-validator';
+import { Type } from 'class-transformer';
 
-import { CurrentUi, UserId } from '../../util/type';
+import { Activity, CurrentUi, UserId } from '../../util/type';
 
 export class CurrentUiDto {
   @Type(() => Number)
@@ -19,4 +19,10 @@ export class CurrentUiDto {
     ),
   )
   ui: CurrentUi;
+}
+
+export interface UserActivityDto {
+  activity: Activity;
+  gameId: number;
+  userId: UserId;
 }

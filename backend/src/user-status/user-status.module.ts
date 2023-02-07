@@ -36,6 +36,7 @@ import { Users } from '../entity/users.entity';
     UserSocketStorage,
   ],
   exports: [
+    ActivityGateway,
     ActivityManager,
     ChannelStorage,
     UserRelationshipStorage,

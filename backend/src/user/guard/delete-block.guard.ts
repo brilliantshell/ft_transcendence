@@ -10,11 +10,13 @@ import { RelationshipRequest } from '../../util/type';
 @Injectable()
 export class DeleteBlockGuard implements CanActivate {
   canActivate(context: ExecutionContext): boolean {
-    const { relationship } = context
+    const { relationship, user } = context
       .switchToHttp()
       .getRequest() as RelationshipRequest;
     if (relationship !== 'blocker') {
-      throw new NotFoundException('The user had not blocked the other user');
+      throw new NotFoundException(
+        `The user(${user.userId}) had not blocked the other user`,
+      );
     }
     return true;
   }

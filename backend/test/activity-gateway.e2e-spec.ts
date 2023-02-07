@@ -1,6 +1,7 @@
 import { INestApplication } from '@nestjs/common';
 import { Socket, io } from 'socket.io-client';
 import { Test, TestingModule } from '@nestjs/testing';
+import waitForExpect from 'wait-for-expect';
 
 import { ActivityManager } from '../src/user-status/activity.manager';
 import { AppModule } from '../src/app.module';
@@ -22,9 +23,7 @@ describe('UserStatusModule (e2e)', () => {
     await app.init();
     await app.listen(4243);
     clientSocket = io('http://localhost:4243', {
-      extraHeaders: {
-        'x-user-id': '20000',
-      },
+      extraHeaders: { 'x-user-id': '20000' },
     });
     await new Promise((resolve) =>
       clientSocket.on('connect', () => resolve('done')),
@@ -84,5 +83,103 @@ describe('UserStatusModule (e2e)', () => {
     const storage = app.select(UserStatusModule).get(UserSocketStorage);
     expect(storage.sockets.get(clientSocket.id)).toEqual(20000);
     expect(storage.clients.get(20000)).toEqual(clientSocket.id);
+  });
+
+  /*****************************************************************************
+   *                                                                           *
+   * SECTION : UserActivity WS event                                           *
+   *                                                                           *
+   ****************************************************************************/
+
+  describe('userActivity (WS)', () => {
+    let clientSockets: Socket[];
+    beforeEach(async () => {
+      clientSockets = [
+        io('http://localhost:4243', {
+          extraHeaders: { 'x-user-id': `${10000}` },
+        }),
+        io('http://localhost:4243', {
+          extraHeaders: { 'x-user-id': `${10001}` },
+        }),
+      ];
+      await Promise.all(
+        clientSockets.map((socket, i) =>
+          new Promise((resolve) =>
+            socket.on('connect', () => resolve(socket)),
+          ).then((client: Socket) =>
+            client.emit('currentUi', { userId: 10000 + i, ui: 'profile' }),
+          ),
+        ),
+      );
+      await waitForExpect(() => {
+        expect(manager.getActivity(10000)).toEqual('profile');
+        expect(manager.getActivity(10001)).toEqual('profile');
+      });
+    });
+
+    afterEach(async () => {
+      clientSockets.forEach((socket) => socket.close());
+    });
+
+    it('should emit userActivity when a user is connected', async () => {
+      const [userActivityOne, userActivityTwo] = await Promise.all([
+        new Promise((resolve) =>
+          clientSockets[0].on('userActivity', (data) => resolve(data)),
+        ),
+        new Promise((resolve) =>
+          clientSockets[1].on('userActivity', (data) => resolve(data)),
+        ),
+        new Promise((resolve) => {
+          const socket = io('http://localhost:4243', {
+            extraHeaders: { 'x-user-id': `${10002}` },
+          });
+          clientSockets.push(socket);
+          clientSockets[2].on('connect', () => resolve(socket));
+        }).then((socket: Socket) =>
+          socket.emit('currentUi', { userId: 10002, ui: 'profile' }),
+        ),
+      ]);
+      await waitForExpect(() =>
+        expect(manager.getActivity(10002)).toEqual('profile'),
+      );
+      expect(userActivityOne).toEqual({
+        activity: 'online',
+        gameId: null,
+        userId: 10002,
+      });
+      expect(userActivityTwo).toEqual({
+        activity: 'online',
+        gameId: null,
+        userId: 10002,
+      });
+    });
+
+    it('should emit userActivity when a user is disconnected', async () => {
+      const socket = io('http://localhost:4243', {
+        extraHeaders: { 'x-user-id': `${10002}` },
+      });
+      await new Promise((resolve) =>
+        socket.on('connect', () => resolve(socket)),
+      );
+      const [userActivityOne, userActivityTwo] = await Promise.all([
+        new Promise((resolve) =>
+          clientSockets[0].on('userActivity', (data) => resolve(data)),
+        ),
+        new Promise((resolve) =>
+          clientSockets[1].on('userActivity', (data) => resolve(data)),
+        ),
+        socket.close(),
+      ]);
+      expect(userActivityOne).toEqual({
+        activity: 'offline',
+        gameId: null,
+        userId: 10002,
+      });
+      expect(userActivityTwo).toEqual({
+        activity: 'offline',
+        gameId: null,
+        userId: 10002,
+      });
+    });
   });
 });

@@ -10,10 +10,12 @@ import {
 import { Server, Socket } from 'socket.io';
 import { UsePipes, ValidationPipe } from '@nestjs/common';
 
+import { Activity, UserId } from './../util/type';
 import { ActivityManager } from './activity.manager';
 import { ChannelStorage } from './channel.storage';
 import { ChatsGateway } from '../chats/chats.gateway';
-import { CurrentUiDto } from './dto/current-ui.dto';
+import { CurrentUiDto } from './dto/user-status.dto';
+import { UserActivityDto } from './dto/user-status.dto';
 import { UserRelationshipStorage } from './user-relationship.storage';
 import { UserSocketStorage } from './user-socket.storage';
 
@@ -42,6 +44,11 @@ export class ActivityGateway
    * private gameGateway: GameGateway,
    * private ranksGateway: RanksGateway, */ {}
 
+  /**
+   * @description websocket connection 이 생성될 때 유저 관련 데이터 케싱
+   *
+   * @param clientSocket
+   */
   async handleConnection(clientSocket: Socket) {
     // const accessToken = clientSocket.handshake.headers.cookie
     //   .split(';')
@@ -59,6 +66,11 @@ export class ActivityGateway
     ]);
   }
 
+  /**
+   * @description websocket connection 이 끊길 때 자원 해제 및 타 유저들에게 activity 전달
+   *
+   * @param clientSocket disconnect 되는 유저의 socket
+   */
   handleDisconnect(clientSocket: Socket) {
     const socketId = clientSocket.id;
     const userId = this.userSocketStorage.sockets.get(socketId);
@@ -67,6 +79,7 @@ export class ActivityGateway
     this.userSocketStorage.sockets.delete(socketId);
     this.userRelationshipStorage.unload(userId);
     this.channelStorage.unloadUser(userId);
+    this.emitUserActivity(userId);
   }
 
   // @SubscribeMessage('disconnecting')
@@ -79,6 +92,12 @@ export class ActivityGateway
   //   });
   // }
 
+  /**
+   * @description 유저가 어떤 UI 에 있는지 client 로 부터 받아서 해당 UI 에 맞는 작업 수행
+   *
+   * @param clientSocket 유저의 socket
+   * @param { userId, ui } 유저 아이디, UI 이름
+   */
   @SubscribeMessage('currentUi')
   handleCurrentUi(
     @ConnectedSocket() clientSocket: Socket,
@@ -108,6 +127,48 @@ export class ActivityGateway
       this.chatsGateway.joinRoom(clientSocket.id, room);
     }
     this.activityManager.setActivity(userId, ui);
+    if (!prevActivity) {
+      this.emitUserActivity(userId);
+    }
     // console.log(clientSocket.request.headers);
+  }
+
+  /**
+   * @description activity 정보 전달
+   *
+   * @param requesterSocketId 요청한 유저의 socket id
+   * @param userActivity 요청한 유저의 activity & relationship 정보
+   */
+  emitUserActivity(targetId: UserId) {
+    this.server.emit('userActivity', this.createUserActivityDto(targetId));
+  }
+
+  /*****************************************************************************
+   *                                                                           *
+   * SECTION : Private Methods                                                 *
+   *                                                                           *
+   ****************************************************************************/
+
+  /**
+   * @description 유저의 상태 정보를 담은 UserActivityDto 를 생성
+   *
+   * @param targetId 조회 대상 유저의 id
+   * @returns
+   */
+  private createUserActivityDto(targetId: UserId): UserActivityDto {
+    let activity: Activity = 'offline';
+    const currentUi = this.activityManager.getActivity(targetId);
+    if (currentUi) {
+      activity = currentUi === 'playingGame' ? 'inGame' : 'online';
+    }
+
+    // TODO : 게임 중이라면 GameStorage 에서 gameId 가져오기
+    const gameId = null;
+
+    return {
+      activity,
+      gameId,
+      userId: targetId,
+    };
   }
 }

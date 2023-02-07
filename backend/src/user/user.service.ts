@@ -6,12 +6,11 @@ import {
 } from '@nestjs/common';
 import { Repository } from 'typeorm';
 
-import { Activity, UserId } from '../util/type';
-import { ActivityManager } from '../user-status/activity.manager';
+import { ActivityGateway } from '../user-status/activity.gateway';
 import { ChannelStorage } from '../user-status/channel.storage';
 import { FriendListDto, UserProfileDto } from './dto/user.dto';
 import { UserGateway } from './user.gateway';
-import { UserInfoDto } from './dto/user-gateway.dto';
+import { UserId } from '../util/type';
 import { UserRelationshipStorage } from '../user-status/user-relationship.storage';
 import { UserSocketStorage } from '../user-status/user-socket.storage';
 import { Users } from '../entity/users.entity';
@@ -20,7 +19,7 @@ import { Users } from '../entity/users.entity';
 export class UserService {
   private readonly logger = new Logger(UserService.name);
   constructor(
-    private readonly activityManager: ActivityManager,
+    private readonly activityGateway: ActivityGateway,
     private readonly channelStorage: ChannelStorage,
     private readonly userGateway: UserGateway,
     private readonly userRelationshipStorage: UserRelationshipStorage,
@@ -58,7 +57,11 @@ export class UserService {
     await this.userRelationshipStorage.blockUser(blockerId, blockedId);
     const blockedSocketId = this.userSocketStorage.clients.get(blockedId);
     if (blockedSocketId !== undefined) {
-      this.userGateway.emitBlocked(blockedSocketId, blockerId);
+      this.userGateway.emitUserRelationship(
+        blockedSocketId,
+        blockerId,
+        'blocked',
+      );
     }
     return true;
   }
@@ -73,7 +76,11 @@ export class UserService {
     await this.userRelationshipStorage.unblockUser(unblockerId, unblockedId);
     const unblockedSocketId = this.userSocketStorage.clients.get(unblockedId);
     if (unblockedSocketId !== undefined) {
-      this.userGateway.emitUnblocked(unblockedSocketId, unblockerId);
+      this.userGateway.emitUserRelationship(
+        unblockedSocketId,
+        unblockerId,
+        'normal',
+      );
     }
   }
 
@@ -139,7 +146,12 @@ export class UserService {
     await this.userRelationshipStorage.sendFriendRequest(senderId, receiverId);
     const receiverSocketId = this.userSocketStorage.clients.get(receiverId);
     if (receiverSocketId !== undefined) {
-      this.userGateway.emitFriendRequest(receiverSocketId, senderId);
+      this.userGateway.emitFriendRequestDiff(receiverSocketId, 1);
+      this.userGateway.emitUserRelationship(
+        receiverSocketId,
+        senderId,
+        'pendingReceiver',
+      );
     }
     return true;
   }
@@ -158,15 +170,14 @@ export class UserService {
     await this.userRelationshipStorage.deleteFriendship(deleterId, deletedId);
     const deletedSocketId = this.userSocketStorage.clients.get(deletedId);
     if (deletedSocketId !== undefined) {
-      switch (prevRelationship) {
-        case 'friend':
-          this.userGateway.emitFriendRemoved(deletedSocketId, deleterId);
-        case 'pendingSender':
-          this.userGateway.emitFriendCancelled(deletedSocketId, deleterId);
-        case 'pendingReceiver':
-          this.userGateway.emitFriendDeclined(deletedSocketId, deleterId);
-        default:
+      if (prevRelationship === 'pendingSender') {
+        this.userGateway.emitFriendRequestDiff(deletedSocketId, -1);
       }
+      this.userGateway.emitUserRelationship(
+        deletedSocketId,
+        deleterId,
+        'normal',
+      );
     }
   }
 
@@ -189,7 +200,11 @@ export class UserService {
     );
     const acceptedSocketId = this.userSocketStorage.clients.get(acceptedId);
     if (acceptedSocketId !== undefined) {
-      this.userGateway.emitFriendAccepted(acceptedSocketId, accepterId);
+      this.userGateway.emitUserRelationship(
+        acceptedSocketId,
+        accepterId,
+        'friend',
+      );
     }
   }
 
@@ -211,7 +226,7 @@ export class UserService {
    ****************************************************************************/
 
   /**
-   * @description 유저의 닉네임과 프로필 이미지 경로를 반환 & userInfo 이벤트를 송신
+   * @description 유저의 닉네임과 프로필 이미지 경로를 반환 & userActivity & userRelationship 이벤트를 송신
    *
    *
    * @param requesterId 요청한 유저의 ID
@@ -228,51 +243,19 @@ export class UserService {
     } catch (e) {
       this.logger.error(e);
       throw new InternalServerErrorException(
-        'Failed to find nickname and profileImage of a user',
+        `Failed to find nickname and profileImage of a user(${requesterId})`,
       );
     }
     const requesterSocketId = this.userSocketStorage.clients.get(requesterId);
     if (requesterSocketId !== undefined) {
-      this.userGateway.emitUserInfo(
+      this.activityGateway.emitUserActivity(targetId);
+      this.userGateway.emitUserRelationship(
         requesterSocketId,
-        this.createUserInfoDto(requesterId, targetId),
+        targetId,
+        this.userRelationshipStorage.getRelationship(requesterId, targetId) ??
+          'normal',
       );
     }
     return profile;
-  }
-
-  /*****************************************************************************
-   *                                                                           *
-   * SECTION : Private Methods                                                 *
-   *                                                                           *
-   ****************************************************************************/
-
-  /**
-   * @description 유저의 상태 정보를 담은 UserInfoDto 를 생성
-   *
-   * @param requesterId 요청하는 유저의 id
-   * @param targetId 조회 대상 유저의 id
-   * @returns
-   */
-  private createUserInfoDto(
-    requesterId: UserId,
-    targetId: UserId,
-  ): UserInfoDto {
-    let activity: Activity = 'offline';
-    const currentUi = this.activityManager.getActivity(targetId);
-    if (currentUi) {
-      activity = currentUi === 'playingGame' ? 'inGame' : 'online';
-    }
-    // TODO : 게임 중이라면 GameStorage 에서 gameId 가져오기
-    const gameId = null;
-    const relationship =
-      this.userRelationshipStorage.getRelationship(requesterId, targetId) ??
-      'normal';
-    return {
-      activity,
-      gameId,
-      relationship,
-      userId: targetId,
-    };
   }
 }
