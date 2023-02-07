@@ -75,7 +75,6 @@ export class ChatsController {
 
   @Put(':channelId/user/:userId')
   @UseGuards(ChannelExistGuard, JoinChannelGuard)
-  // TODO add websocket
   async joinChannel(
     @Req() req: VerifiedRequest,
     @Res() res: Response,
@@ -93,7 +92,6 @@ export class ChatsController {
   }
 
   @Delete(':channelId/user')
-  // TODO add websocket
   @UseGuards(ChannelExistGuard, MemberExistGuard)
   leaveChannel(
     @Req() req: VerifiedRequest,

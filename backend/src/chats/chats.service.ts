@@ -184,7 +184,6 @@ export class ChatsService {
    * @param limit 반환할 메시지의 최대 개수
    * @returns 요청한 채널의 메시지 목록
    */
-  // NOTE : offset, limit 가 음수일 경우는 pipe 단계에서 걸러진다 가정
   async findChannelMessages(
     channelId: ChannelId,
     offset: number,
