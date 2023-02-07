@@ -39,13 +39,17 @@ export class UserExistGuard implements CanActivate {
           where: { userId: req.targetId },
         }))
       ) {
-        throw new NotFoundException("The user doesn't exist");
+        throw new NotFoundException(
+          `The user with the id (${req.targetId}) doesn't exist`,
+        );
       }
     } catch (e) {
       this.logger.error(e);
       throw e instanceof NotFoundException
         ? e
-        : new InternalServerErrorException("Failed to check user's existence");
+        : new InternalServerErrorException(
+            `Failed to check user's existence for id(${req.targetId})`,
+          );
     }
     return true;
   }

@@ -20,7 +20,7 @@ export class SelfCheckGuard implements CanActivate {
     }
     if (req.user.userId === req.targetId) {
       throw new BadRequestException(
-        'The user cannot perform this action on himself/herself',
+        `The user(${req.user.userId}) cannot perform this action on himself/herself`,
       );
     }
     return true;

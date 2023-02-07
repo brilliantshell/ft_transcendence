@@ -23,7 +23,7 @@ export class BlockedUserGuard implements CanActivate {
     );
     req.relationship = relationship;
     if (relationship === 'blocked') {
-      throw new ForbiddenException('The user is blocked');
+      throw new ForbiddenException(`The user(${req.user.userId}) is blocked`);
     }
     return true;
   }
