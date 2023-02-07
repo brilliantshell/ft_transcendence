@@ -243,6 +243,16 @@ describe('ChatsService', () => {
   });
 
   describe('createChannel', () => {
+    let channelCreatedSpy: jest.SpyInstance;
+    let joinChannelRoomSpy: jest.SpyInstance;
+    beforeEach(() => {
+      channelCreatedSpy = jest
+        .spyOn(chatsGateway, 'emitChannelCreated')
+        .mockImplementation(() => undefined);
+      joinChannelRoomSpy = jest
+        .spyOn(chatsGateway, 'joinChannelRoom')
+        .mockImplementation(() => undefined);
+    });
     it('should create new channel', async () => {
       const userId = usersEntities[0].userId;
       let newChannelData: CreateChannelDto = {
@@ -268,6 +278,12 @@ describe('ChatsService', () => {
       expect(
         compare('1q2w3e4r', newChannel.password.toString()),
       ).resolves.toBeTruthy();
+      expect(channelCreatedSpy).toBeCalledWith(
+        newChannel.channelId,
+        newChannel.name,
+        newChannel.accessMode,
+      );
+      expect(joinChannelRoomSpy).toBeCalledWith(newChannel.channelId, userId);
     });
 
     it('should not create new channel if no password given when protected room', async () => {
@@ -328,6 +344,12 @@ describe('ChatsService', () => {
     beforeEach(() => {
       memberJoinSpy = jest
         .spyOn(chatsGateway, 'emitMemberJoin')
+        .mockImplementation(() => undefined);
+      jest
+        .spyOn(chatsGateway, 'emitChannelCreated')
+        .mockImplementation(() => undefined);
+      jest
+        .spyOn(chatsGateway, 'joinChannelRoom')
         .mockImplementation(() => undefined);
     });
     it('should join user to the public channel', async () => {
@@ -465,6 +487,12 @@ describe('ChatsService', () => {
         .mockImplementation(() => undefined);
       memberLeftSpy = jest
         .spyOn(chatsGateway, 'emitMemberLeft')
+        .mockImplementation(() => undefined);
+      jest
+        .spyOn(chatsGateway, 'emitChannelCreated')
+        .mockImplementation(() => undefined);
+      jest
+        .spyOn(chatsGateway, 'joinChannelRoom')
         .mockImplementation(() => undefined);
     });
     it('should leave channel (not owner)', async () => {
@@ -637,6 +665,12 @@ describe('ChatsService', () => {
         .mockImplementation(() => undefined);
       jest
         .spyOn(chatsGateway, 'emitMemberJoin')
+        .mockImplementation(() => undefined);
+      jest
+        .spyOn(chatsGateway, 'emitChannelCreated')
+        .mockImplementation(() => undefined);
+      jest
+        .spyOn(chatsGateway, 'joinChannelRoom')
         .mockImplementation(() => undefined);
     });
 

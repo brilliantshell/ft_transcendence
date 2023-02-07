@@ -301,7 +301,7 @@ describe('UserController (e2e)', () => {
         .expect(400);
     });
 
-    it('POST /chats/:channelId/user/:userId (invited, public)', async () => {
+    it('PUT /chats/:channelId/user/:userId (invited, public)', async () => {
       let newChannelId: string;
       const newChannelOwner = usersEntities[2];
       await request(app.getHttpServer())
@@ -319,12 +319,12 @@ describe('UserController (e2e)', () => {
       const newChannelMember = usersEntities[3];
 
       return request(app.getHttpServer())
-        .post(`/chats/${newChannelId}/user/${newChannelMember.userId}`)
+        .put(`/chats/${newChannelId}/user/${newChannelMember.userId}`)
         .set('x-user-id', newChannelOwner.userId.toString())
         .expect(201);
     });
 
-    it('POST /chats/:channelId/user/:userId invalid userId (< 10000)', async () => {
+    it('PUT /chats/:channelId/user/:userId invalid userId (< 10000)', async () => {
       let newChannelId: string;
       const newChannelOwner = usersEntities[2];
       await request(app.getHttpServer())
@@ -340,12 +340,12 @@ describe('UserController (e2e)', () => {
         });
 
       return request(app.getHttpServer())
-        .post(`/chats/${newChannelId}/user/4242`)
+        .put(`/chats/${newChannelId}/user/4242`)
         .set('x-user-id', newChannelOwner.userId.toString())
         .expect(400);
     });
 
-    it('POST /chats/:channelId/user/:userId invalid userId (> 999999)', async () => {
+    it('PUT /chats/:channelId/user/:userId invalid userId (> 999999)', async () => {
       let newChannelId: string;
       const newChannelOwner = usersEntities[2];
       await request(app.getHttpServer())
@@ -361,12 +361,12 @@ describe('UserController (e2e)', () => {
         });
 
       return request(app.getHttpServer())
-        .post(`/chats/${newChannelId}/user/1000000`)
+        .put(`/chats/${newChannelId}/user/1000000`)
         .set('x-user-id', newChannelOwner.userId.toString())
         .expect(400);
     });
 
-    it('POST /chats/:channelId/user/:userId invalid userId (Not A Number)', async () => {
+    it('PUT /chats/:channelId/user/:userId invalid userId (Not A Number)', async () => {
       let newChannelId: string;
       const newChannelOwner = usersEntities[2];
       await request(app.getHttpServer())
@@ -382,12 +382,12 @@ describe('UserController (e2e)', () => {
         });
 
       return request(app.getHttpServer())
-        .post(`/chats/${newChannelId}/user/10000a`)
+        .put(`/chats/${newChannelId}/user/10000a`)
         .set('x-user-id', newChannelOwner.userId.toString())
         .expect(400);
     });
 
-    it('POST /chats/:channelId/user/:userId (not invited, protected)', async () => {
+    it('PUT /chats/:channelId/user/:userId (not invited, protected)', async () => {
       let newChannelId: string;
       const newChannelOwner = usersEntities[2];
       await request(app.getHttpServer())
@@ -406,13 +406,13 @@ describe('UserController (e2e)', () => {
       const newChannelMember = usersEntities[3];
 
       return request(app.getHttpServer())
-        .post(`/chats/${newChannelId}/user/${newChannelMember.userId}`)
+        .put(`/chats/${newChannelId}/user/${newChannelMember.userId}`)
         .set('x-user-id', newChannelMember.userId.toString())
         .send({ password: 'abc1234d' })
         .expect(201);
     });
 
-    it('POST /chats/:channelId/user/:userId (not invited, incorrect password)', async () => {
+    it('PUT /chats/:channelId/user/:userId (not invited, incorrect password)', async () => {
       let newChannelId: string;
       const newChannelOwner = usersEntities[2];
       await request(app.getHttpServer())
@@ -431,13 +431,13 @@ describe('UserController (e2e)', () => {
       const newChannelMember = usersEntities[3];
 
       return request(app.getHttpServer())
-        .post(`/chats/${newChannelId}/user/${newChannelMember.userId}`)
+        .put(`/chats/${newChannelId}/user/${newChannelMember.userId}`)
         .set('x-user-id', newChannelMember.userId.toString())
         .send({ password: 'wrongPass' })
         .expect(403);
     });
 
-    it('POST /chats/:channelId/user/:userId (invited, protected)', async () => {
+    it('PUT /chats/:channelId/user/:userId (invited, protected)', async () => {
       let newChannelId: string;
       const newChannelOwner = usersEntities[2];
       await request(app.getHttpServer())
@@ -456,12 +456,12 @@ describe('UserController (e2e)', () => {
       const newChannelMember = usersEntities[3];
 
       return request(app.getHttpServer())
-        .post(`/chats/${newChannelId}/user/${newChannelMember.userId}`)
+        .put(`/chats/${newChannelId}/user/${newChannelMember.userId}`)
         .set('x-user-id', newChannelOwner.userId.toString())
         .expect(201);
     });
 
-    it('POST /chats/:channelId/user/:userId (invited, private)', async () => {
+    it('PUT /chats/:channelId/user/:userId (invited, private)', async () => {
       let newChannelId: string;
       const newChannelOwner = usersEntities[2];
       await request(app.getHttpServer())
@@ -479,12 +479,12 @@ describe('UserController (e2e)', () => {
       const newChannelMember = usersEntities[3];
 
       return request(app.getHttpServer())
-        .post(`/chats/${newChannelId}/user/${newChannelMember.userId}`)
+        .put(`/chats/${newChannelId}/user/${newChannelMember.userId}`)
         .set('x-user-id', newChannelOwner.userId.toString())
         .expect(201);
     });
 
-    it('POST /chats/:channelId/user/:userId (not invited, private)', async () => {
+    it('PUT /chats/:channelId/user/:userId (not invited, private)', async () => {
       let newChannelId: string;
       const newChannelOwner = usersEntities[2];
       await request(app.getHttpServer())
@@ -502,12 +502,12 @@ describe('UserController (e2e)', () => {
       const newChannelMember = usersEntities[3];
 
       return request(app.getHttpServer())
-        .post(`/chats/${newChannelId}/user/${newChannelMember.userId}`)
+        .put(`/chats/${newChannelId}/user/${newChannelMember.userId}`)
         .set('x-user-id', newChannelMember.userId.toString())
         .expect(403);
     });
 
-    it('POST /chats/:channelId/user/:userId (banned)', async () => {
+    it('PUT /chats/:channelId/user/:userId (banned)', async () => {
       let newChannelId: string;
       const newChannelOwner = usersEntities[2];
       await request(app.getHttpServer())
@@ -524,7 +524,7 @@ describe('UserController (e2e)', () => {
 
       const newChannelMember = usersEntities[3];
       await request(app.getHttpServer())
-        .post(`/chats/${newChannelId}/user/${newChannelMember.userId}`)
+        .put(`/chats/${newChannelId}/user/${newChannelMember.userId}`)
         .set('x-user-id', newChannelMember.userId.toString())
         .expect(201);
 
@@ -537,13 +537,13 @@ describe('UserController (e2e)', () => {
         .expect(201)
         .expect(() => {
           return request(app.getHttpServer())
-            .post(`/chats/${newChannelId}/user/${newChannelMember.userId}`)
+            .put(`/chats/${newChannelId}/user/${newChannelMember.userId}`)
             .set('x-user-id', newChannelMember.userId.toString())
             .expect(403);
         });
     });
 
-    it('POST /chats/:channelId/user/:userId (already user in channel)', async () => {
+    it('PUT /chats/:channelId/user/:userId (already user in channel)', async () => {
       let newChannelId: string;
       const newChannelOwner = usersEntities[2];
       await request(app.getHttpServer())
@@ -560,17 +560,17 @@ describe('UserController (e2e)', () => {
 
       const newChannelMember = usersEntities[3];
       await request(app.getHttpServer())
-        .post(`/chats/${newChannelId}/user/${newChannelMember.userId}`)
+        .put(`/chats/${newChannelId}/user/${newChannelMember.userId}`)
         .set('x-user-id', newChannelMember.userId.toString())
         .expect(201);
 
       return request(app.getHttpServer())
-        .post(`/chats/${newChannelId}/user/${newChannelMember.userId}`)
+        .put(`/chats/${newChannelId}/user/${newChannelMember.userId}`)
         .set('x-user-id', newChannelMember.userId.toString())
-        .expect(409);
+        .expect(200);
     });
 
-    it('POST /chats/:channelId/user/:userId (already user in channel, invite)', async () => {
+    it('PUT /chats/:channelId/user/:userId (already user in channel, invite)', async () => {
       let newChannelId: string;
       const newChannelOwner = usersEntities[2];
       await request(app.getHttpServer())
@@ -587,14 +587,14 @@ describe('UserController (e2e)', () => {
 
       const newChannelMember = usersEntities[3];
       await request(app.getHttpServer())
-        .post(`/chats/${newChannelId}/user/${newChannelMember.userId}`)
+        .put(`/chats/${newChannelId}/user/${newChannelMember.userId}`)
         .set('x-user-id', newChannelMember.userId.toString())
         .expect(201);
 
       return request(app.getHttpServer())
-        .post(`/chats/${newChannelId}/user/${newChannelMember.userId}`)
+        .put(`/chats/${newChannelId}/user/${newChannelMember.userId}`)
         .set('x-user-id', newChannelOwner.userId.toString())
-        .expect(409);
+        .expect(200);
     });
 
     it('DELETE /chats/:channelId/user (owner)', async () => {
@@ -634,7 +634,7 @@ describe('UserController (e2e)', () => {
 
       const newChannelMember = usersEntities[3];
       await request(app.getHttpServer())
-        .post(`/chats/${newChannelId}/user/${newChannelMember.userId}`)
+        .put(`/chats/${newChannelId}/user/${newChannelMember.userId}`)
         .set('x-user-id', newChannelMember.userId.toString())
         .expect(201);
       return request(app.getHttpServer())
@@ -662,7 +662,54 @@ describe('UserController (e2e)', () => {
       return request(app.getHttpServer())
         .delete(`/chats/${newChannelId}/user`)
         .set('x-user-id', newChannelMember.userId.toString())
-        .expect(403);
+        .expect(403)
+        .expect(async (res) => {
+          expect(res.body.message).toBe(
+            'This user is not a member of the channel',
+          );
+        });
+    });
+
+    it('DELETE /chats/:channelId/user (banned from channel)', async () => {
+      let newChannelId: string;
+      const newChannelOwner = usersEntities[2];
+      await request(app.getHttpServer())
+        .post('/chats')
+        .set('x-user-id', newChannelOwner.userId.toString())
+        .send({
+          channelName: 'test',
+          accessMode: 'public',
+        })
+        .expect(201)
+        .expect(async (res) => {
+          newChannelId = res.headers['location'].replace('/chats/', '');
+        });
+
+      const newChannelMember = usersEntities[3];
+      await request(app.getHttpServer())
+        .put(`/chats/${newChannelId}/user/${newChannelMember.userId}`)
+        .set('x-user-id', newChannelOwner.userId.toString())
+        .expect(201)
+        .expect(() => {
+          request(app.getHttpServer())
+            .post(`/chats/${newChannelId}/message`)
+            .set('x-user-id', newChannelOwner.userId.toString())
+            .send({
+              message: `/ban ${newChannelMember.nickname} 10`,
+            })
+            .expect(201)
+            .expect(() => {
+              return request(app.getHttpServer())
+                .delete(`/chats/${newChannelId}/user`)
+                .set('x-user-id', newChannelMember.userId.toString())
+                .expect(403)
+                .expect(async (res) => {
+                  expect(res.body.message).toBe(
+                    'This user is banned from the channel',
+                  );
+                });
+            });
+        });
     });
   });
 
@@ -826,7 +873,7 @@ describe('UserController (e2e)', () => {
         .expect(201)
         .expect(() => {
           request(app.getHttpServer())
-            .post(`/chats/${channel.channelId}/user/${member.memberId}`)
+            .put(`/chats/${channel.channelId}/user/${member.memberId}`)
             .set('x-user-id', member.memberId.toString())
             .send({
               message: 'test message',
