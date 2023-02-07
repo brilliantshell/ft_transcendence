@@ -5,6 +5,8 @@ export type UserId = number;
 
 export type ChannelId = number;
 
+export type GameId = string;
+
 export type Friendship = 'friend' | 'pendingSender' | 'pendingReceiver';
 
 export type BlockRelationship = 'blocker' | 'blocked';
@@ -40,6 +42,12 @@ export type CurrentUi =
   | 'waitingRoom';
 
 export type Activity = 'online' | 'offline' | 'inGame';
+
+export interface GameInfo {
+  left: UserId;
+  right: UserId;
+  map: 1 | 2 | 3;
+}
 
 export interface VerifiedRequest extends Request {
   user: { userId: UserId };
