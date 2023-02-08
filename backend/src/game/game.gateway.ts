@@ -5,10 +5,11 @@ import {
   WebSocketServer,
 } from '@nestjs/websockets';
 import { Server } from 'socket.io';
-import { UsePipes, ValidationPipe } from '@nestjs/common';
+import { UseInterceptors } from '@nestjs/common';
 
-import { GameId, SocketId } from '../util/type';
 import { GameCompleteDto, GameStartedDto } from './dto/game-gateway.dto';
+import { GameCompleteInterceptor } from './game.interceptor';
+import { GameId, SocketId } from '../util/type';
 import { GameStorage } from './game.storage';
 
 @WebSocketGateway()
@@ -93,13 +94,12 @@ export class GameGateway {
    * @param result 게임 결과
    */
   // FIXME : pipe 에서 throw 되면 gameStorage 에서 해당 게임이 지워지지 않는다
-  @UsePipes(new ValidationPipe({ forbidNonWhitelisted: true, whitelist: true }))
+  @UseInterceptors(GameCompleteInterceptor)
   @SubscribeMessage('gameComplete')
   async handleGameComplete(@MessageBody() result: GameCompleteDto) {
     const { id, scores } = result;
     this.server.socketsLeave(`game-${id}`);
     await this.gameStorage.updateResult(id, scores);
-    this.gameStorage.games.delete(id);
   }
 
   /*****************************************************************************

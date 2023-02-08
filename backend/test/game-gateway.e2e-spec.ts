@@ -349,8 +349,8 @@ describe('GameGateway (e2e)', () => {
   });
 
   describe('gameComplete', () => {
+    // FIXME : 테스트 보강
     it('should throw error when the client sends invalid message', async () => {
-      console.log('1st test: ', userIds);
       const [playerOne] = clientSockets;
       gateway.joinRoom(
         userSocketStorage.clients.get(userIds[0]),
@@ -363,29 +363,27 @@ describe('GameGateway (e2e)', () => {
       gameStorage.games.set(gameId, new GameInfo(users[0], users[1], 1, true));
       playerOne.emit('gameComplete', { id: gameId }); // no scores
       await new Promise((resolve) => setTimeout(resolve, 300));
-      expect(gameStorage.games.get(gameId)).toBeDefined();
-      expect(gateway.doesRoomExist(`game-${gameId}`)).toBeTruthy();
+      expect(gameStorage.games.get(gameId)).toBeUndefined();
+      expect(gateway.doesRoomExist(`game-${gameId}`)).toBeFalsy();
       playerOne.emit('gameComplete', { id: '0123456789abcdefghij' }); // invalid gameId (20 bytes)
       await new Promise((resolve) => setTimeout(resolve, 300));
-      expect(gameStorage.games.get(gameId)).toBeDefined();
-      expect(gateway.doesRoomExist(`game-${gameId}`)).toBeTruthy();
+      expect(gameStorage.games.get(gameId)).toBeUndefined();
+      expect(gateway.doesRoomExist(`game-${gameId}`)).toBeFalsy();
       playerOne.emit('gameComplete', { id: gameId, scores: [0, 'a'] }); // invalid scores
       await new Promise((resolve) => setTimeout(resolve, 300));
-      expect(gameStorage.games.get(gameId)).toBeDefined();
-      expect(gateway.doesRoomExist(`game-${gameId}`)).toBeTruthy();
+      expect(gameStorage.games.get(gameId)).toBeUndefined();
+      expect(gateway.doesRoomExist(`game-${gameId}`)).toBeFalsy();
       playerOne.emit('gameComplete', { id: gameId, scores: [0, 6] }); // invalid scores out of range
       await new Promise((resolve) => setTimeout(resolve, 300));
-      expect(gameStorage.games.get(gameId)).toBeDefined();
-      expect(gateway.doesRoomExist(`game-${gameId}`)).toBeTruthy();
+      expect(gameStorage.games.get(gameId)).toBeUndefined();
+      expect(gateway.doesRoomExist(`game-${gameId}`)).toBeFalsy();
       playerOne.emit('gameComplete', { id: gameId, scores: [0, 6], hi: 'hi' }); // non existing property
       await new Promise((resolve) => setTimeout(resolve, 300));
-      expect(gameStorage.games.get(gameId)).toBeDefined();
-      expect(gateway.doesRoomExist(`game-${gameId}`)).toBeTruthy();
-      // gameStorage.games.delete(gameId);
+      expect(gameStorage.games.get(gameId)).toBeUndefined();
+      expect(gateway.doesRoomExist(`game-${gameId}`)).toBeFalsy();
     });
 
     it('should destroy room and update match result when a game ends (left wins, ladder)', async () => {
-      console.log('2nd test: ', userIds);
       const playerOne = clientSockets[0];
       const prevGame = await dataSource.manager.find(Users, {
         select: ['userId', 'winCount', 'lossCount', 'ladder'],
@@ -445,7 +443,6 @@ describe('GameGateway (e2e)', () => {
     });
 
     it('should destroy room and update match result when a game ends (right wins, ladder)', async () => {
-      console.log('3rd test: ', userIds);
       const playerTwo = clientSockets[1];
       const prevGame = await dataSource.manager.find(Users, {
         select: ['userId', 'winCount', 'lossCount', 'ladder'],
@@ -505,7 +502,6 @@ describe('GameGateway (e2e)', () => {
     });
 
     it('should not update ladder when the normal game ends', async () => {
-      console.log('4th test: ', userIds);
       const playerOne = clientSockets[0];
       const prevGame = await dataSource.manager.find(Users, {
         select: ['userId', 'winCount', 'lossCount', 'ladder'],
@@ -618,7 +614,7 @@ describe('GameGateway (e2e)', () => {
       const { prevWinner, prevLoser, postWinner, postLoser } = winnerLoserStats(
         prevGame,
         postGame,
-        userIds[1],
+        userIds[0],
       );
       const ladderRise = calculateLadderRise(
         prevWinner.ladder,
@@ -638,7 +634,6 @@ describe('GameGateway (e2e)', () => {
       });
       expect(gameStorage.games.has(gameId)).toBeFalsy();
       expect(gateway.doesRoomExist(`game-${gameId}`)).toBeFalsy();
-      clientSockets.pop();
     });
   });
 

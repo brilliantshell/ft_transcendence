@@ -64,6 +64,8 @@ export class GameStorage {
       throw new InternalServerErrorException(
         `Failed to update the game result between ${leftId} and ${rightId}`,
       );
+    } finally {
+      this.games.delete(gameId);
     }
   }
 

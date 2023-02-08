@@ -87,7 +87,6 @@ export class ActivityGateway
               gameId,
               gameInfo.leftId === userId ? 'left' : 'right',
             );
-            this.gameStorage.games.delete(gameId);
             this.gameGateway.destroyRoom(room as `game-${GameId}`);
           }
           break;
