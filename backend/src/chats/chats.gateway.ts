@@ -20,38 +20,81 @@ export class ChatsGateway {
 
   /*****************************************************************************
    *                                                                           *
-   * SECTION : Managing Room                                                  *
+   * SECTION : Managing Room                                                   *
    *                                                                           *
    ****************************************************************************/
 
   /**
-   * @description 채팅방 입장시 해당 Room 에 join
+   * @description 채널 입장시 해당 Room 에 join
    *
    * @param roomId 유저의 socket id
    * @param room 현재 보고있는 채팅방의 room ui
    */
-  joinRoom(socketId: SocketId, room: `chatRooms-${ChannelId}`) {
-    this.server.in(socketId).socketsJoin(room);
+  joinChannelRoom(channelId: ChannelId, userId: UserId) {
+    const socketId = this.userSocketStorage.clients.get(userId);
+    this.server.in(socketId).socketsJoin(`chatRooms-${channelId}`);
   }
 
   /**
-   * @description 채팅방 UI 에 유저가 머무를 시 해당 activeChatRoom 에 join
+   * @description 채널 나갈 시 해당 Room 에서 leave
+   *
+   * @param channelId 유저가 머무르던 채팅방의 id
+   * @param userId 유저의 id
+   */
+  leaveChannelRoom(channelId: ChannelId, userId: UserId) {
+    const socketId = this.userSocketStorage.clients.get(userId);
+    this.server.in(socketId).socketsLeave(`chatRooms-${channelId}`);
+  }
+
+  /**
+   * @description 채널 | chats UI 에 유저가 머무를 시 해당 activeChatRoom 에 join
    *
    * @param socketId 유저의 socket id
    * @param channelId 유저가 머무르는 채팅방의 id
    */
-  joinActiveRoom(socketId: SocketId, room: `chatRooms-${ChannelId}`) {
-    this.server.in(socketId).socketsJoin(room + '-active');
+  joinRoom(
+    socketId: SocketId,
+    room: `chatRooms-${ChannelId}-active` | 'chats',
+  ) {
+    this.server.in(socketId).socketsJoin(room);
   }
 
   /**
-   * @description 채팅방 UI 에서 나갈 시 해당 Room 에서 leave
+   * @description 채널 | chats UI 에서 나갈 시 해당 Room 에서 leave
    *
    * @param socketId 유저의 socket id
    * @param channelId 유저가 머무르던 채팅방의 id
    */
-  leaveActiveRoom(socketId: SocketId, room: `chatRooms-${ChannelId}`) {
-    this.server.in(socketId).socketsLeave(room + '-active');
+  leaveRoom(
+    socketId: SocketId,
+    room: `chatRooms-${ChannelId}-active` | 'chats',
+  ) {
+    this.server.in(socketId).socketsLeave(room);
+  }
+
+  /*****************************************************************************
+   *                                                                           *
+   * SECTION : Events when user does viewing the chat-UI                       *
+   *                                                                           *
+   ****************************************************************************/
+
+  /**
+   * @description 새로운 채널이 생성됐을 떄, chats-UI 를 보고 있는 유저에게 알림
+   *
+   * @param channelId
+   * @param name
+   * @param accessMode
+   */
+  emitChannelCreated(
+    channelId: ChannelId,
+    name: string,
+    accessMode: 'public' | 'protected',
+  ) {
+    this.server.in('chats').emit('channelCreated', {
+      channelId,
+      name,
+      accessMode,
+    });
   }
 
   /*****************************************************************************
@@ -63,13 +106,15 @@ export class ChatsGateway {
   /**
    * @description 새로운 멤버가 채팅방에 입장했을 때, 해당 채팅방을 보고 있는 모든 멤버에게 알림
    *
-   * @param userId 입장한 유저의 id
    * @param channelId 입장한 채팅방의 id
+   * @param joinedMember 입장한 유저의 id
    */
-  emitMemberJoin(joinedMember: UserId, channelId: ChannelId) {
+  emitMemberJoin(channelId: ChannelId, joinedMember: UserId) {
+    this.joinChannelRoom(channelId, joinedMember);
     this.server
       .in(`chatRooms-${channelId}-active`)
       .emit('memberJoin', { joinedMember });
+    this.emitChannelUpdated(channelId, 1);
   }
 
   /**
@@ -81,15 +126,14 @@ export class ChatsGateway {
    * @param sentAt 메시지 작성 시간
    */
   emitNewMessage(
-    senderId: UserId,
     channelId: ChannelId,
+    senderId: UserId,
     content: string,
     sentAt: DateTime,
   ) {
     this.server
       .in(`chatRooms-${channelId}-active`)
       .emit('newMessage', { senderId, content, sentAt });
-    // TODO: 여기서 emit 하는게 맞는 지 고민해보기
     this.emitMessageArrived(channelId);
   }
 
@@ -100,10 +144,19 @@ export class ChatsGateway {
    * @param channelId 나간 채팅방의 id
    * @param isOwner 나간 멤버가 채팅방의 owner 인지 여부
    */
-  emitMemberLeft(leftMember: UserId, channelId: ChannelId, isOwner: boolean) {
+  emitMemberLeft(channelId: ChannelId, leftMember: UserId, isOwner: boolean) {
+    this.leaveChannelRoom(channelId, leftMember);
     this.server
       .in(`chatRooms-${channelId}-active`)
       .emit('memberLeft', { leftMember, isOwner });
+    if (isOwner) {
+      this.emitChannelDeleted(channelId);
+      return this.server.socketsLeave([
+        `chatRooms-${channelId}`,
+        `chatRooms-${channelId}-active`,
+      ]);
+    }
+    this.emitChannelUpdated(channelId, -1);
   }
 
   /**
@@ -114,8 +167,8 @@ export class ChatsGateway {
    * @param newRole 새로운 역할
    */
   emitRoleChanged(
-    changedMember: UserId,
     channelId: ChannelId,
+    changedMember: UserId,
     newRole: Exclude<UserRole, 'owner'>,
   ) {
     this.server
@@ -130,26 +183,13 @@ export class ChatsGateway {
    ****************************************************************************/
 
   /**
-   * @description 새로운 메시지가 도착 했을 때, 해당 채팅방을 보고 있지 않은 멤버에게 알림
-   *
-   * @param channelId 채팅방의 id
-   */
-  // TODO: unseenCount 생각하기, private 로 바꿀지 생각하기
-  emitMessageArrived(channelId: ChannelId) {
-    this.server
-      .in(`chatRooms-${channelId}`)
-      .except(`chatRooms-${channelId}-active`)
-      .emit('messageArrived', { channelId });
-  }
-
-  /**
    * @description 멤버가 채팅방에서 mute 되었을 때, 해당 유저에게 알림
    *
    * @param mutedMember mute 된 멤버의 id
    * @param channelId mute 된 채팅방의 id
    * @param muteEndAt mute 가 해제되는 시간
    */
-  emitMuted(mutedMember: UserId, channelId: ChannelId, muteEndAt: DateTime) {
+  emitMuted(channelId: ChannelId, mutedMember: UserId, muteEndAt: DateTime) {
     const socketId = this.userSocketStorage.clients.get(mutedMember);
     if (socketId) {
       this.server.in(socketId).emit('muted', {
@@ -167,5 +207,56 @@ export class ChatsGateway {
    ****************************************************************************/
   getRoomMembers(chatRoom: string) {
     return this.server.sockets.adapter.rooms.get(chatRoom);
+  }
+
+  /*****************************************************************************
+   *                                                                           *
+   * SECTION : Private Methods                                                 *
+   *                                                                           *
+   ****************************************************************************/
+
+  /*****************************************************************************
+   *                                                                           *
+   * SECTION : Events when user does viewing the chatRoom-UI                   *
+   *                                                                           *
+   ****************************************************************************/
+
+  /**
+   * @description 새로운 메시지가 도착 했을 때, 해당 채팅방을 보고 있지 않은 멤버에게 알림
+   *
+   * @param channelId 채팅방의 id
+   */
+  private emitMessageArrived(channelId: ChannelId) {
+    this.server
+      .in(`chatRooms-${channelId}`)
+      .except(`chatRooms-${channelId}-active`)
+      .emit('messageArrived', { channelId });
+  }
+
+  /*****************************************************************************
+   *                                                                           *
+   * SECTION : Events when user does viewing the chats-UI                      *
+   *                                                                           *
+   ****************************************************************************/
+
+  /**
+   * @description 채널에 멤버가 추가/삭제 되었을 때, chats-UI 를 보고 있는 유저에게 알림
+   *
+   * @param channelId 참여 인원 변동이 일어난 채널
+   * @param memberCountDiff 참여 인원 변동량
+   */
+  private emitChannelUpdated(channelId: ChannelId, memberCountDiff: number) {
+    this.server
+      .in('chats')
+      .emit('channelUpdated', { channelId, memberCountDiff });
+  }
+
+  /**
+   * @description 채널이 삭제 되었을 때, chats-UI 를 보고 있는 유저에게 알림
+   *
+   * @param channelId 삭제된 채널
+   */
+  private emitChannelDeleted(channelId: ChannelId) {
+    this.server.in('chats').emit('channelDeleted', { channelId });
   }
 }

@@ -54,6 +54,9 @@ describe('ChatsService', () => {
     dataSource = dataSources.dataSource;
     usersEntities = generateUsers(10);
     channelsEntities = generateChannels(usersEntities);
+    channelsEntities
+      .filter((_, index) => index & 1)
+      .forEach((c) => (c.name = generateRandomKorean(c.name.length)));
     await dataSource.getRepository(Users).save(usersEntities);
     await dataSource.getRepository(Channels).save(channelsEntities);
     channelsEntities = await dataSource.getRepository(Channels).find();
@@ -156,7 +159,9 @@ describe('ChatsService', () => {
             accessMode: channel.accessMode as 'public' | 'protected',
           };
         })
-        .sort((a, b) => a.channelName.localeCompare(b.channelName));
+        .sort((a, b) =>
+          new Intl.Collator('ko').compare(a.channelName, b.channelName),
+        );
       expect(result).toEqual({ joinedChannels, otherChannels });
     });
 
@@ -215,7 +220,9 @@ describe('ChatsService', () => {
             accessMode: channel.accessMode as 'public' | 'protected',
           };
         })
-        .sort((a, b) => a.channelName.localeCompare(b.channelName));
+        .sort((a, b) =>
+          new Intl.Collator('ko').compare(a.channelName, b.channelName),
+        );
       expect(result).toEqual({ joinedChannels, otherChannels });
     });
 
@@ -236,6 +243,16 @@ describe('ChatsService', () => {
   });
 
   describe('createChannel', () => {
+    let channelCreatedSpy: jest.SpyInstance;
+    let joinChannelRoomSpy: jest.SpyInstance;
+    beforeEach(() => {
+      channelCreatedSpy = jest
+        .spyOn(chatsGateway, 'emitChannelCreated')
+        .mockImplementation(() => undefined);
+      joinChannelRoomSpy = jest
+        .spyOn(chatsGateway, 'joinChannelRoom')
+        .mockImplementation(() => undefined);
+    });
     it('should create new channel', async () => {
       const userId = usersEntities[0].userId;
       let newChannelData: CreateChannelDto = {
@@ -261,6 +278,12 @@ describe('ChatsService', () => {
       expect(
         compare('1q2w3e4r', newChannel.password.toString()),
       ).resolves.toBeTruthy();
+      expect(channelCreatedSpy).toBeCalledWith(
+        newChannel.channelId,
+        newChannel.name,
+        newChannel.accessMode,
+      );
+      expect(joinChannelRoomSpy).toBeCalledWith(newChannel.channelId, userId);
     });
 
     it('should not create new channel if no password given when protected room', async () => {
@@ -321,6 +344,12 @@ describe('ChatsService', () => {
     beforeEach(() => {
       memberJoinSpy = jest
         .spyOn(chatsGateway, 'emitMemberJoin')
+        .mockImplementation(() => undefined);
+      jest
+        .spyOn(chatsGateway, 'emitChannelCreated')
+        .mockImplementation(() => undefined);
+      jest
+        .spyOn(chatsGateway, 'joinChannelRoom')
         .mockImplementation(() => undefined);
     });
     it('should join user to the public channel', async () => {
@@ -458,6 +487,12 @@ describe('ChatsService', () => {
         .mockImplementation(() => undefined);
       memberLeftSpy = jest
         .spyOn(chatsGateway, 'emitMemberLeft')
+        .mockImplementation(() => undefined);
+      jest
+        .spyOn(chatsGateway, 'emitChannelCreated')
+        .mockImplementation(() => undefined);
+      jest
+        .spyOn(chatsGateway, 'joinChannelRoom')
         .mockImplementation(() => undefined);
     });
     it('should leave channel (not owner)', async () => {
@@ -610,7 +645,8 @@ describe('ChatsService', () => {
       newMessageSpy = jest
         .spyOn(chatsGateway, 'emitNewMessage')
         .mockImplementation((userId, channelId) => {
-          chatsGateway.emitMessageArrived(channelId);
+          // NOTE : Access Private Method
+          (chatsGateway as any).emitMessageArrived(channelId);
         });
 
       memberLeftSpy = jest
@@ -625,10 +661,16 @@ describe('ChatsService', () => {
         .spyOn(chatsGateway, 'emitMuted')
         .mockImplementation(() => undefined);
       messageArrivedSpy = jest
-        .spyOn(chatsGateway, 'emitMessageArrived')
+        .spyOn(chatsGateway as any, 'emitMessageArrived') // NOTE : Access Private Method
         .mockImplementation(() => undefined);
       jest
         .spyOn(chatsGateway, 'emitMemberJoin')
+        .mockImplementation(() => undefined);
+      jest
+        .spyOn(chatsGateway, 'emitChannelCreated')
+        .mockImplementation(() => undefined);
+      jest
+        .spyOn(chatsGateway, 'joinChannelRoom')
         .mockImplementation(() => undefined);
     });
 
@@ -648,12 +690,7 @@ describe('ChatsService', () => {
 
       await service.joinChannel(newChannelId, anotherUserId, true);
       const msg = { message: 'hello message!' };
-      await service.createMessage(
-        newChannelId,
-        userId,
-        msg.message,
-        DateTime.now(),
-      );
+      await service.createMessage(newChannelId, userId, msg.message);
       expect(newMessageSpy).toBeCalledWith(
         userId,
         newChannelId,
@@ -693,12 +730,11 @@ describe('ChatsService', () => {
       const anotherUserId = usersEntities[2].userId;
 
       await service.joinChannel(newChannelId, anotherUserId, true);
-      await service.executeCommand(
-        newChannelId,
-        ownerId,
-        ['role', anotherUserId, 'admin'],
-        DateTime.now(),
-      );
+      await service.executeCommand(newChannelId, ownerId, [
+        'role',
+        anotherUserId,
+        'admin',
+      ]);
       expect(channelStorage.getUserRole(newChannelId, anotherUserId)).toBe(
         'admin',
       );
@@ -707,12 +743,11 @@ describe('ChatsService', () => {
         newChannelId,
         'admin',
       );
-      await service.executeCommand(
-        newChannelId,
-        ownerId,
-        ['role', anotherUserId, 'member'],
-        DateTime.now(),
-      );
+      await service.executeCommand(newChannelId, ownerId, [
+        'role',
+        anotherUserId,
+        'member',
+      ]);
       expect(channelStorage.getUserRole(newChannelId, anotherUserId)).toBe(
         'member',
       );
@@ -739,21 +774,19 @@ describe('ChatsService', () => {
       await service.joinChannel(newChannelId, adminId, true);
       await service.joinChannel(newChannelId, memberId, true);
 
-      await service.executeCommand(
-        newChannelId,
-        ownerId,
-        ['role', adminId, 'admin'],
-        DateTime.now(),
-      );
+      await service.executeCommand(newChannelId, ownerId, [
+        'role',
+        adminId,
+        'admin',
+      ]);
       expect(channelStorage.getUserRole(newChannelId, adminId)).toBe('admin');
       expect(roleChangedSpy).toBeCalledWith(adminId, newChannelId, 'admin');
 
-      await service.executeCommand(
-        newChannelId,
-        adminId,
-        ['role', memberId, 'admin'],
-        DateTime.now(),
-      );
+      await service.executeCommand(newChannelId, adminId, [
+        'role',
+        memberId,
+        'admin',
+      ]);
       expect(channelStorage.getUserRole(newChannelId, memberId)).toBe('admin');
       expect(roleChangedSpy).toBeCalledWith(memberId, newChannelId, 'admin');
     });
@@ -774,33 +807,30 @@ describe('ChatsService', () => {
       await service.joinChannel(newChannelId, adminId, true);
       await service.joinChannel(newChannelId, memberId, true);
 
-      await service.executeCommand(
-        newChannelId,
-        ownerId,
-        ['role', adminId, 'admin'],
-        DateTime.now(),
-      );
+      await service.executeCommand(newChannelId, ownerId, [
+        'role',
+        adminId,
+        'admin',
+      ]);
       expect(channelStorage.getUserRole(newChannelId, adminId)).toBe('admin');
       expect(roleChangedSpy).toBeCalledWith(adminId, newChannelId, 'admin');
 
       expect(
         async () =>
-          await service.executeCommand(
-            newChannelId,
-            memberId,
-            ['role', adminId, 'member'],
-            DateTime.now(),
-          ),
+          await service.executeCommand(newChannelId, memberId, [
+            'role',
+            adminId,
+            'member',
+          ]),
       ).rejects.toThrow(ForbiddenException);
 
       expect(
         async () =>
-          await service.executeCommand(
-            newChannelId,
-            memberId,
-            ['role', adminId, 'admin'],
-            DateTime.now(),
-          ),
+          await service.executeCommand(newChannelId, memberId, [
+            'role',
+            adminId,
+            'admin',
+          ]),
       ).rejects.toThrow(ForbiddenException);
     });
 
@@ -818,12 +848,11 @@ describe('ChatsService', () => {
       await service.joinChannel(newChannelId, anotherUserId, true);
       expect(
         async () =>
-          await service.executeCommand(
-            newChannelId,
-            anotherUserId,
-            ['role', ownerId, 'admin'],
-            DateTime.now(),
-          ),
+          await service.executeCommand(newChannelId, anotherUserId, [
+            'role',
+            ownerId,
+            'admin',
+          ]),
       ).rejects.toThrow(ForbiddenException);
     });
 
@@ -841,21 +870,19 @@ describe('ChatsService', () => {
       await service.joinChannel(newChannelId, anotherUserId, true);
       expect(
         async () =>
-          await service.executeCommand(
-            newChannelId,
-            anotherUserId,
-            ['role', ownerId, 'admin'],
-            DateTime.now(),
-          ),
+          await service.executeCommand(newChannelId, anotherUserId, [
+            'role',
+            ownerId,
+            'admin',
+          ]),
       ).rejects.toThrow(ForbiddenException);
       expect(
         async () =>
-          await service.executeCommand(
-            newChannelId,
-            anotherUserId,
-            ['ban', ownerId, '42'],
-            DateTime.now(),
-          ),
+          await service.executeCommand(newChannelId, anotherUserId, [
+            'ban',
+            ownerId,
+            '42',
+          ]),
       ).rejects.toThrow(ForbiddenException);
     });
 
@@ -875,21 +902,19 @@ describe('ChatsService', () => {
       await service.joinChannel(newChannelId, adminId, true);
       await service.joinChannel(newChannelId, memberId, true);
 
-      await service.executeCommand(
-        newChannelId,
-        ownerId,
-        ['role', adminId, 'admin'],
-        DateTime.now(),
-      );
+      await service.executeCommand(newChannelId, ownerId, [
+        'role',
+        adminId,
+        'admin',
+      ]);
       expect(channelStorage.getUserRole(newChannelId, adminId)).toBe('admin');
       expect(roleChangedSpy).toBeCalledWith(adminId, newChannelId, 'admin');
 
-      await service.executeCommand(
-        newChannelId,
-        ownerId,
-        ['mute', memberId, '5'],
-        DateTime.now(),
-      );
+      await service.executeCommand(newChannelId, ownerId, [
+        'mute',
+        memberId,
+        '5',
+      ]);
       expect(
         Math.round(
           DateTime.now()
@@ -924,23 +949,21 @@ describe('ChatsService', () => {
       await service.joinChannel(newChannelId, adminId, true);
       await service.joinChannel(newChannelId, memberId, true);
 
-      await service.executeCommand(
-        newChannelId,
-        ownerId,
-        ['role', adminId, 'admin'],
-        DateTime.now(),
-      );
+      await service.executeCommand(newChannelId, ownerId, [
+        'role',
+        adminId,
+        'admin',
+      ]);
       expect(channelStorage.getUserRole(newChannelId, adminId)).toBe('admin');
       expect(roleChangedSpy).toBeCalledWith(adminId, newChannelId, 'admin');
 
       expect(
         async () =>
-          await service.executeCommand(
-            newChannelId,
-            adminId,
-            ['mute', ownerId, '5'],
-            DateTime.now(),
-          ),
+          await service.executeCommand(newChannelId, adminId, [
+            'mute',
+            ownerId,
+            '5',
+          ]),
       ).rejects.toThrow(ForbiddenException);
     });
 
@@ -960,21 +983,19 @@ describe('ChatsService', () => {
       await service.joinChannel(newChannelId, adminId, true);
       await service.joinChannel(newChannelId, memberId, true);
 
-      await service.executeCommand(
-        newChannelId,
-        ownerId,
-        ['role', adminId, 'admin'],
-        DateTime.now(),
-      );
+      await service.executeCommand(newChannelId, ownerId, [
+        'role',
+        adminId,
+        'admin',
+      ]);
       expect(channelStorage.getUserRole(newChannelId, adminId)).toBe('admin');
       expect(roleChangedSpy).toBeCalledWith(adminId, newChannelId, 'admin');
 
-      await service.executeCommand(
-        newChannelId,
-        adminId,
-        ['ban', memberId, '5'],
-        DateTime.now(),
-      );
+      await service.executeCommand(newChannelId, adminId, [
+        'ban',
+        memberId,
+        '5',
+      ]);
       expect(
         Math.round(
           DateTime.now()
@@ -989,3 +1010,13 @@ describe('ChatsService', () => {
     });
   });
 });
+
+const generateRandomKorean = (length: number) => {
+  const result = [];
+  for (let i = 0; i < length; i++) {
+    result.push(
+      String.fromCharCode(Math.floor(Math.random() * 11172) + 0xac00),
+    );
+  }
+  return result.join('');
+};

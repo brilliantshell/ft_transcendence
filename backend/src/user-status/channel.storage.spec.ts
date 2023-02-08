@@ -589,6 +589,7 @@ describe('ChannelStorage', () => {
       AccessMode.PUBLIC,
       owner.userId,
       'banbanbanana',
+      null,
     );
     await storage.addUserToChannel(nonDmChannel, member.userId);
     const banEndAt = DateTime.now().plus({ hours: 1 });

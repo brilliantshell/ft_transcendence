@@ -1,7 +1,6 @@
 import {
   BadRequestException,
   CanActivate,
-  ConflictException,
   ExecutionContext,
   ForbiddenException,
   Injectable,
@@ -31,7 +30,7 @@ export class JoinChannelGuard implements CanActivate {
     const { channelId, userId } = context
       .switchToHttp()
       .getRequest<VerifiedRequest>().params;
-    if (typeof userId !== 'string' || !/^[1-9][0-9]{4,5}$/.test(userId)) {
+    if (!/^[1-9][0-9]{4,5}$/.test(userId)) {
       throw new BadRequestException('userId must be between 10000 and 999999');
     }
     const safeUserId = Math.floor(Number(userId));
@@ -39,7 +38,6 @@ export class JoinChannelGuard implements CanActivate {
 
     await this.checkUserExist(safeUserId);
     await this.checkBanned(safeChannelId, safeUserId);
-    this.checkUserInChannel(safeChannelId, safeUserId);
     return true;
   }
 
@@ -65,13 +63,7 @@ export class JoinChannelGuard implements CanActivate {
       (await this.channelStorage.getBanEndAt(channelId, userId)) >
       DateTime.now()
     ) {
-      throw new ForbiddenException('You are banned');
-    }
-  }
-
-  private checkUserInChannel(channelId: ChannelId, userId: UserId) {
-    if (this.channelStorage.getUserRole(channelId, userId) !== null) {
-      throw new ConflictException('You are already in the channel');
+      throw new ForbiddenException(`The user (${userId}) is  banned`);
     }
   }
 }

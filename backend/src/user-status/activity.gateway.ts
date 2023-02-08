@@ -10,7 +10,7 @@ import {
 import { Server, Socket } from 'socket.io';
 import { UsePipes, ValidationPipe } from '@nestjs/common';
 
-import { Activity, UserId } from './../util/type';
+import { Activity, ChannelId, CurrentUi, UserId } from './../util/type';
 import { ActivityManager } from './activity.manager';
 import { ChannelStorage } from './channel.storage';
 import { ChatsGateway } from '../chats/chats.gateway';
@@ -65,6 +65,10 @@ export class ActivityGateway
       this.userRelationshipStorage.load(userId),
       this.channelStorage.loadUser(userId),
     ]);
+    const joinedChannels = this.channelStorage.getUser(userId).keys();
+    for (const channelId of joinedChannels) {
+      this.chatsGateway.joinChannelRoom(channelId, userId);
+    }
   }
 
   /**
@@ -111,24 +115,7 @@ export class ActivityGateway
     //   this.chatsGateway.joinRoom(clientSocket, ui);
     // }
     const prevActivity = this.activityManager.getActivity(userId);
-    if (prevActivity && prevActivity.startsWith('chatRooms-')) {
-      this.chatsGateway.leaveActiveRoom(
-        clientSocket.id,
-        prevActivity as `chatRooms-${number}`,
-      );
-    }
-    if (ui.startsWith('chatRooms-')) {
-      const room = ui as `chatRooms-${number}`;
-      this.channelStorage.updateUnseenCount(
-        Number(room.split('-')[1]),
-        userId,
-        true,
-      );
-      this.chatsGateway.joinActiveRoom(clientSocket.id, room);
-      this.chatsGateway.joinRoom(clientSocket.id, room);
-    } else if (ui === 'waitingRoom') {
-      this.gameGateway.joinRoom(clientSocket.id, 'waitingRoom');
-    }
+    this.manageRooms(clientSocket.id, userId, prevActivity, ui);
     this.activityManager.setActivity(userId, ui);
     if (!prevActivity) {
       this.emitUserActivity(userId);
@@ -173,5 +160,37 @@ export class ActivityGateway
       gameId,
       userId: targetId,
     };
+  }
+
+  private manageRooms(
+    socketId: string,
+    userId: UserId,
+    prevActivity: CurrentUi,
+    ui: CurrentUi,
+  ) {
+    if (prevActivity?.startsWith('chatRooms-') === true) {
+      this.chatsGateway.leaveRoom(
+        socketId,
+        (prevActivity + '-active') as `chatRooms-${ChannelId}-active`,
+      );
+    } else if (prevActivity === 'chats') {
+      this.chatsGateway.leaveRoom(socketId, prevActivity);
+    }
+
+    if (ui === 'chats') {
+      this.chatsGateway.joinRoom(socketId, ui);
+    } else if (ui.startsWith('chatRooms-')) {
+      this.channelStorage.updateUnseenCount(
+        Number(ui.split('-')[1]),
+        userId,
+        true,
+      );
+      this.chatsGateway.joinRoom(
+        socketId,
+        (ui + '-active') as `chatRooms-${ChannelId}-active`,
+      );
+    } else if (ui === 'waitingRoom') {
+      this.gameGateway.joinRoom(socketId, 'waitingRoom');
+    }
   }
 }
