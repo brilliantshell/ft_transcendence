@@ -902,6 +902,19 @@ describe('UserModule - /user (e2e)', () => {
    ****************************************************************************/
 
   describe('GET /:userId/info', () => {
+    it('should return null profileImage', async () => {
+      const [requesterId, targetId] = userIds;
+      await dataSource.manager.update(Users, targetId, { profileImage: null });
+      const response = await request(app.getHttpServer())
+        .get(`/user/${targetId}/info`)
+        .set('x-user-id', requesterId.toString());
+      expect(response.status).toEqual(200);
+      expect(response.body).toEqual({
+        nickname: usersEntities[index + 1].nickname,
+        profileImage: null,
+      });
+    });
+
     it('should return nickname, profileImage (HTTP) & online, normal (WS) (both are logged in)', async () => {
       const [requesterId, targetId] = userIds;
       const [wsMessage, response] = await Promise.all([

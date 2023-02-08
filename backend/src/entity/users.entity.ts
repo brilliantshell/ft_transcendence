@@ -18,10 +18,9 @@ export class Users {
 
   @Column({
     type: 'varchar',
-    default: 'default.png',
     length: 256,
     name: 'profile_image',
-    nullable: false,
+    nullable: true,
   })
   profileImage: string;
 
