@@ -85,7 +85,7 @@ CREATE TABLE IF NOT EXISTS messages (
 CREATE TABLE IF NOT EXISTS users (
 	user_id int PRIMARY KEY,
 	nickname varchar(16) NOT NULL UNIQUE,
-	profile_image varchar(256) NOT NULL,
+	profile_image varchar(256),
 	auth_email varchar(320) UNIQUE,
 	ladder int NOT NULL DEFAULT 0,
 	win_cnt int NOT NULL DEFAULT 0,
