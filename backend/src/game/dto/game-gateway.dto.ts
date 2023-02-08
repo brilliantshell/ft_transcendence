@@ -15,6 +15,10 @@ export interface GameStartedDto {
   right: string;
 }
 
+export interface GameAbortedDto {
+  abortedSide: 'left' | 'right';
+}
+
 export class GameCompleteDto {
   @IsString()
   @Length(21)

@@ -10,12 +10,13 @@ import {
 import { Server, Socket } from 'socket.io';
 import { UsePipes, ValidationPipe } from '@nestjs/common';
 
-import { Activity, ChannelId, CurrentUi, UserId } from './../util/type';
+import { Activity, ChannelId, CurrentUi, GameId, UserId } from '../util/type';
 import { ActivityManager } from './activity.manager';
 import { ChannelStorage } from './channel.storage';
 import { ChatsGateway } from '../chats/chats.gateway';
 import { CurrentUiDto } from './dto/user-status.dto';
 import { GameGateway } from '../game/game.gateway';
+import { GameStorage } from '../game/game.storage';
 import { UserActivityDto } from './dto/user-status.dto';
 import { UserRelationshipStorage } from './user-relationship.storage';
 import { UserSocketStorage } from './user-socket.storage';
@@ -32,15 +33,16 @@ export class ActivityGateway
   implements OnGatewayConnection, OnGatewayDisconnect
 {
   @WebSocketServer()
-  private server: Server;
+  private readonly server: Server;
 
   constructor(
-    private activityManager: ActivityManager,
-    private channelStorage: ChannelStorage,
-    private chatsGateway: ChatsGateway,
-    private gameGateway: GameGateway,
-    private userRelationshipStorage: UserRelationshipStorage,
-    private userSocketStorage: UserSocketStorage,
+    private readonly activityManager: ActivityManager,
+    private readonly channelStorage: ChannelStorage,
+    private readonly chatsGateway: ChatsGateway,
+    private readonly gameGateway: GameGateway,
+    private readonly gameStorage: GameStorage,
+    private readonly userRelationshipStorage: UserRelationshipStorage,
+    private readonly userSocketStorage: UserSocketStorage,
   ) /**
    * private authService: AuthService,
    * private ranksGateway: RanksGateway, */ {}
@@ -71,6 +73,27 @@ export class ActivityGateway
         this.chatsGateway.joinChannelRoom(channelId, userId);
       }
     }
+    // FIXME : abort 된 케이스인지 가리는게 중요
+    clientSocket.on('disconnecting', async () => {
+      for (const room of clientSocket.rooms) {
+        if (room.startsWith('game-')) {
+          this.gameGateway.leaveRoom(clientSocket.id, room as `game-${GameId}`);
+          const gameId = room.replace('game-', '');
+          const userId = this.userSocketStorage.sockets.get(clientSocket.id);
+          const gameInfo = this.gameStorage.games.get(gameId);
+          if (gameInfo !== undefined) {
+            await this.gameGateway.emitGameAborted(
+              room as `game-${GameId}`,
+              gameId,
+              gameInfo.leftId === userId ? 'left' : 'right',
+            );
+            this.gameStorage.games.delete(gameId);
+            this.gameGateway.destroyRoom(room as `game-${GameId}`);
+          }
+          break;
+        }
+      }
+    });
   }
 
   /**
@@ -78,8 +101,7 @@ export class ActivityGateway
    *
    * @param clientSocket disconnect 되는 유저의 socket
    */
-  handleDisconnect(clientSocket: Socket) {
-    const socketId = clientSocket.id;
+  handleDisconnect({ id: socketId }: Socket) {
     const userId = this.userSocketStorage.sockets.get(socketId);
     this.activityManager.deleteActivity(userId);
     this.userSocketStorage.clients.delete(userId);
@@ -88,16 +110,6 @@ export class ActivityGateway
     this.channelStorage.unloadUser(userId);
     this.emitUserActivity(userId);
   }
-
-  // @SubscribeMessage('disconnecting')
-  // handleDisconnecting(clientSocket: Socket) {
-  //   const { rooms } = clientSocket;
-  //   rooms.forEach((room) => {
-  //     if (room.startsWith('game-')) {
-  //       // this.gameGateway.emitOpponentDisconnected(room);
-  //     }
-  //   });
-  // }
 
   /**
    * @description 유저가 어떤 UI 에 있는지 client 로 부터 받아서 해당 UI 에 맞는 작업 수행

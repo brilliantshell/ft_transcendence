@@ -34,6 +34,14 @@ export class GameGateway {
     this.server.in(socketId).socketsJoin(room);
   }
 
+  leaveRoom(socketId: SocketId, room: `game-${GameId}` | 'waitingRoom') {
+    this.server.in(socketId).socketsLeave(room);
+  }
+
+  destroyRoom(room: `game-${GameId}`) {
+    this.server.socketsLeave(room);
+  }
+
   /**
    * @description 게임 player 들에게 매칭되었다고 알림
    *
@@ -65,10 +73,26 @@ export class GameGateway {
   }
 
   /**
+   *
+   */
+  async emitGameAborted(
+    room: `game-${GameId}`,
+    gameId: GameId,
+    abortedSide: 'left' | 'right',
+  ) {
+    await this.gameStorage.updateResult(
+      gameId,
+      abortedSide === 'left' ? [0, 5] : [5, 0],
+    );
+    this.server.to(room).emit('gameAborted', { abortedSide });
+  }
+
+  /**
    * @description 게임 정상 종료 시, 승자가 게임 결과를 서버에 알리는 메시지, 게임 결과 업데이트
    *
    * @param result 게임 결과
    */
+  // FIXME : pipe 에서 throw 되면 gameStorage 에서 해당 게임이 지워지지 않는다
   @UsePipes(new ValidationPipe({ forbidNonWhitelisted: true, whitelist: true }))
   @SubscribeMessage('gameComplete')
   async handleGameComplete(@MessageBody() result: GameCompleteDto) {
