@@ -593,7 +593,7 @@ describe('ChannelStorage', () => {
     );
     await storage.addUserToChannel(nonDmChannel, member.userId);
     const banEndAt = DateTime.now().plus({ hours: 1 });
-    await storage.banUser(nonDmChannel, owner.userId, member.userId, banEndAt);
+    await storage.banUser(nonDmChannel, member.userId, banEndAt);
 
     expect(
       (

@@ -65,9 +65,11 @@ export class ActivityGateway
       this.userRelationshipStorage.load(userId),
       this.channelStorage.loadUser(userId),
     ]);
-    const joinedChannels = this.channelStorage.getUser(userId).keys();
-    for (const channelId of joinedChannels) {
-      this.chatsGateway.joinChannelRoom(channelId, userId);
+    const joinedChannels = this.channelStorage.getUser(userId)?.keys();
+    if (joinedChannels !== undefined) {
+      for (const channelId of joinedChannels) {
+        this.chatsGateway.joinChannelRoom(channelId, userId);
+      }
     }
   }
 
