@@ -1,5 +1,6 @@
 import { DateTime } from 'luxon';
 import { Request } from 'express';
+import { Users } from '../entity/users.entity';
 
 export type UserId = number;
 
@@ -43,10 +44,20 @@ export type CurrentUi =
 
 export type Activity = 'online' | 'offline' | 'inGame';
 
-export interface GameInfo {
+export class GameInfo {
+  constructor(leftUser: Users, rightUsers: Users, map, isRank: boolean) {
+    this.leftId = leftUser.userId;
+    this.leftNickname = leftUser.nickname;
+    this.rightId = rightUsers.userId;
+    this.rightNickname = rightUsers.nickname;
+    this.map = map;
+    this.isRank = isRank;
+  }
+
+  isRank: boolean;
   leftId: UserId;
   leftNickname: string;
-  right: UserId;
+  rightId: UserId;
   rightNickname: string;
   map: 1 | 2 | 3;
 }

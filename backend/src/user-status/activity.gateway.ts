@@ -15,6 +15,7 @@ import { ActivityManager } from './activity.manager';
 import { ChannelStorage } from './channel.storage';
 import { ChatsGateway } from '../chats/chats.gateway';
 import { CurrentUiDto } from './dto/user-status.dto';
+import { GameGateway } from '../game/game.gateway';
 import { UserActivityDto } from './dto/user-status.dto';
 import { UserRelationshipStorage } from './user-relationship.storage';
 import { UserSocketStorage } from './user-socket.storage';
@@ -35,13 +36,13 @@ export class ActivityGateway
 
   constructor(
     private activityManager: ActivityManager,
-    private userRelationshipStorage: UserRelationshipStorage,
-    private userSocketStorage: UserSocketStorage,
     private channelStorage: ChannelStorage,
     private chatsGateway: ChatsGateway,
+    private gameGateway: GameGateway,
+    private userRelationshipStorage: UserRelationshipStorage,
+    private userSocketStorage: UserSocketStorage,
   ) /**
    * private authService: AuthService,
-   * private gameGateway: GameGateway,
    * private ranksGateway: RanksGateway, */ {}
 
   /**
@@ -125,6 +126,8 @@ export class ActivityGateway
       );
       this.chatsGateway.joinActiveRoom(clientSocket.id, room);
       this.chatsGateway.joinRoom(clientSocket.id, room);
+    } else if (ui === 'waitingRoom') {
+      this.gameGateway.joinRoom(clientSocket.id, 'waitingRoom');
     }
     this.activityManager.setActivity(userId, ui);
     if (!prevActivity) {
