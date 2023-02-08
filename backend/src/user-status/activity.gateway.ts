@@ -15,6 +15,7 @@ import { ActivityManager } from './activity.manager';
 import { ChannelStorage } from './channel.storage';
 import { ChatsGateway } from '../chats/chats.gateway';
 import { CurrentUiDto } from './dto/user-status.dto';
+import { GameGateway } from '../game/game.gateway';
 import { UserActivityDto } from './dto/user-status.dto';
 import { UserRelationshipStorage } from './user-relationship.storage';
 import { UserSocketStorage } from './user-socket.storage';
@@ -35,13 +36,13 @@ export class ActivityGateway
 
   constructor(
     private activityManager: ActivityManager,
-    private userRelationshipStorage: UserRelationshipStorage,
-    private userSocketStorage: UserSocketStorage,
     private channelStorage: ChannelStorage,
     private chatsGateway: ChatsGateway,
+    private gameGateway: GameGateway,
+    private userRelationshipStorage: UserRelationshipStorage,
+    private userSocketStorage: UserSocketStorage,
   ) /**
    * private authService: AuthService,
-   * private gameGateway: GameGateway,
    * private ranksGateway: RanksGateway, */ {}
 
   /**
@@ -64,9 +65,11 @@ export class ActivityGateway
       this.userRelationshipStorage.load(userId),
       this.channelStorage.loadUser(userId),
     ]);
-    const joinedChannels = this.channelStorage.getUser(userId).keys();
-    for (const channelId of joinedChannels) {
-      this.chatsGateway.joinChannelRoom(channelId, userId);
+    const joinedChannels = this.channelStorage.getUser(userId)?.keys();
+    if (joinedChannels !== undefined) {
+      for (const channelId of joinedChannels) {
+        this.chatsGateway.joinChannelRoom(channelId, userId);
+      }
     }
   }
 
@@ -188,6 +191,8 @@ export class ActivityGateway
         socketId,
         (ui + '-active') as `chatRooms-${ChannelId}-active`,
       );
+    } else if (ui === 'waitingRoom') {
+      this.gameGateway.joinRoom(socketId, 'waitingRoom');
     }
   }
 }

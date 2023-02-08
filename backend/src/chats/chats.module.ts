@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { Channels } from '../entity/channels.entity';
@@ -12,7 +12,7 @@ import { Users } from '../entity/users.entity';
 @Module({
   imports: [
     TypeOrmModule.forFeature([Channels, Messages, Users]),
-    UserStatusModule,
+    forwardRef(() => UserStatusModule),
   ],
   controllers: [ChatsController],
   providers: [ChatsGateway, ChatsService],
