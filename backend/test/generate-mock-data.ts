@@ -204,28 +204,28 @@ export const ACHIEVEMENTS_ENTITIES = [
     title: 'one giant leap for mankind.',
     about:
       '누군가에겐 미약해 보일 수 있지만, 분명히 그것은 위대한 첫 걸음 입니다. 당신은 처음으로 승리하였습니다.',
-    imagePath: '/asset/achievement/1.png',
+    imagePath: '/achievements/1.png',
   },
   {
     title: 'World Best Ping-Pong Player',
     about: '초월적인 온라인 탁구 게임에서 1등을 거머쥐었습니다!',
-    imagePath: '/asset/achievement/2.png',
+    imagePath: '/achievements/2.png',
   },
   {
     title: 'Social Animal',
     about: '무려 10명의 친구! 아리스토텔레스가 당신을 부러워합니다.',
-    imagePath: '/asset/achievement/3.png',
+    imagePath: '/achievements/3.png',
   },
   {
     title: ' Born To Be FT',
     about:
       '삶, 우주, 그리고 모든 것에 대한 궁극적인 질문에 대한 해답은 바로 당신!',
-    imagePath: '/asset/achievement/4.png',
+    imagePath: '/achievements/4.png',
   },
   {
     title: 'So noisy~ ',
     about: 'Join 5 channels',
-    imagePath: '/asset/achievement/5.png',
+    imagePath: '/achievements/5.png',
   },
 ];
 
