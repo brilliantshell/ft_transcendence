@@ -1,3 +1,11 @@
+import {
+  ArrayUnique,
+  IsInt,
+  IsString,
+  Length,
+  Max,
+  Min,
+} from 'class-validator';
 import { GameId } from '../../util/type';
 
 export interface GameStartedDto {
@@ -10,7 +18,14 @@ export interface GameAbortedDto {
   abortedSide: 'left' | 'right';
 }
 
-export interface GameCompleteDto {
+export class GameCompleteDto {
+  @IsString()
+  @Length(21)
   id: GameId;
+
+  @ArrayUnique()
+  @IsInt({ each: true })
+  @Min(0, { each: true })
+  @Max(5, { each: true })
   scores: [number, number];
 }

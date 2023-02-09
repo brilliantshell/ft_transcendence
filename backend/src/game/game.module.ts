@@ -1,7 +1,6 @@
 import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
-import { GameCompleteInterceptor } from './game.interceptor';
 import { GameGateway } from './game.gateway';
 import { GameStorage } from './game.storage';
 import { MatchHistory } from '../entity/match-history.entity';

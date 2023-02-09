@@ -5,11 +5,10 @@ import {
   WebSocketServer,
 } from '@nestjs/websockets';
 import { Server } from 'socket.io';
-import { UseInterceptors } from '@nestjs/common';
+import { UsePipes, ValidationPipe } from '@nestjs/common';
 
 import { GameCompleteDto, GameStartedDto } from './dto/game-gateway.dto';
-import { GameCompleteInterceptor } from './game.interceptor';
-import { GameId, SocketId } from '../util/type';
+import { GameId, SocketId, UserId } from '../util/type';
 import { GameStorage } from './game.storage';
 
 @WebSocketGateway()
@@ -35,10 +34,21 @@ export class GameGateway {
     this.server.in(socketId).socketsJoin(room);
   }
 
+  /**
+   * @description socket room 퇴장
+   *
+   * @param socketId socket id
+   * @param room 퇴장할 room
+   */
   leaveRoom(socketId: SocketId, room: `game-${GameId}` | 'waitingRoom') {
     this.server.in(socketId).socketsLeave(room);
   }
 
+  /**
+   * @description socket room 삭제
+   *
+   * @param room 삭제할 room
+   */
   destroyRoom(room: `game-${GameId}`) {
     this.server.socketsLeave(room);
   }
@@ -74,18 +84,25 @@ export class GameGateway {
   }
 
   /**
+   * @description 게임 비정상 종료 처리
    *
+   * @param gameId 게임 id
+   * @param userId 플레이어 id
    */
-  async emitGameAborted(
-    room: `game-${GameId}`,
-    gameId: GameId,
-    abortedSide: 'left' | 'right',
-  ) {
-    await this.gameStorage.updateResult(
+  async abortIfPlayerLeave(gameId: GameId, userId: UserId) {
+    const gameInfo = this.gameStorage.games.get(gameId);
+    if (
+      gameInfo === undefined ||
+      (userId !== gameInfo.leftId && userId !== gameInfo.rightId)
+    ) {
+      return;
+    }
+    await this.emitGameAborted(
+      `game-${gameId}`,
       gameId,
-      abortedSide === 'left' ? [0, 5] : [5, 0],
+      gameInfo.leftId === userId ? 'left' : 'right',
     );
-    this.server.to(room).emit('gameAborted', { abortedSide });
+    this.destroyRoom(`game-${gameId}`);
   }
 
   /**
@@ -93,13 +110,12 @@ export class GameGateway {
    *
    * @param result 게임 결과
    */
-  // FIXME : pipe 에서 throw 되면 gameStorage 에서 해당 게임이 지워지지 않는다
-  @UseInterceptors(GameCompleteInterceptor)
+  @UsePipes(new ValidationPipe({ forbidNonWhitelisted: true, whitelist: true }))
   @SubscribeMessage('gameComplete')
   async handleGameComplete(@MessageBody() result: GameCompleteDto) {
     const { id, scores } = result;
     this.server.socketsLeave(`game-${id}`);
-    await this.gameStorage.updateResult(id, scores);
+    this.gameStorage.updateResult(id, scores);
   }
 
   /*****************************************************************************
@@ -110,5 +126,31 @@ export class GameGateway {
 
   doesRoomExist(room: `game-${GameId}`) {
     return this.server.sockets.adapter.rooms.get(room) !== undefined;
+  }
+
+  /*****************************************************************************
+   *                                                                           *
+   * SECTION : Private methods                                                 *
+   *                                                                           *
+   ****************************************************************************/
+
+  /**
+   * @description 플레이어가 게임 방을 나거가나 연결이 끊길 경우, 결과 업데이트 및
+   *              다른 플레이어와 관전자에게 알림
+   *
+   * @param room 게임 방
+   * @param gameId 게임 id
+   * @param abortedSide 게임 종료한 쪽
+   */
+  private async emitGameAborted(
+    room: `game-${GameId}`,
+    gameId: GameId,
+    abortedSide: 'left' | 'right',
+  ) {
+    await this.gameStorage.updateResult(
+      gameId,
+      abortedSide === 'left' ? [0, 5] : [5, 0],
+    );
+    this.server.to(room).emit('gameAborted', { abortedSide });
   }
 }

@@ -36,6 +36,7 @@ export class GameStorage {
    */
   async updateResult(gameId: GameId, scores: [number, number]) {
     const { leftId, rightId, isRank } = this.games.get(gameId);
+    this.games.delete(gameId);
     const [winnerId, loserId] =
       scores[0] > scores[1] ? [leftId, rightId] : [rightId, leftId];
     const winnerPartialEntity = { winCount: () => 'win_count + 1' };
@@ -64,8 +65,6 @@ export class GameStorage {
       throw new InternalServerErrorException(
         `Failed to update the game result between ${leftId} and ${rightId}`,
       );
-    } finally {
-      this.games.delete(gameId);
     }
   }
 
