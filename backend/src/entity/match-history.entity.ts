@@ -59,12 +59,12 @@ export class MatchHistory {
     name: 'user_one_id',
     foreignKeyConstraintName: 'match_history_user_one_id_fkey',
   })
-  user_one: Users;
+  userOne: Users;
 
   @ManyToOne(() => Users)
   @JoinColumn({
     name: 'user_two_id',
     foreignKeyConstraintName: 'match_history_user_two_id_fkey',
   })
-  user_two: Users;
+  userTwo: Users;
 }

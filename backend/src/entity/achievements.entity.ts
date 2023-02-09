@@ -1,7 +1,7 @@
-import { Column, Entity, PrimaryGeneratedColumn, Unique } from 'typeorm';
+import { Column, Entity, Index, PrimaryGeneratedColumn } from 'typeorm';
 
 @Entity()
-@Unique(['title'])
+@Index(['achievementId', 'title', 'about', 'imagePath'], { unique: true })
 export class Achievements {
   @PrimaryGeneratedColumn({
     primaryKeyConstraintName: 'achievements_pkey',

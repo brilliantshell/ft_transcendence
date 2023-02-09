@@ -1,10 +1,9 @@
-import { Check, Column, Entity, PrimaryColumn, Unique } from 'typeorm';
+import { Check, Column, Entity, PrimaryColumn } from 'typeorm';
 
 @Entity()
 @Check(`"ladder" >= 0`)
 @Check(`"win_count" >= 0`)
 @Check(`"loss_count" >= 0`)
-@Unique(['nickname', 'authEmail'])
 export class Users {
   @PrimaryColumn({
     type: 'integer',
@@ -13,7 +12,7 @@ export class Users {
   })
   userId: number;
 
-  @Column({ type: 'varchar', length: 16, nullable: false })
+  @Column({ type: 'varchar', length: 16, unique: true, nullable: false })
   nickname: string;
 
   @Column({
@@ -24,7 +23,13 @@ export class Users {
   })
   profileImage: string;
 
-  @Column({ type: 'varchar', length: 320, name: 'auth_email' })
+  @Column({
+    type: 'varchar',
+    length: 320,
+    unique: true,
+    name: 'auth_email',
+    nullable: true,
+  })
   authEmail: string;
 
   @Column({ type: 'integer', default: 0, nullable: false })
