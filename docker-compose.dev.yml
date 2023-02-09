@@ -1,0 +1,121 @@
+# NOTE - A docker-compose.dev.yml for DEVELOPMENT
+
+version: "3.8"
+
+# SECTION : SERVICES
+services:
+  backend_dev:
+    container_name: back_dev_con
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    entrypoint: [ sleep, infinity ]
+    environment:
+      - PGDATABASE=${PGDATABASE}
+      - PGPASSWORD=${PGPASSWORD}
+      - PGUSER=${PGUSER}
+      - PGHOST=${PGHOST}
+      - PGPORT=${PGPORT}
+    expose:
+      - "3000"
+    init: true
+    networks:
+      development:
+        ipv4_address: 172.18.0.2
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./:/workspaces/:cached
+      - /var/run/docker.sock:/var/run/docker-host.sock
+
+  frontend_dev:
+    container_name: front_dev_con
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    entrypoint: [ sleep, infinity ]
+    init: true
+    networks:
+      development:
+        ipv4_address: 172.18.0.3
+    ports:
+      - "4242:4242"
+    volumes:
+      - ./:/workspaces/:cached
+      - /var/run/docker.sock:/var/run/docker-host.sock
+
+  database_dev:
+    container_name: db_dev_con
+    build:
+      context: ./database
+      dockerfile: Dockerfile.dev
+    environment:
+      - PGDATABASE=${PGDATABASE}
+      - PGPASSWORD=${PGPASSWORD}
+      - PGUSER=${PGUSER}
+      - PGPORT=${PGPORT}
+    expose:
+      - "5432"
+    init: true
+    networks:
+      development:
+        ipv4_address: 172.18.0.4
+    volumes:
+      - ./:/workspaces/:cached
+      - /var/run/docker.sock:/var/run/docker-host.sock
+      # Database Volume
+      - pgdata:/var/lib/postgresql/data/
+  
+  # NOTE : PostgreSQL GUI tools
+  pgadmin_dev:
+    container_name: pgadmin_dev_con
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=${PGADMIN_DEFAULT_EMAIL}
+      - PGADMIN_DEFAULT_PASSWORD=${PGADMIN_DEFAULT_PASSWORD}
+      - PGADMIN_LISTEN_PORT=${PGADMIN_LISTEN_PORT}
+    image: dpage/pgadmin4
+    init: true
+    networks:
+      development:
+        ipv4_address: 172.18.0.5
+    ports:
+      - "5050:5050"
+  
+  pgweb:
+    container_name: pgweb_dev_con
+    depends_on:
+      database_dev:
+        condition: service_healthy
+    entrypoint:
+      - /usr/bin/pgweb
+      - --bind=172.18.0.6
+      - --host=${PGHOST}
+      - --ssl=disable
+      - --user=${PGUSER}
+      - --pass=${PGPASSWORD}
+    image: sosedoff/pgweb
+    init: true
+    networks:
+      development:
+        ipv4_address: 172.18.0.6
+    ports:
+      - "8081:8081"
+
+# SECTION : NETWORKS
+networks:
+  development:
+    ipam:
+      config:
+        - subnet: 172.18.0.0/24
+          gateway: 172.18.0.1
+
+volumes:
+  pgdata:
+    driver: local
+    driver_opts:
+      type: none
+      device: ${PGDATA_DIR}
+      o: bind
+
+# SECTION : VOLUMES
+# volumes:
