@@ -24,6 +24,12 @@ export class GameGateway {
    *                                                                           *
    ****************************************************************************/
 
+  /*****************************************************************************
+   *                                                                           *
+   * SECTION : Room management                                                 *
+   *                                                                           *
+   ****************************************************************************/
+
   /**
    * @description socket room 입장
    *
@@ -52,6 +58,12 @@ export class GameGateway {
   destroyRoom(room: `game-${GameId}`) {
     this.server.socketsLeave(room);
   }
+
+  /*****************************************************************************
+   *                                                                           *
+   * SECTION : Game management                                                 *
+   *                                                                           *
+   ****************************************************************************/
 
   /**
    * @description 게임 player 들에게 매칭되었다고 알림
@@ -83,6 +95,8 @@ export class GameGateway {
   emitGameStarted(gameStartedDto: GameStartedDto) {
     this.server.to('waitingRoom').emit('gameStarted', gameStartedDto);
   }
+
+  // TODO : gameStatus emitter
 
   /**
    * @description 게임 비정상 종료 처리
