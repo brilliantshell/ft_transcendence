@@ -1,15 +1,9 @@
-import { Test, TestingModule } from '@nestjs/testing';
+import { ConflictException, NotFoundException } from '@nestjs/common';
 import { DataSource } from 'typeorm';
+import { DateTime } from 'luxon';
+import { Test, TestingModule } from '@nestjs/testing';
+import { TypeOrmModule } from '@nestjs/typeorm';
 
-import { Achievements } from '../entity/achievements.entity';
-import { Achievers } from '../entity/achievers.entity';
-import { MatchHistory } from '../entity/match-history.entity';
-import { Users } from '../entity/users.entity';
-import {
-  createDataSources,
-  destroyDataSources,
-  TYPEORM_SHARED_CONFIG,
-} from '../../test/db-resource-manager';
 import {
   ACHIEVEMENTS_ENTITIES,
   generateAchievers,
@@ -17,10 +11,16 @@ import {
   generateUsers,
   updateUsersFromMatchHistory,
 } from '../../test/generate-mock-data';
+import { Achievements } from '../entity/achievements.entity';
+import { Achievers } from '../entity/achievers.entity';
+import { MatchHistory } from '../entity/match-history.entity';
 import { ProfileService } from './profile.service';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { ConflictException, NotFoundException } from '@nestjs/common';
-import { DateTime } from 'luxon';
+import { Users } from '../entity/users.entity';
+import {
+  TYPEORM_SHARED_CONFIG,
+  createDataSources,
+  destroyDataSources,
+} from '../../test/db-resource-manager';
 
 const TEST_DB = 'test_db_profile_service';
 const ENTITIES = [Achievements, Achievers, MatchHistory, Users];
