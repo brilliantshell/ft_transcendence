@@ -101,22 +101,18 @@ describe('ProfileService', () => {
       })
     ).map((e) => e.achievement);
     const matchHistoryRaw = (
-      await dataSource
-        .createQueryBuilder(MatchHistory, 'MatchHistory')
-        .leftJoin('MatchHistory.userOne', 'UserOne')
-        .leftJoin('MatchHistory.userTwo', 'UserTwo')
-        .select([
-          'MatchHistory.userOneScore',
-          'MatchHistory.userTwoScore',
-          'MatchHistory.isRank',
-          'MatchHistory.endAt',
-          'UserOne.nickname',
-          'UserTwo.nickname',
-        ])
-        .where('MatchHistory.userOneId = :id')
-        .orWhere('MatchHistory.userTwoId = :id')
-        .setParameter('id', user.userId)
-        .getMany()
+      await dataSource.getRepository(MatchHistory).find({
+        where: [{ userOneId: user.userId }, { userTwoId: user.userId }],
+        relations: ['userOne', 'userTwo'],
+        select: {
+          userOneScore: true,
+          userTwoScore: true,
+          endAt: true as any,
+          isRank: true,
+          userOne: { nickname: true },
+          userTwo: { nickname: true },
+        },
+      })
     ).sort((a, b) => b.endAt.valueOf() - a.endAt.valueOf());
     let start = DateTime.now().valueOf();
     for (const { endAt } of matchHistoryRaw) {
