@@ -73,14 +73,15 @@ export class GameGateway {
     this.server.to(room).emit('gameOption', { map });
   }
 
+  // NOTE : ladder 일 때만 호출
   /**
    * @description 게임 시작 시, waitingRoom UI 에 있는 유저들에게 새 게임 정보 전송
    *
    * @param room waitingRoom UI 에 있는 유저들
    * @param gameStartedDto 게임 시작 정보
    */
-  emitGameStarted(room: 'waitingRoom', gameStartedDto: GameStartedDto) {
-    this.server.to(room).emit('gameStarted', gameStartedDto);
+  emitGameStarted(gameStartedDto: GameStartedDto) {
+    this.server.to('waitingRoom').emit('gameStarted', gameStartedDto);
   }
 
   /**
@@ -114,6 +115,7 @@ export class GameGateway {
   @SubscribeMessage('gameComplete')
   async handleGameComplete(@MessageBody() result: GameCompleteDto) {
     const { id, scores } = result;
+    this.emitGameEnded(id);
     this.server.socketsLeave(`game-${id}`);
     this.gameStorage.updateResult(id, scores);
   }
@@ -124,7 +126,7 @@ export class GameGateway {
    *                                                                           *
    ****************************************************************************/
 
-  doesRoomExist(room: `game-${GameId}`) {
+  doesRoomExist(room: `game-${GameId}` | 'waitingRoom') {
     return this.server.sockets.adapter.rooms.get(room) !== undefined;
   }
 
@@ -147,10 +149,21 @@ export class GameGateway {
     gameId: GameId,
     abortedSide: 'left' | 'right',
   ) {
+    this.emitGameEnded(gameId);
     await this.gameStorage.updateResult(
       gameId,
       abortedSide === 'left' ? [0, 5] : [5, 0],
     );
     this.server.to(room).emit('gameAborted', { abortedSide });
+  }
+
+  /**
+   * @description 게임 종료 waitingRoom UI 에 있는 유저들에게 알림
+   *
+   * @param id 게임 id
+   */
+  private emitGameEnded(id: GameId) {
+    this.gameStorage.games.get(id).isRank &&
+      this.server.to('waitingRoom').emit('gameEnded', { id });
   }
 }

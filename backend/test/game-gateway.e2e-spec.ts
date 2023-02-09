@@ -219,7 +219,7 @@ describe('GameGateway (e2e)', () => {
         listenPromise(userOne, 'gameStarted'),
         listenPromise(userTwo, 'gameStarted'),
         gateway.emitNewGame(`game-${gameId}`, gameId),
-        gateway.emitGameStarted('waitingRoom', {
+        gateway.emitGameStarted({
           id: gameId,
           left: users[0].nickname,
           right: users[1].nickname,
@@ -280,7 +280,7 @@ describe('GameGateway (e2e)', () => {
         timeout(1000, listenPromise(userOne, 'gameStarted')),
         listenPromise(userTwo, 'gameStarted'),
         gateway.emitNewGame(`game-${gameId}`, gameId),
-        gateway.emitGameStarted('waitingRoom', {
+        gateway.emitGameStarted({
           id: gameId,
           left: users[0].nickname,
           right: users[1].nickname,
@@ -737,6 +737,176 @@ describe('GameGateway (e2e)', () => {
         where: { userId: In([userIds[0], userIds[1]]) },
       });
       expect(postGame).toEqual(prevGame);
+    });
+  });
+
+  /*****************************************************************************
+   *                                                                           *
+   * SECTION : gameEnded Emiiter                                               *
+   *                                                                           *
+   ****************************************************************************/
+  /**
+   * 게임이 종료되면 waitingRoom UI 에 있는 유저들에게 알림
+   */
+
+  describe('gameEnded', () => {
+    beforeEach(async () => {
+      users.push(usersEntities[index++], usersEntities[index++]);
+      userIds = users.map(({ userId }) => userId);
+      clientSockets.push(
+        io(URL, { extraHeaders: { 'x-user-id': userIds[2].toString() } }),
+        io(URL, { extraHeaders: { 'x-user-id': userIds[3].toString() } }),
+      );
+      await Promise.all([
+        new Promise((resolve) =>
+          clientSockets[2].on('connect', () => resolve('done')),
+        ),
+        new Promise((resolve) =>
+          clientSockets[3].on('connect', () => resolve('done')),
+        ),
+      ]);
+    });
+
+    it('should notify the users in waiting-room when the ladder game is ended', async () => {
+      const [playerOne, playerTwo, waitingOne, waitingTwo] = clientSockets;
+      gameStorage.games.set(gameId, new GameInfo(users[0], users[1], 1, true));
+      playerOne.emit('currentUi', { userId: userIds[0], ui: `game-${gameId}` });
+      playerTwo.emit('currentUi', { userId: userIds[1], ui: `game-${gameId}` });
+      waitingOne.emit('currentUi', { userId: userIds[2], ui: 'waitingRoom' });
+      waitingTwo.emit('currentUi', { userId: userIds[3], ui: 'waitingRoom' });
+      await waitForExpect(() => {
+        expect(gateway.doesRoomExist(`game-${gameId}`)).toBeTruthy();
+        expect(gateway.doesRoomExist('waitingRoom')).toBeTruthy();
+        expect(gameStorage.games.has(gameId)).toBeTruthy();
+        expect(activityManager.getActivity(userIds[0])).toEqual(
+          `game-${gameId}`,
+        );
+        expect(activityManager.getActivity(userIds[1])).toEqual(
+          `game-${gameId}`,
+        );
+        expect(activityManager.getActivity(userIds[2])).toEqual('waitingRoom');
+        expect(activityManager.getActivity(userIds[3])).toEqual('waitingRoom');
+      });
+      const [wsErrorOne, wsErrorTwo, wsOne, wsTwo] = await Promise.allSettled([
+        timeout(1000, listenPromise(playerOne, 'gameEnded')),
+        timeout(1000, listenPromise(playerTwo, 'gameEnded')),
+        listenPromise(waitingOne, 'gameEnded'),
+        listenPromise(waitingTwo, 'gameEnded'),
+        playerOne.emit('gameComplete', { id: gameId, scores: [5, 3] }),
+      ]);
+      expect(gameStorage.games.has(gameId)).toBeFalsy();
+      expect(gateway.doesRoomExist(`game-${gameId}`)).toBeFalsy();
+      expect(wsErrorOne.status).toEqual('rejected');
+      expect(wsErrorTwo.status).toEqual('rejected');
+      if (wsOne.status !== 'fulfilled' || wsTwo.status !== 'fulfilled') {
+        fail();
+      }
+      expect(wsOne.value).toEqual({ id: gameId });
+      expect(wsTwo.value).toEqual({ id: gameId });
+    });
+
+    it('should notify the users in waiting-room when the ladder game is aborted', async () => {
+      const [playerOne, playerTwo, waitingOne, waitingTwo] = clientSockets;
+      gameStorage.games.set(gameId, new GameInfo(users[0], users[1], 1, true));
+      playerOne.emit('currentUi', { userId: userIds[0], ui: `game-${gameId}` });
+      playerTwo.emit('currentUi', { userId: userIds[1], ui: `game-${gameId}` });
+      waitingOne.emit('currentUi', { userId: userIds[2], ui: 'waitingRoom' });
+      waitingTwo.emit('currentUi', { userId: userIds[3], ui: 'waitingRoom' });
+      await waitForExpect(() => {
+        expect(gateway.doesRoomExist(`game-${gameId}`)).toBeTruthy();
+        expect(gateway.doesRoomExist('waitingRoom')).toBeTruthy();
+        expect(gameStorage.games.has(gameId)).toBeTruthy();
+        expect(activityManager.getActivity(userIds[0])).toEqual(
+          `game-${gameId}`,
+        );
+        expect(activityManager.getActivity(userIds[1])).toEqual(
+          `game-${gameId}`,
+        );
+        expect(activityManager.getActivity(userIds[2])).toEqual('waitingRoom');
+        expect(activityManager.getActivity(userIds[3])).toEqual('waitingRoom');
+      });
+      const [wsErrorOne, wsErrorTwo, wsOne, wsTwo] = await Promise.allSettled([
+        timeout(1000, listenPromise(playerOne, 'gameEnded')),
+        timeout(1000, listenPromise(playerTwo, 'gameEnded')),
+        listenPromise(waitingOne, 'gameEnded'),
+        listenPromise(waitingTwo, 'gameEnded'),
+        playerOne.emit('currentUi', { userId: userIds[0], ui: 'profile' }),
+      ]);
+      expect(gameStorage.games.has(gameId)).toBeFalsy();
+      expect(gateway.doesRoomExist(`game-${gameId}`)).toBeFalsy();
+      expect(wsErrorOne.status).toEqual('rejected');
+      expect(wsErrorTwo.status).toEqual('rejected');
+      if (wsOne.status !== 'fulfilled' || wsTwo.status !== 'fulfilled') {
+        fail();
+      }
+      expect(wsOne.value).toEqual({ id: gameId });
+      expect(wsTwo.value).toEqual({ id: gameId });
+    });
+
+    it('should not notify the users in waiting-room when the non-ladder game is ended', async () => {
+      const [playerOne, playerTwo, waitingOne, waitingTwo] = clientSockets;
+      gameStorage.games.set(gameId, new GameInfo(users[0], users[1], 1, false));
+      playerOne.emit('currentUi', { userId: userIds[0], ui: `game-${gameId}` });
+      playerTwo.emit('currentUi', { userId: userIds[1], ui: `game-${gameId}` });
+      waitingOne.emit('currentUi', { userId: userIds[2], ui: 'waitingRoom' });
+      waitingTwo.emit('currentUi', { userId: userIds[3], ui: 'waitingRoom' });
+      await waitForExpect(() => {
+        expect(gateway.doesRoomExist(`game-${gameId}`)).toBeTruthy();
+        expect(gateway.doesRoomExist('waitingRoom')).toBeTruthy();
+        expect(gameStorage.games.has(gameId)).toBeTruthy();
+        expect(activityManager.getActivity(userIds[0])).toEqual(
+          `game-${gameId}`,
+        );
+        expect(activityManager.getActivity(userIds[1])).toEqual(
+          `game-${gameId}`,
+        );
+        expect(activityManager.getActivity(userIds[2])).toEqual('waitingRoom');
+        expect(activityManager.getActivity(userIds[3])).toEqual('waitingRoom');
+      });
+      const [wsErrorOne, wsErrorTwo, wsOne, wsTwo] = await Promise.allSettled([
+        timeout(1000, listenPromise(playerOne, 'gameEnded')),
+        timeout(1000, listenPromise(playerTwo, 'gameEnded')),
+        timeout(1000, listenPromise(waitingOne, 'gameEnded')),
+        timeout(1000, listenPromise(waitingTwo, 'gameEnded')),
+        playerOne.emit('gameComplete', { id: gameId, scores: [5, 3] }),
+      ]);
+      expect(wsOne.status).toEqual('rejected');
+      expect(wsTwo.status).toEqual('rejected');
+      expect(wsErrorOne.status).toEqual('rejected');
+      expect(wsErrorTwo.status).toEqual('rejected');
+    });
+
+    it('should not notify the users in waiting-room when the non-ladder game is aborted', async () => {
+      const [playerOne, playerTwo, waitingOne, waitingTwo] = clientSockets;
+      gameStorage.games.set(gameId, new GameInfo(users[0], users[1], 1, false));
+      playerOne.emit('currentUi', { userId: userIds[0], ui: `game-${gameId}` });
+      playerTwo.emit('currentUi', { userId: userIds[1], ui: `game-${gameId}` });
+      waitingOne.emit('currentUi', { userId: userIds[2], ui: 'waitingRoom' });
+      waitingTwo.emit('currentUi', { userId: userIds[3], ui: 'waitingRoom' });
+      await waitForExpect(() => {
+        expect(gateway.doesRoomExist(`game-${gameId}`)).toBeTruthy();
+        expect(gateway.doesRoomExist('waitingRoom')).toBeTruthy();
+        expect(gameStorage.games.has(gameId)).toBeTruthy();
+        expect(activityManager.getActivity(userIds[0])).toEqual(
+          `game-${gameId}`,
+        );
+        expect(activityManager.getActivity(userIds[1])).toEqual(
+          `game-${gameId}`,
+        );
+        expect(activityManager.getActivity(userIds[2])).toEqual('waitingRoom');
+        expect(activityManager.getActivity(userIds[3])).toEqual('waitingRoom');
+      });
+      const [wsErrorOne, wsErrorTwo, wsOne, wsTwo] = await Promise.allSettled([
+        timeout(1000, listenPromise(playerOne, 'gameEnded')),
+        timeout(1000, listenPromise(playerTwo, 'gameEnded')),
+        timeout(1000, listenPromise(waitingOne, 'gameEnded')),
+        timeout(1000, listenPromise(waitingTwo, 'gameEnded')),
+        playerOne.disconnect,
+      ]);
+      expect(wsOne.status).toEqual('rejected');
+      expect(wsTwo.status).toEqual('rejected');
+      expect(wsErrorOne.status).toEqual('rejected');
+      expect(wsErrorTwo.status).toEqual('rejected');
     });
   });
 

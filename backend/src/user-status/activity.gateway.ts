@@ -117,12 +117,12 @@ export class ActivityGateway
   ) {
     // FIXME : userId 를 메시지로 받아서 처리하는게 아니라 client socket 에서 받아서 처리해야 함
     // const userId = Number(clientSocket.handshake.headers['x-user-id']);
-    const prevActivity = this.activityManager.getActivity(userId);
-    this.manageRooms(clientSocket.id, userId, prevActivity, ui);
+    const prevUi = this.activityManager.getActivity(userId);
     this.activityManager.setActivity(userId, ui);
-    if (!prevActivity) {
-      this.emitUserActivity(userId);
-    }
+    prevUi
+      ? this.leaveRooms(clientSocket.id, userId, prevUi)
+      : this.emitUserActivity(userId);
+    this.joinRooms(clientSocket.id, userId, ui);
   }
 
   /**
@@ -182,33 +182,33 @@ export class ActivityGateway
   }
 
   /**
-   * @description 유저의 activity 에 따라 room 에 join, leave
+   * @description 유저 UI 변경 시, 이전에 있던 UI 에 따라 room 에서 나가기
    *
    * @param socketId 유저의 socket id
    * @param userId 유저의 id
-   * @param prevActivity 이전 activity
-   * @param ui 현재 activity
+   * @param prevUi 이전 UI
    */
-  private manageRooms(
-    socketId: string,
-    userId: UserId,
-    prevActivity: CurrentUi,
-    ui: CurrentUi,
-  ) {
-    // TODO prevActivity 가 null 일 때 처리
-    if (prevActivity?.startsWith('chatRooms-') === true) {
+  private leaveRooms(socketId: SocketId, userId: UserId, prevUi: CurrentUi) {
+    if (prevUi.startsWith('chatRooms-') === true) {
       this.chatsGateway.leaveRoom(
         socketId,
-        (prevActivity + '-active') as `chatRooms-${ChannelId}-active`,
+        (prevUi + '-active') as `chatRooms-${ChannelId}-active`,
       );
-    } else if (prevActivity === 'chats') {
-      this.chatsGateway.leaveRoom(socketId, prevActivity);
-    } else if (prevActivity?.startsWith('game-')) {
-      this.gameGateway.abortIfPlayerLeave(
-        prevActivity.replace('game-', ''),
-        userId,
-      );
+    } else if (prevUi === 'chats') {
+      this.chatsGateway.leaveRoom(socketId, prevUi);
+    } else if (prevUi.startsWith('game-')) {
+      this.gameGateway.abortIfPlayerLeave(prevUi.replace('game-', ''), userId);
     }
+  }
+
+  /**
+   * @description 유저 UI 변경 시, 새로운 UI 에 맞게 room 에 join 하기
+   *
+   * @param socketId 유저의 socket id
+   * @param userId 유저의 id
+   * @param ui 새로운 UI
+   */
+  private joinRooms(socketId: SocketId, userId: UserId, ui: CurrentUi) {
     if (ui === 'chats') {
       this.chatsGateway.joinRoom(socketId, ui);
     } else if (ui.startsWith('chatRooms-')) {
@@ -224,6 +224,11 @@ export class ActivityGateway
     } else if (ui === 'waitingRoom') {
       this.gameGateway.joinRoom(socketId, 'waitingRoom');
     } else if (ui.startsWith('game-')) {
+      /**
+       * TODO
+       * room 에 이벤트 보낼 일이 있기 전에 유저들이 들어가 있다고 확신할 수 없다
+       * GameService & controller 구현하면서 확인하기
+       */
       this.gameGateway.joinRoom(socketId, ui as `game-${GameId}`);
     }
   }
