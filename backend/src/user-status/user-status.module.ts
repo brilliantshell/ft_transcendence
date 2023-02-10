@@ -13,6 +13,7 @@ import { Friends } from '../entity/friends.entity';
 import { GameModule } from '../game/game.module';
 import { MatchHistory } from '../entity/match-history.entity';
 import { Messages } from '../entity/messages.entity';
+import { RanksModule } from '../ranks/ranks.module';
 import { UserRelationshipStorage } from './user-relationship.storage';
 import { UserSocketStorage } from './user-socket.storage';
 import { Users } from '../entity/users.entity';
@@ -31,6 +32,7 @@ import { Users } from '../entity/users.entity';
     ]),
     forwardRef(() => ChatsModule),
     forwardRef(() => GameModule),
+    RanksModule,
   ],
   providers: [
     ActivityGateway,

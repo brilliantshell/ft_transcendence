@@ -40,10 +40,9 @@ export class GameStorage {
     const [winnerId, loserId] =
       scores[0] > scores[1] ? [leftId, rightId] : [rightId, leftId];
     const winnerPartialEntity = { winCount: () => 'win_count + 1' };
-    let ladderRise = 0;
+    const ladder = await this.calculateNewLadder(winnerId, loserId, scores);
     if (isRank) {
-      ladderRise = await this.calculateLadderRise(winnerId, loserId, scores);
-      winnerPartialEntity['ladder'] = () => `ladder + ${ladderRise}`;
+      winnerPartialEntity['ladder'] = ladder;
     }
     try {
       await this.dataSource.manager.transaction(async (manager) => {
@@ -66,6 +65,7 @@ export class GameStorage {
         `Failed to update the game result between ${leftId} and ${rightId}`,
       );
     }
+    return isRank ? { winnerId, ladder } : null;
   }
 
   /*****************************************************************************
@@ -82,7 +82,7 @@ export class GameStorage {
    * @param scores 스코어
    * @returns 래더 점수
    */
-  async calculateLadderRise(
+  async calculateNewLadder(
     winnerId: UserId,
     loserId: UserId,
     scores: [number, number],
@@ -105,8 +105,11 @@ export class GameStorage {
         : [beforeGame[1].ladder, beforeGame[0].ladder];
     const scoreGap = Math.abs(scores[0] - scores[1]);
     const ladderGap = Math.abs(winnerLadder - loserLadder);
-    return winnerLadder >= loserLadder
-      ? Math.max(Math.floor(scoreGap * (1 - ladderGap / 42)), 1)
-      : Math.floor(scoreGap * (1 + ladderGap / 42));
+    return (
+      winnerLadder +
+      (winnerLadder >= loserLadder
+        ? Math.max(Math.floor(scoreGap * (1 - ladderGap / 42)), 1)
+        : Math.floor(scoreGap * (1 + ladderGap / 42)))
+    );
   }
 }

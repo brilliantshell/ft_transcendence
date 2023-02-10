@@ -26,8 +26,8 @@ import {
 } from './db-resource-manager';
 import { UserSocketStorage } from '../src/user-status/user-socket.storage';
 import { Users } from '../src/entity/users.entity';
+import { calculateLadderRise, listenPromise, timeout } from './util';
 import { generateUsers } from './generate-mock-data';
-import { timeout } from './util';
 
 const URL = 'http://localhost:4247';
 
@@ -107,6 +107,57 @@ describe('GameGateway (e2e)', () => {
     await new Promise((resolve) => setTimeout(resolve, 300));
     await app.close();
     await destroyDataSources(TEST_DB, dataSource, initDataSource);
+  });
+
+  /*****************************************************************************
+   *                                                                           *
+   * SECTION : Join & leave rooms                                              *
+   *                                                                           *
+   ****************************************************************************/
+  /**
+   * UI 변경시 방 관리
+   */
+
+  describe('join & leave rooms', () => {
+    beforeEach(async () => {
+      users.push(usersEntities[index++]);
+      userIds.push(users[2].userId);
+      clientSockets.push(
+        io(URL, { extraHeaders: { 'x-user-id': userIds[2].toString() } }),
+      );
+      await new Promise((resolve) =>
+        clientSockets[2].on('connect', () => resolve('done')),
+      );
+      gameStorage.games.set(gameId, new GameInfo(users[0], users[1], 1, true));
+    });
+
+    it('should join and leave rooms', async () => {
+      const [playerOne, playerTwo, user] = clientSockets;
+      playerOne.emit('currentUi', { userId: userIds[0], ui: 'waitingRoom' });
+      playerTwo.emit('currentUi', { userId: userIds[1], ui: `game-${gameId}` });
+      user.emit('currentUi', { userId: userIds[2], ui: `game-${gameId}` });
+      await waitForExpect(() => {
+        expect(activityManager.getActivity(userIds[0])).toEqual('waitingRoom');
+        expect(activityManager.getActivity(userIds[1])).toEqual(
+          `game-${gameId}`,
+        );
+        expect(activityManager.getActivity(userIds[2])).toEqual(
+          `game-${gameId}`,
+        );
+        expect(gateway.doesRoomExist('waitingRoom')).toBeTruthy();
+        expect(gateway.doesRoomExist(`game-${gameId}`)).toBeTruthy();
+      });
+      playerOne.emit('currentUi', { userId: userIds[0], ui: 'profile' });
+      playerTwo.emit('currentUi', { userId: userIds[1], ui: 'ranks' });
+      user.emit('currentUi', { userId: userIds[2], ui: `chats` });
+      await waitForExpect(() => {
+        expect(activityManager.getActivity(userIds[0])).toEqual('profile');
+        expect(activityManager.getActivity(userIds[1])).toEqual('ranks');
+        expect(activityManager.getActivity(userIds[2])).toEqual('chats');
+        expect(gateway.doesRoomExist('waitingRoom')).toBeFalsy();
+        expect(gateway.doesRoomExist(`game-${gameId}`)).toBeFalsy();
+      });
+    });
   });
 
   /*****************************************************************************
@@ -418,7 +469,6 @@ describe('GameGateway (e2e)', () => {
         prevWinner.ladder,
         prevLoser.ladder,
         scores,
-        prevWinner.ladder >= prevLoser.ladder,
       );
       expect(postGame.length).toBe(2);
       expect(postWinner).toMatchObject({
@@ -477,7 +527,6 @@ describe('GameGateway (e2e)', () => {
         prevWinner.ladder,
         prevLoser.ladder,
         scores,
-        prevWinner.ladder >= prevLoser.ladder,
       );
       expect(postGame.length).toBe(2);
       expect(postWinner).toMatchObject({
@@ -628,7 +677,6 @@ describe('GameGateway (e2e)', () => {
         prevWinner.ladder,
         prevLoser.ladder,
         [5, 0],
-        prevWinner.ladder >= prevLoser.ladder,
       );
       expect(postWinner).toMatchObject({
         winCount: prevWinner.winCount + 1,
@@ -700,7 +748,6 @@ describe('GameGateway (e2e)', () => {
         prevWinner.ladder,
         prevLoser.ladder,
         [0, 5],
-        prevWinner.ladder >= prevLoser.ladder,
       );
       expect(postWinner).toMatchObject({
         winCount: prevWinner.winCount + 1,
@@ -916,19 +963,6 @@ describe('GameGateway (e2e)', () => {
    *                                                                           *
    ****************************************************************************/
 
-  const calculateLadderRise = (
-    winnerLadder: number,
-    loserLadder: number,
-    scores: number[],
-    isHigher: boolean,
-  ) => {
-    const ladderGap = Math.abs(winnerLadder - loserLadder);
-    const scoreGap = Math.abs(scores[0] - scores[1]);
-    return isHigher
-      ? Math.max(Math.floor(scoreGap * (1 - ladderGap / 42)), 1)
-      : Math.floor(scoreGap * (1 + ladderGap / 42));
-  };
-
   const winnerLoserStats = (
     prevGame: Users[],
     postGame: Users[],
@@ -944,9 +978,6 @@ describe('GameGateway (e2e)', () => {
         : [postGame[1], postGame[0]];
     return { prevWinner, prevLoser, postWinner, postLoser };
   };
-
-  const listenPromise = (socket: Socket, event: string) =>
-    new Promise((resolve) => socket.on(event, resolve));
 });
 
 // TODO : 추후에 클라이언트에서 라이브로 전달되어야하는 데이터가 파악되면 구현
