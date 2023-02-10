@@ -23,7 +23,7 @@ import { ChannelStorage } from './channel.storage';
 import { ChatsGateway } from '../chats/chats.gateway';
 import { CurrentUiDto } from './dto/user-status.dto';
 import { GameGateway } from '../game/game.gateway';
-import { GameStorage } from '../game/game.storage';
+import { RanksGateway } from '../ranks/ranks.gateway';
 import { UserActivityDto } from './dto/user-status.dto';
 import { UserRelationshipStorage } from './user-relationship.storage';
 import { UserSocketStorage } from './user-socket.storage';
@@ -47,7 +47,7 @@ export class ActivityGateway
     private readonly channelStorage: ChannelStorage,
     private readonly chatsGateway: ChatsGateway,
     private readonly gameGateway: GameGateway,
-    private readonly gameStorage: GameStorage,
+    private readonly ranksGateway: RanksGateway,
     private readonly userRelationshipStorage: UserRelationshipStorage,
     private readonly userSocketStorage: UserSocketStorage,
   ) {}
@@ -196,8 +196,12 @@ export class ActivityGateway
       );
     } else if (prevUi === 'chats') {
       this.chatsGateway.leaveRoom(socketId, prevUi);
+    } else if (prevUi === 'waitingRoom') {
+      this.gameGateway.leaveRoom(socketId, 'waitingRoom');
     } else if (prevUi.startsWith('game-')) {
       this.gameGateway.abortIfPlayerLeave(prevUi.replace('game-', ''), userId);
+    } else if (prevUi === 'ranks') {
+      this.ranksGateway.leaveRanksRoom(socketId);
     }
   }
 
@@ -230,6 +234,8 @@ export class ActivityGateway
        * GameService & controller 구현하면서 확인하기
        */
       this.gameGateway.joinRoom(socketId, ui as `game-${GameId}`);
+    } else if (ui === 'ranks') {
+      this.ranksGateway.joinRanksRoom(socketId);
     }
   }
 }

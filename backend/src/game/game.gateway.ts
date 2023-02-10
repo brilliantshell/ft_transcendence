@@ -10,13 +10,17 @@ import { UsePipes, ValidationPipe } from '@nestjs/common';
 import { GameCompleteDto, GameStartedDto } from './dto/game-gateway.dto';
 import { GameId, SocketId, UserId } from '../util/type';
 import { GameStorage } from './game.storage';
+import { RanksGateway } from '../ranks/ranks.gateway';
 
 @WebSocketGateway()
 export class GameGateway {
   @WebSocketServer()
   private readonly server: Server;
 
-  constructor(private readonly gameStorage: GameStorage) {}
+  constructor(
+    private readonly gameStorage: GameStorage,
+    private readonly ranksGateway: RanksGateway,
+  ) {}
 
   /*****************************************************************************
    *                                                                           *
@@ -131,7 +135,8 @@ export class GameGateway {
     const { id, scores } = result;
     this.emitGameEnded(id);
     this.server.socketsLeave(`game-${id}`);
-    this.gameStorage.updateResult(id, scores);
+    const ladderUpdateDto = await this.gameStorage.updateResult(id, scores);
+    ladderUpdateDto && this.ranksGateway.emitLadderUpdate(ladderUpdateDto);
   }
 
   /*****************************************************************************
@@ -164,11 +169,12 @@ export class GameGateway {
     abortedSide: 'left' | 'right',
   ) {
     this.emitGameEnded(gameId);
-    await this.gameStorage.updateResult(
+    const ladderUpdate = await this.gameStorage.updateResult(
       gameId,
       abortedSide === 'left' ? [0, 5] : [5, 0],
     );
     this.server.to(room).emit('gameAborted', { abortedSide });
+    ladderUpdate && this.ranksGateway.emitLadderUpdate(ladderUpdate);
   }
 
   /**

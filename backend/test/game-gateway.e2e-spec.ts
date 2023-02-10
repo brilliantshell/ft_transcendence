@@ -26,8 +26,8 @@ import {
 } from './db-resource-manager';
 import { UserSocketStorage } from '../src/user-status/user-socket.storage';
 import { Users } from '../src/entity/users.entity';
+import { calculateLadderRise, listenPromise, timeout } from './util';
 import { generateUsers } from './generate-mock-data';
-import { timeout } from './util';
 
 const URL = 'http://localhost:4247';
 
@@ -418,7 +418,6 @@ describe('GameGateway (e2e)', () => {
         prevWinner.ladder,
         prevLoser.ladder,
         scores,
-        prevWinner.ladder >= prevLoser.ladder,
       );
       expect(postGame.length).toBe(2);
       expect(postWinner).toMatchObject({
@@ -477,7 +476,6 @@ describe('GameGateway (e2e)', () => {
         prevWinner.ladder,
         prevLoser.ladder,
         scores,
-        prevWinner.ladder >= prevLoser.ladder,
       );
       expect(postGame.length).toBe(2);
       expect(postWinner).toMatchObject({
@@ -628,7 +626,6 @@ describe('GameGateway (e2e)', () => {
         prevWinner.ladder,
         prevLoser.ladder,
         [5, 0],
-        prevWinner.ladder >= prevLoser.ladder,
       );
       expect(postWinner).toMatchObject({
         winCount: prevWinner.winCount + 1,
@@ -700,7 +697,6 @@ describe('GameGateway (e2e)', () => {
         prevWinner.ladder,
         prevLoser.ladder,
         [0, 5],
-        prevWinner.ladder >= prevLoser.ladder,
       );
       expect(postWinner).toMatchObject({
         winCount: prevWinner.winCount + 1,
@@ -916,19 +912,6 @@ describe('GameGateway (e2e)', () => {
    *                                                                           *
    ****************************************************************************/
 
-  const calculateLadderRise = (
-    winnerLadder: number,
-    loserLadder: number,
-    scores: number[],
-    isHigher: boolean,
-  ) => {
-    const ladderGap = Math.abs(winnerLadder - loserLadder);
-    const scoreGap = Math.abs(scores[0] - scores[1]);
-    return isHigher
-      ? Math.max(Math.floor(scoreGap * (1 - ladderGap / 42)), 1)
-      : Math.floor(scoreGap * (1 + ladderGap / 42));
-  };
-
   const winnerLoserStats = (
     prevGame: Users[],
     postGame: Users[],
@@ -944,9 +927,6 @@ describe('GameGateway (e2e)', () => {
         : [postGame[1], postGame[0]];
     return { prevWinner, prevLoser, postWinner, postLoser };
   };
-
-  const listenPromise = (socket: Socket, event: string) =>
-    new Promise((resolve) => socket.on(event, resolve));
 });
 
 // TODO : 추후에 클라이언트에서 라이브로 전달되어야하는 데이터가 파악되면 구현
