@@ -5,21 +5,21 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
+import { EntityNotFoundError, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
-import { UserId } from 'src/util/type';
-import { Repository } from 'typeorm';
+import { join } from 'path';
+import { rmSync } from 'fs';
 
-import { Achievements } from '../entity/achievements.entity';
 import { Achievers } from '../entity/achievers.entity';
 import { MatchHistory } from '../entity/match-history.entity';
 import { Users } from '../entity/users.entity';
+import { UserId } from '../util/type';
 
 @Injectable()
 export class ProfileService {
   private readonly logger: Logger = new Logger(ProfileService.name);
+
   constructor(
-    @InjectRepository(Achievements)
-    private readonly achievementsRepository: Repository<Achievements>,
     @InjectRepository(Achievers)
     private readonly achieversRepository: Repository<Achievers>,
     @InjectRepository(MatchHistory)
@@ -56,9 +56,7 @@ export class ProfileService {
       const achievement = (
         await this.achieversRepository.find({
           where: { userId: targetId },
-          relations: {
-            achievement: true,
-          },
+          relations: { achievement: true },
         })
       ).map((e) => e.achievement);
       const matchHistory = await this.findMatchHistory(targetId);
@@ -91,26 +89,14 @@ export class ProfileService {
     try {
       await this.usersRepository.update(userId, { nickname });
     } catch (e) {
-      if (e.code === '23505' /** Postgres unique_violation error code */) {
+      // Postgres unique_violation error code
+      if (e.code === '23505') {
         throw new ConflictException(`Nickname (${nickname}) already exists`);
       }
       this.logger.error(e);
       throw new InternalServerErrorException('Failed to update user nickname');
     }
   }
-
-  // FIXME: 필요 없을 수 있음. DB 업데이트와 프사 업로드 과정이 transaction 처럼 작동해야함.
-  // updateProfileImage(userId: UserId, profileImage: string) {
-  //   try {
-  //     return this.usersRepository.update(userId, { profileImage });
-  //   } catch (e) {
-  //     this.logger.error(e);
-  //     throw new InternalServerErrorException(
-  //       'Failed to update user profileImage',
-  //     );
-  //   }
-  // }
-  // deleteProfileImage(userId: UserId) {}
 
   /**
    * @description 유저의 2FA email 을 반환
@@ -120,20 +106,18 @@ export class ProfileService {
    */
   async findTwoFactorEmail(userId: UserId) {
     try {
-      const authEmail = (
-        await this.usersRepository.findOne({
-          where: { userId },
-          select: ['authEmail'],
-        })
-      )?.authEmail;
-      if (!authEmail) {
-        throw new NotFoundException('Two-factor authentication is not enabled');
-      }
-      return { email: authEmail };
+      return {
+        email: (
+          await this.usersRepository.findOneOrFail({
+            where: { userId },
+            select: ['authEmail'],
+          })
+        ).authEmail,
+      };
     } catch (e) {
       this.logger.error(e);
-      throw e instanceof NotFoundException
-        ? e
+      throw e instanceof EntityNotFoundError
+        ? new NotFoundException('Two-factor Authentication is not enabled')
         : new InternalServerErrorException('Failed to find two-factor email');
     }
   }
@@ -150,7 +134,8 @@ export class ProfileService {
         authEmail: email,
       });
     } catch (e) {
-      if (e.code === '23505' /** Postgres unique_violation error code */) {
+      // Postgres unique_violation error code
+      if (e.code === '23505') {
         throw new ConflictException(`Email (${email}) already exists`);
       }
       this.logger.error(e);
@@ -179,6 +164,44 @@ export class ProfileService {
     }
   }
 
+  /**
+   * @description 유저의 프로필 이미지 경로 업데이트
+   *
+   * @param userId 유저의 ID
+   * @param profileImage 변경된 프로필 이미지 경로
+   */
+  async updateProfileImage(userId: UserId, profileImage: string) {
+    try {
+      await this.usersRepository.update(userId, { profileImage });
+    } catch (e) {
+      this.logger.error(e);
+      throw new InternalServerErrorException(
+        'Failed to update user profileImage',
+      );
+    }
+  }
+
+  /**
+   * @description 유저의 프로필 이미지 초기화
+   *
+   * @param userId 유저의 ID
+   */
+  async deleteProfileImage(userId: UserId) {
+    try {
+      await this.usersRepository.update(userId, {
+        profileImage: null,
+      });
+      rmSync(join(__dirname, `../../asset/profile/${userId}`), {
+        recursive: true,
+        force: true,
+      });
+    } catch (e) {
+      this.logger.error(e);
+      throw new InternalServerErrorException(
+        'Failed to delete user profileImage',
+      );
+    }
+  }
   /*****************************************************************************
    *                                                                           *
    * SECTION : Private Methods                                                 *
@@ -193,22 +216,18 @@ export class ProfileService {
    */
   private async findMatchHistory(userId: UserId) {
     return (
-      await this.matchHistoryRepository
-        .createQueryBuilder('MatchHistory')
-        .leftJoin('MatchHistory.userOne', 'UserOne')
-        .leftJoin('MatchHistory.userTwo', 'UserTwo')
-        .select([
-          'MatchHistory.userOneScore',
-          'MatchHistory.userTwoScore',
-          'MatchHistory.isRank',
-          'MatchHistory.endAt',
-          'UserOne.nickname',
-          'UserTwo.nickname',
-        ])
-        .where('MatchHistory.userOneId = :userId')
-        .orWhere('MatchHistory.userTwoId = :userId')
-        .setParameter('userId', userId)
-        .getMany()
+      await this.matchHistoryRepository.find({
+        where: [{ userOneId: userId }, { userTwoId: userId }],
+        relations: ['userOne', 'userTwo'],
+        select: {
+          userOneScore: true,
+          userTwoScore: true,
+          endAt: true as any,
+          isRank: true,
+          userOne: { nickname: true },
+          userTwo: { nickname: true },
+        },
+      })
     )
       .sort((a, b) => b.endAt.valueOf() - a.endAt.valueOf())
       .map((e) => {
