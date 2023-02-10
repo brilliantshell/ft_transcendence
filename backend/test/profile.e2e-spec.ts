@@ -2,6 +2,8 @@ import { DataSource } from 'typeorm';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { existsSync, rmSync } from 'fs';
+import { join } from 'path';
 import * as request from 'supertest';
 
 import {
@@ -23,8 +25,6 @@ import {
 } from './db-resource-manager';
 import { UserRelationshipStorage } from '../src/user-status/user-relationship.storage';
 import { Users } from '../src/entity/users.entity';
-import { existsSync, rmSync } from 'fs';
-import { join } from 'path';
 
 const TEST_DB = 'test_db_profile_e2e';
 const ENTITIES = [Achievements, Achievers, MatchHistory, Users];

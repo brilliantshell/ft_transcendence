@@ -9,8 +9,8 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
-import { Users } from '../../entity/users.entity';
 import { UserId } from '../../util/type';
+import { Users } from '../../entity/users.entity';
 
 @Injectable()
 export class ValidateUserIdPipe

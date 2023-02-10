@@ -1,11 +1,12 @@
 import { MulterOptions } from '@nestjs/platform-express/multer/interfaces/multer-options.interface';
-import { VerifiedRequest } from 'src/util/type';
-import { diskStorage } from 'multer';
 import {
   PayloadTooLargeException,
   UnsupportedMediaTypeException,
 } from '@nestjs/common';
+import { diskStorage } from 'multer';
 import { existsSync, mkdirSync } from 'fs';
+
+import { VerifiedRequest } from '../util/type';
 
 const PROFILE_IMAGE_PATH = 'asset/profile/'; // 추후에 변경
 
