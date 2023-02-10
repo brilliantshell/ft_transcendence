@@ -15,11 +15,12 @@ export const multerOptions: MulterOptions = {
       throw new PayloadTooLargeException('File size must be less than 5MB');
     }
     if (file.mimetype === 'image/png' || file.mimetype === 'image/jpeg') {
-      // keep processing
       cb(null, true);
     } else {
       cb(
-        new UnsupportedMediaTypeException('Only image files are allowed!'),
+        new UnsupportedMediaTypeException(
+          'MIME-type must be image/png or image/jpeg',
+        ),
         false,
       );
     }
@@ -33,7 +34,7 @@ export const multerOptions: MulterOptions = {
     },
     filename: (req, file, cb) => {
       const userId = (req as VerifiedRequest).user.userId;
-      cb(null, `${userId}.${file.mimetype.split('/')[1]}`);
+      cb(null, `${userId}.${file.mimetype.slice(6)}`);
     },
   }),
   limits: { fileSize: 5242880 /** 5MB */ },

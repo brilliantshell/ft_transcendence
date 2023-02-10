@@ -4,32 +4,23 @@ import {
   Delete,
   Get,
   Param,
-  ParseIntPipe,
   Patch,
   Put,
   Req,
+  Res,
   UploadedFile,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { Response } from 'express';
 
+import { MockAuthGuard } from '../chats/guard/mock-auth.guard';
+import { NicknameDto, TwoFactorEmailDto } from './dto/profile.dto';
 import { ProfileService } from './profile.service';
 import { UserId, VerifiedRequest } from '../util/type';
-import { IsEmail, IsString, Length } from 'class-validator';
-import { MockAuthGuard } from '../chats/guard/mock-auth.guard';
-import { FileInterceptor } from '@nestjs/platform-express';
+import { ValidateUserIdPipe } from './pipe/validate-user-id.pipe';
 import { multerOptions } from './profile.upload-options';
-
-class NicknameDto {
-  @IsString()
-  @Length(3, 16)
-  nickname: string;
-}
-
-class TwoFactorEmailDto {
-  @IsEmail()
-  email: string;
-}
 
 // FIXME: AuthGuard 구현 후 변경
 @UseGuards(MockAuthGuard)
@@ -59,7 +50,7 @@ export class ProfileController {
   }
 
   @Get(':userId')
-  findProfile(@Param('userId', ParseIntPipe) userId: UserId) {
+  findProfile(@Param('userId', ValidateUserIdPipe) userId: UserId) {
     return this.profileService.findProfile(userId);
   }
 
@@ -75,19 +66,22 @@ export class ProfileController {
   }
 
   @Put('image')
+  // FIXME: formData key, 프론트와 협의 후 수정
   @UseInterceptors(FileInterceptor('profileImage', multerOptions))
   async updateProfileImage(
     @Req() req: VerifiedRequest,
     @UploadedFile() file: Express.Multer.File,
+    @Res() res: Response,
   ) {
     await this.profileService.updateProfileImage(
       req.user.userId,
       file.filename,
     );
+    res.status(201).set('location', `/${file.path}`).end();
   }
 
   @Delete('image')
-  async deleteProfileImage(@Req() req: VerifiedRequest) {
-    await this.profileService.deleteProfileImage(req.user.userId);
+  deleteProfileImage(@Req() req: VerifiedRequest) {
+    return this.profileService.deleteProfileImage(req.user.userId);
   }
 }

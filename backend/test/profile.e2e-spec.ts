@@ -23,10 +23,8 @@ import {
 } from './db-resource-manager';
 import { UserRelationshipStorage } from '../src/user-status/user-relationship.storage';
 import { Users } from '../src/entity/users.entity';
-import { ProfileService } from 'src/profile/profile.service';
-import { readFileSync } from 'fs';
+import { existsSync, rmSync } from 'fs';
 import { join } from 'path';
-import { FileInterceptor } from '@nestjs/platform-express';
 
 const TEST_DB = 'test_db_profile_e2e';
 const ENTITIES = [Achievements, Achievers, MatchHistory, Users];
@@ -40,8 +38,6 @@ describe('UserController (e2e)', () => {
   let achieversEntities: Achievers[];
   let matchHistoryEntities: MatchHistory[];
   let usersEntities: Users[];
-
-  let profileService: ProfileService;
 
   beforeAll(async () => {
     const dataSources = await createDataSources(TEST_DB, ENTITIES);
@@ -108,6 +104,30 @@ describe('UserController (e2e)', () => {
         .get(`/profile/${otherUser.userId}`)
         .set('x-user-id', user.userId.toString())
         .expect(200);
+    });
+
+    it('should throw 404 (non-exist user)', async () => {
+      const user = usersEntities[0];
+      return request(app.getHttpServer())
+        .get(`/profile/424242`)
+        .set('x-user-id', user.userId.toString())
+        .expect(404);
+    });
+
+    it('should throw 400 (out of range userId)', async () => {
+      const user = usersEntities[0];
+      return request(app.getHttpServer())
+        .get(`/profile/4210`)
+        .set('x-user-id', user.userId.toString())
+        .expect(400);
+    });
+
+    it('should throw 400 (out of range userId)', async () => {
+      const user = usersEntities[0];
+      return request(app.getHttpServer())
+        .get(`/profile/abcd`)
+        .set('x-user-id', user.userId.toString())
+        .expect(400);
     });
     // TODO: check invalid userId, non-exist userId
   });
@@ -183,7 +203,7 @@ describe('UserController (e2e)', () => {
 
     it('should return 409 when 2fa email is duplicated', async () => {
       const [userOne, userTwo] = usersEntities;
-      return request(app.getHttpServer())
+      return await request(app.getHttpServer())
         .patch(`/profile/2fa-email`)
         .set('x-user-id', userOne.userId.toString())
         .send({ email: userTwo.authEmail })
@@ -236,30 +256,39 @@ describe('UserController (e2e)', () => {
   });
 
   describe('PUT /profile/image', () => {
+    const ASSET_DIR = join(__dirname, 'test-asset');
     it('should return 200 when success to update profile image (png)', async () => {
-      const user = usersEntities[1];
+      const user = usersEntities[8];
+      const userId = user.userId.toString();
       await request(app.getHttpServer())
         .put('/profile/image')
-        .set('x-user-id', user.userId.toString())
-        .attach('profileImage', join(__dirname, 'test-asset/tiny.png'))
-        .expect(200);
-      return await request(app.getHttpServer())
-        .delete('/profile/image')
-        .set('x-user-id', user.userId.toString())
-        .expect(200);
+        .set('x-user-id', userId)
+        .attach('profileImage', `${ASSET_DIR}/tiny.png`)
+        .expect(201)
+        .expect((res) => {
+          const fileDir = join(__dirname, '..', '/asset/profile', userId);
+          const file = join(fileDir, `${userId}.png`);
+          expect(file.endsWith(res.headers['location'])).toBeTruthy();
+          expect(existsSync(file)).toBeTruthy();
+          rmSync(fileDir, { recursive: true, force: true });
+        });
     });
 
     it('should return 200 when success to update profile image (jpg)', async () => {
       const user = usersEntities[1];
+      const userId = user.userId.toString();
       await request(app.getHttpServer())
         .put('/profile/image')
-        .set('x-user-id', user.userId.toString())
-        .attach('profileImage', join(__dirname, 'test-asset/tiny.jpg'))
-        .expect(200);
-      return await request(app.getHttpServer())
-        .delete('/profile/image')
-        .set('x-user-id', user.userId.toString())
-        .expect(200);
+        .set('x-user-id', userId)
+        .attach('profileImage', `${ASSET_DIR}/tiny.jpg`)
+        .expect(201)
+        .expect((res) => {
+          const fileDir = join(__dirname, '..', '/asset/profile', userId);
+          const file = join(fileDir, `${userId}.jpeg`);
+          expect(file.endsWith(res.headers['location'])).toBeTruthy();
+          expect(existsSync(file)).toBeTruthy();
+          rmSync(fileDir, { recursive: true, force: true });
+        });
     });
 
     it('should throw 415 unsupported media type (svg)', async () => {
@@ -269,35 +298,33 @@ describe('UserController (e2e)', () => {
         .set('x-user-id', user.userId.toString())
         .expect(200);
 
-      return await request(app.getHttpServer())
+      return request(app.getHttpServer())
         .put('/profile/image')
         .set('x-user-id', user.userId.toString())
-        .attach('profileImage', join(__dirname, 'test-asset/tiny.svg'))
+        .attach('profileImage', `${ASSET_DIR}/tiny.svg`)
         .expect(415);
     });
 
-    // it('should throw 413 Payload Too Large (> 5MB)', async () => {
-    //   const user = usersEntities[1];
-    //   console.log('uid:', user.userId);
-
-    //   return await request(app.getHttpServer())
-    //     .put('/profile/image')
-    //     .set('x-user-id', user.userId.toString())
-    //     .attach('profileImage', '/Users/yongjule/desktop/big-picture.png')
-    //     .expect(413);
-    // });
+    it.skip('should throw 413 Payload Too Large (> 5MB)', async () => {
+      const user = usersEntities[3];
+      return request(app.getHttpServer())
+        .put('/profile/image')
+        .set('x-user-id', user.userId.toString())
+        .attach('profileImage', '/Users/yongjule/desktop/big-picture.png')
+        .expect(413);
+    });
   });
 
   describe('DELETE /profile/image', () => {
+    const ASSET_DIR = join(__dirname, 'test-asset');
     it('should delete profile image', async () => {
-      const user = usersEntities[2];
-      console.log('uid:', user.userId);
+      const user = usersEntities[4];
 
       await request(app.getHttpServer())
         .put('/profile/image')
         .set('x-user-id', user.userId.toString())
-        .attach('profileImage', join(__dirname, 'test-asset/tiny.png'))
-        .expect(200);
+        .attach('profileImage', `${ASSET_DIR}/tiny.png`)
+        .expect(201);
 
       await request(app.getHttpServer())
         .delete('/profile/image')
