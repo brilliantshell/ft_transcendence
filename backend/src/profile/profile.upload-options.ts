@@ -13,7 +13,10 @@ const PROFILE_IMAGE_PATH = 'asset/profile/'; // 추후에 변경
 export const multerOptions: MulterOptions = {
   fileFilter: (req, file, cb) => {
     if (file.size > 5242880 /** 5MB */) {
-      throw new PayloadTooLargeException('File size must be less than 5MB');
+      cb(
+        new PayloadTooLargeException('File size must be less than 5MB'),
+        false,
+      );
     }
     if (file.mimetype === 'image/png' || file.mimetype === 'image/jpeg') {
       cb(null, true);

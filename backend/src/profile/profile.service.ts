@@ -7,8 +7,8 @@ import {
 } from '@nestjs/common';
 import { EntityNotFoundError, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
-import { rmSync } from 'fs';
 import { join } from 'path';
+import { rmSync } from 'fs';
 
 import { Achievers } from '../entity/achievers.entity';
 import { MatchHistory } from '../entity/match-history.entity';
