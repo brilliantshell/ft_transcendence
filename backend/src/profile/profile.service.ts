@@ -5,10 +5,10 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { rm, rmSync } from 'fs';
-import { join } from 'path';
 import { EntityNotFoundError, Repository } from 'typeorm';
+import { InjectRepository } from '@nestjs/typeorm';
+import { rmSync } from 'fs';
+import { join } from 'path';
 
 import { Achievers } from '../entity/achievers.entity';
 import { MatchHistory } from '../entity/match-history.entity';
@@ -98,33 +98,6 @@ export class ProfileService {
     }
   }
 
-  async updateProfileImage(userId: UserId, profileImage: string) {
-    try {
-      return await this.usersRepository.update(userId, { profileImage });
-    } catch (e) {
-      this.logger.error(e);
-      throw new InternalServerErrorException(
-        'Failed to update user profileImage',
-      );
-    }
-  }
-  async deleteProfileImage(userId: UserId) {
-    try {
-      await this.usersRepository.update(userId, {
-        profileImage: null,
-      });
-      rmSync(join(__dirname, `../../asset/profile/${userId}`), {
-        recursive: true,
-        force: true,
-      });
-    } catch (e) {
-      this.logger.error(e);
-      throw new InternalServerErrorException(
-        'Failed to delete user profileImage',
-      );
-    }
-  }
-
   /**
    * @description 유저의 2FA email 을 반환
    *
@@ -191,6 +164,44 @@ export class ProfileService {
     }
   }
 
+  /**
+   * @description 유저의 프로필 이미지 경로 업데이트
+   *
+   * @param userId 유저의 ID
+   * @param profileImage 변경된 프로필 이미지 경로
+   */
+  async updateProfileImage(userId: UserId, profileImage: string) {
+    try {
+      await this.usersRepository.update(userId, { profileImage });
+    } catch (e) {
+      this.logger.error(e);
+      throw new InternalServerErrorException(
+        'Failed to update user profileImage',
+      );
+    }
+  }
+
+  /**
+   * @description 유저의 프로필 이미지 초기화
+   *
+   * @param userId 유저의 ID
+   */
+  async deleteProfileImage(userId: UserId) {
+    try {
+      await this.usersRepository.update(userId, {
+        profileImage: null,
+      });
+      rmSync(join(__dirname, `../../asset/profile/${userId}`), {
+        recursive: true,
+        force: true,
+      });
+    } catch (e) {
+      this.logger.error(e);
+      throw new InternalServerErrorException(
+        'Failed to delete user profileImage',
+      );
+    }
+  }
   /*****************************************************************************
    *                                                                           *
    * SECTION : Private Methods                                                 *

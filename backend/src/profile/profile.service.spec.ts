@@ -229,18 +229,6 @@ describe('ProfileService', () => {
     ).rejects.toThrowError(ConflictException);
   });
 
-  // it('should update user imagePath', async () => {
-  //   const user = usersEntities[0];
-
-  //   const newImage = `${user.userId}.png`;
-  //   await service.updateProfileImage(user.userId, newImage);
-  //   const ret = await dataSource.getRepository(Users).findOne({
-  //     where: { userId: user.userId },
-  //     select: ['profileImage'],
-  //   });
-  //   expect(ret.profileImage).toEqual(newImage);
-  // });
-
   it('should find 2FA email', async () => {
     const user = usersEntities[0];
     const ret = await service.findTwoFactorEmail(user.userId);
