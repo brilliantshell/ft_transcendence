@@ -3,6 +3,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { faker } from '@faker-js/faker';
 
+import { RanksDto } from './dto/ranks.dto';
 import { RanksService } from './ranks.service';
 import {
   TYPEORM_SHARED_CONFIG,
@@ -52,12 +53,12 @@ describe('RanksService', () => {
           ...TYPEORM_SHARED_CONFIG,
           autoLoadEntities: true,
           database: TEST_DB,
+          logging: true,
         }),
         TypeOrmModule.forFeature([Users]),
       ],
       providers: [RanksService],
     }).compile();
-
     service = module.get<RanksService>(RanksService);
   });
 
@@ -74,5 +75,21 @@ describe('RanksService', () => {
     });
   });
 
-  // it('should return ids and ladders of a range of users, ordered by their ladders', async () => {});
+  it('should return ids and ladders of a range of users, ordered by their ladders', async () => {
+    let ranksDto: RanksDto = await service.findLadders(0, 20);
+    expect(ranksDto.users.length).toEqual(20);
+    let ladders = ranksDto.users.map(({ ladder }) => ladder);
+    expect(ladders).toEqual(
+      usersEntities.slice(0, 20).map(({ ladder }) => ladder),
+    );
+    ranksDto = await service.findLadders(30, 42);
+    expect(ranksDto.users.length).toEqual(42);
+    ladders = ranksDto.users.map(({ ladder }) => ladder);
+    expect(ladders).toEqual(
+      expect.arrayContaining(
+        usersEntities.slice(30, 72).map(({ ladder }) => ladder),
+      ),
+    );
+    expect((await service.findLadders(0, 10000)).users.length).toEqual(length);
+  });
 });

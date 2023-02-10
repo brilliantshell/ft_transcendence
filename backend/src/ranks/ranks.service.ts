@@ -18,6 +18,32 @@ export class RanksService {
     private readonly usersRepository: Repository<Users>,
   ) {}
 
+  // TODO PIPE 로 range 검증
+  /**
+   * @description offset 부터 limit 만큼 유저의 id 와 ladder 를 랭킹 순으로 나열
+   *
+   * @param offset 시작 index
+   * @param limit 반환할 유저 수
+   * @returns 랭킹 순으로 나열된 유저들의 id 와 ladder
+   */
+  async findLadders(offset: number, limit: number) {
+    try {
+      return {
+        users: await this.usersRepository.find({
+          select: ['userId', 'ladder'],
+          order: { ladder: 'DESC' },
+          skip: offset,
+          take: limit,
+        }),
+      };
+    } catch (e) {
+      this.logger.error(e);
+      throw new InternalServerErrorException(
+        `Failed to find ladders of ${limit} users from offset=${offset}`,
+      );
+    }
+  }
+
   /**
    * @description 요청한 유저의 랭킹과 전체 유저 수를 반환
    *
@@ -49,7 +75,9 @@ export class RanksService {
       return { myRank: Number(rank), total };
     } catch (e) {
       this.logger.error(e);
-      throw new InternalServerErrorException();
+      throw new InternalServerErrorException(
+        `Failed to find the ranking of the user ${userId}`,
+      );
     }
   }
 }
