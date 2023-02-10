@@ -111,6 +111,57 @@ describe('GameGateway (e2e)', () => {
 
   /*****************************************************************************
    *                                                                           *
+   * SECTION : Join & leave rooms                                              *
+   *                                                                           *
+   ****************************************************************************/
+  /**
+   * UI 변경시 방 관리
+   */
+
+  describe('join & leave rooms', () => {
+    beforeEach(async () => {
+      users.push(usersEntities[index++]);
+      userIds.push(users[2].userId);
+      clientSockets.push(
+        io(URL, { extraHeaders: { 'x-user-id': userIds[2].toString() } }),
+      );
+      await new Promise((resolve) =>
+        clientSockets[2].on('connect', () => resolve('done')),
+      );
+      gameStorage.games.set(gameId, new GameInfo(users[0], users[1], 1, true));
+    });
+
+    it('should join and leave rooms', async () => {
+      const [playerOne, playerTwo, user] = clientSockets;
+      playerOne.emit('currentUi', { userId: userIds[0], ui: 'waitingRoom' });
+      playerTwo.emit('currentUi', { userId: userIds[1], ui: `game-${gameId}` });
+      user.emit('currentUi', { userId: userIds[2], ui: `game-${gameId}` });
+      await waitForExpect(() => {
+        expect(activityManager.getActivity(userIds[0])).toEqual('waitingRoom');
+        expect(activityManager.getActivity(userIds[1])).toEqual(
+          `game-${gameId}`,
+        );
+        expect(activityManager.getActivity(userIds[2])).toEqual(
+          `game-${gameId}`,
+        );
+        expect(gateway.doesRoomExist('waitingRoom')).toBeTruthy();
+        expect(gateway.doesRoomExist(`game-${gameId}`)).toBeTruthy();
+      });
+      playerOne.emit('currentUi', { userId: userIds[0], ui: 'profile' });
+      playerTwo.emit('currentUi', { userId: userIds[1], ui: 'ranks' });
+      user.emit('currentUi', { userId: userIds[2], ui: `chats` });
+      await waitForExpect(() => {
+        expect(activityManager.getActivity(userIds[0])).toEqual('profile');
+        expect(activityManager.getActivity(userIds[1])).toEqual('ranks');
+        expect(activityManager.getActivity(userIds[2])).toEqual('chats');
+        expect(gateway.doesRoomExist('waitingRoom')).toBeFalsy();
+        expect(gateway.doesRoomExist(`game-${gameId}`)).toBeFalsy();
+      });
+    });
+  });
+
+  /*****************************************************************************
+   *                                                                           *
    * SECTION : newGame emitter                                                 *
    *                                                                           *
    ****************************************************************************/
