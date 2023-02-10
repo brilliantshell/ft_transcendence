@@ -53,7 +53,6 @@ describe('RanksService', () => {
           ...TYPEORM_SHARED_CONFIG,
           autoLoadEntities: true,
           database: TEST_DB,
-          logging: true,
         }),
         TypeOrmModule.forFeature([Users]),
       ],
