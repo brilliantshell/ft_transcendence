@@ -30,7 +30,7 @@ import { Users } from '../entity/users.entity';
       Users,
     ]),
     forwardRef(() => ChatsModule),
-    GameModule,
+    forwardRef(() => GameModule),
   ],
   providers: [
     ActivityGateway,

@@ -10,12 +10,20 @@ import {
 import { Server, Socket } from 'socket.io';
 import { UsePipes, ValidationPipe } from '@nestjs/common';
 
-import { Activity, ChannelId, CurrentUi, UserId } from './../util/type';
+import {
+  Activity,
+  ChannelId,
+  CurrentUi,
+  GameId,
+  SocketId,
+  UserId,
+} from '../util/type';
 import { ActivityManager } from './activity.manager';
 import { ChannelStorage } from './channel.storage';
 import { ChatsGateway } from '../chats/chats.gateway';
 import { CurrentUiDto } from './dto/user-status.dto';
 import { GameGateway } from '../game/game.gateway';
+import { GameStorage } from '../game/game.storage';
 import { UserActivityDto } from './dto/user-status.dto';
 import { UserRelationshipStorage } from './user-relationship.storage';
 import { UserSocketStorage } from './user-socket.storage';
@@ -32,23 +40,28 @@ export class ActivityGateway
   implements OnGatewayConnection, OnGatewayDisconnect
 {
   @WebSocketServer()
-  private server: Server;
+  private readonly server: Server;
 
   constructor(
-    private activityManager: ActivityManager,
-    private channelStorage: ChannelStorage,
-    private chatsGateway: ChatsGateway,
-    private gameGateway: GameGateway,
-    private userRelationshipStorage: UserRelationshipStorage,
-    private userSocketStorage: UserSocketStorage,
-  ) /**
-   * private authService: AuthService,
-   * private ranksGateway: RanksGateway, */ {}
+    private readonly activityManager: ActivityManager,
+    private readonly channelStorage: ChannelStorage,
+    private readonly chatsGateway: ChatsGateway,
+    private readonly gameGateway: GameGateway,
+    private readonly gameStorage: GameStorage,
+    private readonly userRelationshipStorage: UserRelationshipStorage,
+    private readonly userSocketStorage: UserSocketStorage,
+  ) {}
+
+  /*****************************************************************************
+   *                                                                           *
+   * SECTION : Public Methods                                                  *
+   *                                                                           *
+   ****************************************************************************/
 
   /**
    * @description websocket connection 이 생성될 때 유저 관련 데이터 케싱
    *
-   * @param clientSocket
+   * @param clientSocket connect 된 socket
    */
   async handleConnection(clientSocket: Socket) {
     // const accessToken = clientSocket.handshake.headers.cookie
@@ -71,6 +84,9 @@ export class ActivityGateway
         this.chatsGateway.joinChannelRoom(channelId, userId);
       }
     }
+    clientSocket.on('disconnecting', () =>
+      this.handleDisconnecting(clientSocket.id, clientSocket.rooms),
+    );
   }
 
   /**
@@ -78,8 +94,7 @@ export class ActivityGateway
    *
    * @param clientSocket disconnect 되는 유저의 socket
    */
-  handleDisconnect(clientSocket: Socket) {
-    const socketId = clientSocket.id;
+  handleDisconnect({ id: socketId }: Socket) {
     const userId = this.userSocketStorage.sockets.get(socketId);
     this.activityManager.deleteActivity(userId);
     this.userSocketStorage.clients.delete(userId);
@@ -88,16 +103,6 @@ export class ActivityGateway
     this.channelStorage.unloadUser(userId);
     this.emitUserActivity(userId);
   }
-
-  // @SubscribeMessage('disconnecting')
-  // handleDisconnecting(clientSocket: Socket) {
-  //   const { rooms } = clientSocket;
-  //   rooms.forEach((room) => {
-  //     if (room.startsWith('game-')) {
-  //       // this.gameGateway.emitOpponentDisconnected(room);
-  //     }
-  //   });
-  // }
 
   /**
    * @description 유저가 어떤 UI 에 있는지 client 로 부터 받아서 해당 UI 에 맞는 작업 수행
@@ -110,19 +115,14 @@ export class ActivityGateway
     @ConnectedSocket() clientSocket: Socket,
     @MessageBody() { userId, ui }: CurrentUiDto,
   ) {
-    // NOTE : UI 에 따라 client socket 을 room 에 join
-    // if (ui === 'ranks') {
-    //   this.ranksGateway.joinRoom(clientSocket);
-    // } else if (/chatRooms-\d+/.test(ui)) {
-    //   this.chatsGateway.joinRoom(clientSocket, ui);
-    // }
-    const prevActivity = this.activityManager.getActivity(userId);
-    this.manageRooms(clientSocket.id, userId, prevActivity, ui);
+    // FIXME : userId 를 메시지로 받아서 처리하는게 아니라 client socket 에서 받아서 처리해야 함
+    // const userId = Number(clientSocket.handshake.headers['x-user-id']);
+    const prevUi = this.activityManager.getActivity(userId);
     this.activityManager.setActivity(userId, ui);
-    if (!prevActivity) {
-      this.emitUserActivity(userId);
-    }
-    // console.log(clientSocket.request.headers);
+    prevUi
+      ? this.leaveRooms(clientSocket.id, userId, prevUi)
+      : this.emitUserActivity(userId);
+    this.joinRooms(clientSocket.id, userId, ui);
   }
 
   /**
@@ -151,7 +151,7 @@ export class ActivityGateway
     let activity: Activity = 'offline';
     const currentUi = this.activityManager.getActivity(targetId);
     if (currentUi) {
-      activity = currentUi === 'playingGame' ? 'inGame' : 'online';
+      activity = currentUi.startsWith('game-') ? 'inGame' : 'online';
     }
 
     // TODO : 게임 중이라면 GameStorage 에서 gameId 가져오기
@@ -164,21 +164,51 @@ export class ActivityGateway
     };
   }
 
-  private manageRooms(
-    socketId: string,
-    userId: UserId,
-    prevActivity: CurrentUi,
-    ui: CurrentUi,
-  ) {
-    if (prevActivity?.startsWith('chatRooms-') === true) {
+  /**
+   * @description 유저의 socket 이 disconnecting 되었을 때 처리
+   *
+   * @param socketId 유저의 socket id
+   * @param rooms 유저의 socket 이 속한 room 목록
+   */
+  handleDisconnecting(socketId: SocketId, rooms: Set<string>) {
+    for (const room of rooms) {
+      if (room.startsWith('game-')) {
+        const userId = this.userSocketStorage.sockets.get(socketId);
+        const gameId = room.replace('game-', '');
+        this.gameGateway.abortIfPlayerLeave(gameId, userId);
+        break;
+      }
+    }
+  }
+
+  /**
+   * @description 유저 UI 변경 시, 이전에 있던 UI 에 따라 room 에서 나가기
+   *
+   * @param socketId 유저의 socket id
+   * @param userId 유저의 id
+   * @param prevUi 이전 UI
+   */
+  private leaveRooms(socketId: SocketId, userId: UserId, prevUi: CurrentUi) {
+    if (prevUi.startsWith('chatRooms-') === true) {
       this.chatsGateway.leaveRoom(
         socketId,
-        (prevActivity + '-active') as `chatRooms-${ChannelId}-active`,
+        (prevUi + '-active') as `chatRooms-${ChannelId}-active`,
       );
-    } else if (prevActivity === 'chats') {
-      this.chatsGateway.leaveRoom(socketId, prevActivity);
+    } else if (prevUi === 'chats') {
+      this.chatsGateway.leaveRoom(socketId, prevUi);
+    } else if (prevUi.startsWith('game-')) {
+      this.gameGateway.abortIfPlayerLeave(prevUi.replace('game-', ''), userId);
     }
+  }
 
+  /**
+   * @description 유저 UI 변경 시, 새로운 UI 에 맞게 room 에 join 하기
+   *
+   * @param socketId 유저의 socket id
+   * @param userId 유저의 id
+   * @param ui 새로운 UI
+   */
+  private joinRooms(socketId: SocketId, userId: UserId, ui: CurrentUi) {
     if (ui === 'chats') {
       this.chatsGateway.joinRoom(socketId, ui);
     } else if (ui.startsWith('chatRooms-')) {
@@ -193,6 +223,13 @@ export class ActivityGateway
       );
     } else if (ui === 'waitingRoom') {
       this.gameGateway.joinRoom(socketId, 'waitingRoom');
+    } else if (ui.startsWith('game-')) {
+      /**
+       * TODO
+       * room 에 이벤트 보낼 일이 있기 전에 유저들이 들어가 있다고 확신할 수 없다
+       * GameService & controller 구현하면서 확인하기
+       */
+      this.gameGateway.joinRoom(socketId, ui as `game-${GameId}`);
     }
   }
 }
