@@ -1,6 +1,7 @@
 import { INestApplication } from '@nestjs/common';
 import { Socket, io } from 'socket.io-client';
 import { Test, TestingModule } from '@nestjs/testing';
+import { nanoid } from 'nanoid';
 import waitForExpect from 'wait-for-expect';
 
 import { ActivityManager } from '../src/user-status/activity.manager';
@@ -40,11 +41,12 @@ describe('UserStatusModule (e2e)', () => {
   });
 
   it('should pass information about in which UI a user is', async () => {
+    const gameId = nanoid();
     clientSocket.emit('currentUi', { userId: '20000', ui: 'profile' });
     clientSocket.emit('currentUi', { userId: '121212', ui: 'ranks' });
     clientSocket.emit('currentUi', { userId: '10000', ui: 'chatRooms-4242' });
     clientSocket.emit('currentUi', { userId: '199999', ui: 'waitingRoom' });
-    clientSocket.emit('currentUi', { userId: '42424', ui: 'playingGame' });
+    clientSocket.emit('currentUi', { userId: '42424', ui: `game-${gameId}` });
     await new Promise((resolve) => setTimeout(() => resolve('done'), 1000));
     expect(manager.getActivity(20000)).toEqual('profile');
     manager.deleteActivity(20000);
@@ -54,7 +56,7 @@ describe('UserStatusModule (e2e)', () => {
     manager.deleteActivity(10000);
     expect(manager.getActivity(199999)).toEqual('waitingRoom');
     manager.deleteActivity(199999);
-    expect(manager.getActivity(42424)).toEqual('playingGame');
+    expect(manager.getActivity(42424)).toEqual(`game-${gameId}`);
     manager.deleteActivity(42424);
   });
 

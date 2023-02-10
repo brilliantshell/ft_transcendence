@@ -13,9 +13,9 @@ export class CurrentUiDto {
   @IsString()
   @Matches(
     new RegExp(
-      '^(chats|playingGame|profile' +
+      '^(chats|profile' +
         '|ranks|watchingGame|waitingRoom' +
-        '|chatRooms-[1-9]\\d*)$',
+        '|chatRooms-[1-9]\\d*|game-[0-9A-Za-z_-]{21})$',
     ),
   )
   ui: CurrentUi;

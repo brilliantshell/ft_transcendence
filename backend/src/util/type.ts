@@ -36,7 +36,7 @@ export interface UserChannelStatus {
 export type CurrentUi =
   | 'chats'
   | `chatRooms-${ChannelId}`
-  | 'playingGame'
+  | `game-${GameId}`
   | 'profile'
   | 'ranks'
   | 'watchingGame'
