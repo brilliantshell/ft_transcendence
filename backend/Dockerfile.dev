@@ -32,7 +32,12 @@ RUN wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc > /tmp/
 	&& apt-get update \
 	&& apt-get install -y postgresql-client
 
-# Install node packages
-RUN npm install -g \
-	typescript \
-	@nestjs/cli
+COPY . /backend
+
+WORKDIR /backend
+
+RUN npm install
+
+ENV NODE_ENV=development
+
+ENTRYPOINT [ "npm", "run", "start" ]
