@@ -73,7 +73,7 @@ export class RanksService {
           .getRawOne(),
         this.usersRepository.count(),
       ]);
-      return { myRank: Number(rank), total };
+      return { myRank: rank, total };
     } catch (e) {
       this.logger.error(e);
       throw new InternalServerErrorException(
