@@ -15,7 +15,7 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Response } from 'express';
 
-import { MockAuthGuard } from '../chats/guard/mock-auth.guard';
+import { MockAuthGuard } from '../guard/mock-auth.guard';
 import { NicknameDto, TwoFactorEmailDto } from './dto/profile.dto';
 import { ProfileService } from './profile.service';
 import { UserId, VerifiedRequest } from '../util/type';

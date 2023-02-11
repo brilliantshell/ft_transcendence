@@ -1,6 +1,6 @@
 import { Controller, Get, Query, Req, UseGuards } from '@nestjs/common';
 
-import { MockAuthGuard } from '../chats/guard/mock-auth.guard';
+import { MockAuthGuard } from '../guard/mock-auth.guard';
 import { RanksService } from './ranks.service';
 import { ValidateRangePipe } from '../pipe/validate-range.pipe';
 import { VerifiedRequest } from '../util/type';

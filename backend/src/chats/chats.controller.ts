@@ -19,7 +19,7 @@ import { ChannelExistGuard } from './guard/channel-exist.guard';
 import { ChannelId, UserId, VerifiedRequest } from '../util/type';
 import { CreateChannelDto, JoinChannelDto, MessageDto } from './dto/chats.dto';
 import { JoinChannelGuard } from './guard/join-channel.guard';
-import { MockAuthGuard } from './guard/mock-auth.guard';
+import { MockAuthGuard } from '../guard/mock-auth.guard';
 import { MemberExistGuard } from './guard/member-exist.guard';
 import { MemberMessagingGuard } from './guard/member-messaging.guard';
 import { MessageTransformPipe } from './pipe/message-transform.pipe';
