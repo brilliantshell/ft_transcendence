@@ -38,6 +38,4 @@ WORKDIR /backend
 
 RUN npm install
 
-ENV NODE_ENV=development
-
 ENTRYPOINT [ "npm", "run", "start" ]
