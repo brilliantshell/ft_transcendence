@@ -19,15 +19,14 @@ export class RanksService {
     private readonly usersRepository: Repository<Users>,
   ) {}
 
-  // TODO PIPE 로 range 검증
   /**
-   * @description offset 부터 limit 만큼 유저의 id 와 ladder 를 랭킹 순으로 나열
+   * @description offset 부터 limit 만큼 유저의 id, ladder, rank 를 랭킹 순으로 나열
    *
    * @param offset 시작 index
    * @param limit 반환할 유저 수
-   * @returns 랭킹 순으로 나열된 유저들의 id 와 ladder
+   * @returns 랭킹 순으로 나열된 유저들의 id, ladder, rank
    */
-  async findLadders(offset: number, limit: number) {
+  async findRanks(offset: number, limit: number) {
     try {
       const users = await this.usersRepository
         .createQueryBuilder()

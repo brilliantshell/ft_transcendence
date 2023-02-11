@@ -77,8 +77,8 @@ describe('RanksService', () => {
     });
   });
 
-  it('should return ids and ladders of a range of users, ordered by their ladders', async () => {
-    let ranksDto: RanksDto = await service.findLadders(0, 20);
+  it('should return ids, ladders, ranks of a range of users, ordered by their ladders', async () => {
+    let ranksDto: RanksDto = await service.findRanks(0, 20);
     expect(ranksDto.users.length).toEqual(20);
     let ladderRank = ranksDto.users.map(({ ladder, rank }) => {
       return { ladder, rank };
@@ -88,7 +88,7 @@ describe('RanksService', () => {
         return { ladder, rank: rankMap.get(userId) };
       }),
     );
-    ranksDto = await service.findLadders(30, 42);
+    ranksDto = await service.findRanks(30, 42);
     expect(ranksDto.users.length).toEqual(42);
     ladderRank = ranksDto.users.map(({ ladder, rank }) => {
       return { ladder, rank };
@@ -100,12 +100,12 @@ describe('RanksService', () => {
         }),
       ),
     );
-    expect((await service.findLadders(0, 10000)).users.length).toEqual(length);
+    expect((await service.findRanks(0, 10000)).users.length).toEqual(length);
   });
 
   it('should throw NOT FOUND when the offset is larger than the total number of users', async () => {
     const offset = length + 1;
-    await expect(service.findLadders(offset, 10)).rejects.toThrowError(
+    await expect(service.findRanks(offset, 10)).rejects.toThrowError(
       NotFoundException,
     );
   });
