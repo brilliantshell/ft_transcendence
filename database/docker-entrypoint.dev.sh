@@ -34,6 +34,7 @@ setup_db
 gosu postgres pg_ctl -l ${PGLOG} start -s -o "-c config_file=${CONFIG_FILE}" 
 
 # Create tables if they do not exist
-psql -f /workspaces/backend/test/integration/integration.sql > /dev/null 2>&1
+psql -f /workspaces/database/sql/init_db.sql > /dev/null 2>&1
+# psql -f /workspaces/database/test_data.sql > /dev/null 2>&1
 
 exec "$@"
