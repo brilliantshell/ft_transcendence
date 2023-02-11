@@ -1,4 +1,5 @@
 import { DataSource } from 'typeorm';
+import { NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { faker } from '@faker-js/faker';
@@ -31,14 +32,17 @@ describe('RanksService', () => {
     usersEntities = generateUsers(length).sort(
       (a: Users, b: Users) => b.ladder - a.ladder,
     );
-    let currentLadder = Number.MAX_SAFE_INTEGER;
-    let position = 1;
-    usersEntities.forEach((user: Users) => {
-      if (currentLadder > user.ladder) {
-        currentLadder = user.ladder;
-        rankMap.set(user.ladder, position);
-        position++;
+    let curLadder = usersEntities[0].ladder;
+    let rank = 1;
+    let count = 0;
+    usersEntities.forEach(({ userId, ladder }) => {
+      if (curLadder > ladder) {
+        curLadder = ladder;
+        rank += count;
+        count = 0;
       }
+      rankMap.set(userId, rank);
+      count++;
     });
     await dataSource.getRepository(Users).insert(usersEntities);
   });
@@ -66,10 +70,9 @@ describe('RanksService', () => {
   });
 
   it("should return the requester's rank and a total number of players", async () => {
-    const { userId, ladder } =
-      usersEntities[Math.floor(Math.random() * length)];
+    const { userId } = usersEntities[Math.floor(Math.random() * length)];
     expect(await service.findPosition(userId)).toEqual({
-      myRank: rankMap.get(ladder),
+      myRank: rankMap.get(userId),
       total: usersEntities.length,
     });
   });
@@ -77,18 +80,33 @@ describe('RanksService', () => {
   it('should return ids and ladders of a range of users, ordered by their ladders', async () => {
     let ranksDto: RanksDto = await service.findLadders(0, 20);
     expect(ranksDto.users.length).toEqual(20);
-    let ladders = ranksDto.users.map(({ ladder }) => ladder);
-    expect(ladders).toEqual(
-      usersEntities.slice(0, 20).map(({ ladder }) => ladder),
+    let ladderRank = ranksDto.users.map(({ ladder, rank }) => {
+      return { ladder, rank };
+    });
+    expect(ladderRank).toEqual(
+      usersEntities.slice(0, 20).map(({ userId, ladder }) => {
+        return { ladder, rank: rankMap.get(userId) };
+      }),
     );
     ranksDto = await service.findLadders(30, 42);
     expect(ranksDto.users.length).toEqual(42);
-    ladders = ranksDto.users.map(({ ladder }) => ladder);
-    expect(ladders).toEqual(
+    ladderRank = ranksDto.users.map(({ ladder, rank }) => {
+      return { ladder, rank };
+    });
+    expect(ladderRank).toEqual(
       expect.arrayContaining(
-        usersEntities.slice(30, 72).map(({ ladder }) => ladder),
+        usersEntities.slice(30, 72).map(({ userId, ladder }) => {
+          return { ladder, rank: rankMap.get(userId) };
+        }),
       ),
     );
     expect((await service.findLadders(0, 10000)).users.length).toEqual(length);
+  });
+
+  it('should throw NOT FOUND when the offset is larger than the total number of users', async () => {
+    const offset = length + 1;
+    await expect(service.findLadders(offset, 10)).rejects.toThrowError(
+      NotFoundException,
+    );
   });
 });

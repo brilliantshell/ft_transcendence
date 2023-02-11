@@ -6,8 +6,9 @@ export interface MyRankDto {
 }
 
 interface RankElement {
-  userId: UserId;
+  id: UserId;
   ladder: number;
+  rank: number;
 }
 
 export interface RanksDto {
