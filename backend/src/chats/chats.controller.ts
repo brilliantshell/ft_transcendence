@@ -25,7 +25,9 @@ import { MemberMessagingGuard } from './guard/member-messaging.guard';
 import { MessageTransformPipe } from './pipe/message-transform.pipe';
 import { Response } from 'express';
 import { ValidateNewChannelPipe } from './pipe/validate-new-channel.pipe';
-import { ValidateRangePipe } from './pipe/validate-range.pipe';
+import { ValidateRangePipe } from '../pipe/validate-range.pipe';
+
+const RANGE_LIMIT_MAX = 10000;
 
 @UseGuards(MockAuthGuard)
 @Controller('chats')
@@ -110,7 +112,7 @@ export class ChatsController {
   @UseGuards(ChannelExistGuard, MemberExistGuard)
   findChannelMessages(
     @Param('channelId', ParseIntPipe) channelId: ChannelId,
-    @Query('range', ValidateRangePipe)
+    @Query('range', new ValidateRangePipe(RANGE_LIMIT_MAX))
     range: [offset: number, limit: number],
   ) {
     return this.chatsService.findChannelMessages(channelId, range[0], range[1]);
