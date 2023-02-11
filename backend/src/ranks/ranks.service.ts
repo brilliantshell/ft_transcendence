@@ -13,11 +13,6 @@ import { Users } from '../entity/users.entity';
 @Injectable()
 export class RanksService {
   private readonly logger = new Logger(RanksService.name);
-  private readonly ranksCte = this.usersRepository
-    .createQueryBuilder()
-    .select('user_id')
-    .addSelect('ladder')
-    .addSelect('RANK() OVER (ORDER BY ladder DESC)::INTEGER', 'rank');
 
   constructor(
     @InjectRepository(Users)
@@ -34,14 +29,11 @@ export class RanksService {
    */
   async findLadders(offset: number, limit: number) {
     try {
-      const users = await this.usersRepository.manager
+      const users = await this.usersRepository
         .createQueryBuilder()
-        .addCommonTableExpression(this.ranksCte, 'Ranks')
         .select('user_id', 'id')
         .addSelect('ladder')
-        .addSelect('rank')
-        .from('Ranks', 'Ranks')
-        .orderBy('rank')
+        .addSelect('RANK() OVER (ORDER BY ladder DESC)::INTEGER', 'rank')
         .offset(offset)
         .limit(limit)
         .getRawMany();
@@ -66,11 +58,15 @@ export class RanksService {
    * @returns 요청한 유저의 랭킹과 전체 유저 수
    */
   async findPosition(userId: UserId) {
+    const ranksCte = this.usersRepository
+      .createQueryBuilder()
+      .select('user_id')
+      .addSelect('RANK() OVER (ORDER BY ladder DESC)::INTEGER', 'rank');
     try {
       const [{ rank }, total] = await Promise.all([
         this.usersRepository.manager
           .createQueryBuilder()
-          .addCommonTableExpression(this.ranksCte, 'Ranks')
+          .addCommonTableExpression(ranksCte, 'Ranks')
           .select('rank')
           .from('Ranks', 'Ranks')
           .where('user_id = :userId', { userId })
