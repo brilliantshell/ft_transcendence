@@ -38,6 +38,8 @@ const ENTITIES = [
   Users,
 ];
 
+process.env.DB_HOST = 'localhost';
+
 describe('UserController (e2e)', () => {
   let app: INestApplication;
   let initDataSource: DataSource;

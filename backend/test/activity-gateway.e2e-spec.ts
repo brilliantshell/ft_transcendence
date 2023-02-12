@@ -9,6 +9,8 @@ import { AppModule } from '../src/app.module';
 import { UserSocketStorage } from '../src/user-status/user-socket.storage';
 import { UserStatusModule } from '../src/user-status/user-status.module';
 
+process.env.DB_HOST = 'localhost';
+
 describe('UserStatusModule (e2e)', () => {
   let app: INestApplication;
   let clientSocket: Socket;

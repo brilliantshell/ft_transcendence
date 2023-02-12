@@ -1,13 +1,14 @@
 import { BadRequestException, Injectable, PipeTransform } from '@nestjs/common';
 
-const RANGE_REGEX = /^(0|[1-9]\d{0,9}),[1-9]\d{0,9}$/;
 const OFFSET_MAX = 2147483647;
-const LIMIT_MAX = 10000;
+const RANGE_REGEX = /^(0|[1-9]\d{0,9}),[1-9]\d{0,9}$/;
 
 @Injectable()
 export class ValidateRangePipe
   implements PipeTransform<string, Promise<[offset: number, limit: number]>>
 {
+  constructor(private readonly limitMax: number) {}
+
   async transform(value: string) {
     if (!RANGE_REGEX.test(value)) {
       throw new BadRequestException(
@@ -17,7 +18,7 @@ export class ValidateRangePipe
     const [offset, limit] = value.split(',');
     return [
       this.validateNumberInRange(offset, OFFSET_MAX),
-      this.validateNumberInRange(limit, LIMIT_MAX),
+      this.validateNumberInRange(limit, this.limitMax),
     ] as [number, number];
   }
 
