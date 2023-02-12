@@ -23,8 +23,10 @@ const createRandomUser = (): Users => {
   user.authEmail = faker.helpers.unique(faker.internet.email);
   user.ladder = faker.datatype.number(100);
   user.lossCount = faker.datatype.number(100);
-  user.nickname = faker.helpers.unique(faker.name.firstName);
-  user.profileImage = `/asset/${user.userId}/profile.png`;
+  user.nickname = faker.helpers.unique(faker.word.noun, [
+    { length: { min: 4, max: 10 } },
+  ]);
+  user.profileImage = faker.datatype.boolean();
   user.winCount = faker.datatype.number(100);
   return user;
 };
