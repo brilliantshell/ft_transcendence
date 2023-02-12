@@ -11,6 +11,14 @@
     "plugin:react/recommended",
     "plugin:@typescript-eslint/recommended"
   ],
+  "import/no-extraneous-dependencies": [
+    "error",
+    {
+      "devDependencies": true,
+      "optionalDependencies": false,
+      "peerDependencies": true
+    }
+  ],
   "overrides": [],
   "parser": "@typescript-eslint/parser",
   "parserOptions": {
