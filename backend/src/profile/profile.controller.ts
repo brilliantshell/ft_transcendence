@@ -7,13 +7,10 @@ import {
   Patch,
   Put,
   Req,
-  Res,
-  UploadedFile,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { Response } from 'express';
 
 import { MockAuthGuard } from '../guard/mock-auth.guard';
 import { NicknameDto, TwoFactorEmailDto } from './dto/profile.dto';
