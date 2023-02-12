@@ -1,6 +1,8 @@
 import { ConfigModule } from '@nestjs/config';
 import { Module } from '@nestjs/common';
+import { ServeStaticModule } from '@nestjs/serve-static';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { join } from 'path';
 
 import { ApiConfigModule } from './config/api-config.module';
 import { ApiConfigService } from './config/api-config.service';
@@ -18,6 +20,13 @@ import { UserStatusModule } from './user-status/user-status.module';
   imports: [
     ConfigModule.forRoot({
       envFilePath: './.env',
+    }),
+    ServeStaticModule.forRoot({
+      rootPath: join(__dirname, '..', 'asset'),
+      serveRoot: '/asset/',
+      serveStaticOptions: {
+        index: false,
+      },
     }),
     TypeOrmModule.forRootAsync({
       imports: [ApiConfigModule],
