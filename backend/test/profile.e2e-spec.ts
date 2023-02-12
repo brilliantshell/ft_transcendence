@@ -29,6 +29,8 @@ import { Users } from '../src/entity/users.entity';
 const TEST_DB = 'test_db_profile_e2e';
 const ENTITIES = [Achievements, Achievers, MatchHistory, Users];
 
+process.env.DB_HOST = 'localhost';
+
 describe('UserController (e2e)', () => {
   let app: INestApplication;
   let initDataSource: DataSource;

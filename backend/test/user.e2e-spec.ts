@@ -33,6 +33,7 @@ import {
 import { timeout } from './util';
 
 process.env.NODE_ENV = 'development';
+process.env.DB_HOST = 'localhost';
 
 const TEST_DB = 'test_db_user_e2e';
 const ENTITIES = [

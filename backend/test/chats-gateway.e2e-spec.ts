@@ -22,6 +22,8 @@ import {
 } from './generate-mock-data';
 import { timeout } from './util';
 
+process.env.DB_HOST = 'localhost';
+
 describe('ChatsGateway (e2e)', () => {
   let app: INestApplication;
   let chatsGateway: ChatsGateway;

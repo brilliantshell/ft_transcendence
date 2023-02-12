@@ -2,7 +2,7 @@ import { UserId } from '../../util/type';
 
 export interface MyRankDto {
   myRank: number;
-  totol: number;
+  total: number;
 }
 
 interface RankElement {

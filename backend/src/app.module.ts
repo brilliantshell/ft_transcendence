@@ -8,6 +8,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ChatsModule } from './chats/chats.module';
 import { GameModule } from './game/game.module';
+import { LoginModule } from './login/login.module';
 import { ProfileModule } from './profile/profile.module';
 import { RanksModule } from './ranks/ranks.module';
 import { UserModule } from './user/user.module';
@@ -26,6 +27,7 @@ import { UserStatusModule } from './user-status/user-status.module';
     }),
     ChatsModule,
     GameModule,
+    LoginModule,
     ProfileModule,
     RanksModule,
     UserModule,
