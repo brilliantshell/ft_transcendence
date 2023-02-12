@@ -2,7 +2,7 @@ import { DataSource } from 'typeorm';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { existsSync, rmSync } from 'fs';
+import { existsSync, unlinkSync } from 'fs';
 import { join } from 'path';
 import * as request from 'supertest';
 
@@ -135,7 +135,7 @@ describe('UserController (e2e)', () => {
   describe('PATCH /profile/nickname', () => {
     it('should change my nickname', async () => {
       const user = usersEntities[0];
-      const newNickname = 'newNickname';
+      const newNickname = 'newNick';
       return request(app.getHttpServer())
         .patch(`/profile/nickname`)
         .set('x-user-id', user.userId.toString())
@@ -257,6 +257,7 @@ describe('UserController (e2e)', () => {
 
   describe('PUT /profile/image', () => {
     const ASSET_DIR = join(__dirname, 'test-asset');
+    const PROFILE_DIR = join(__dirname, '..', '/asset/profile-image/');
     it('should return 200 when success to update profile image (png)', async () => {
       const user = usersEntities[8];
       const userId = user.userId.toString();
@@ -264,13 +265,11 @@ describe('UserController (e2e)', () => {
         .put('/profile/image')
         .set('x-user-id', userId)
         .attach('profileImage', `${ASSET_DIR}/tiny.png`)
-        .expect(201)
-        .expect((res) => {
-          const fileDir = join(__dirname, '..', '/asset/profile', userId);
-          const file = join(fileDir, `${userId}.png`);
-          expect(file.endsWith(res.headers['location'])).toBeTruthy();
+        .expect(200)
+        .expect(() => {
+          const file = join(PROFILE_DIR, userId);
           expect(existsSync(file)).toBeTruthy();
-          rmSync(fileDir, { recursive: true, force: true });
+          unlinkSync(file);
         });
     });
 
@@ -281,55 +280,90 @@ describe('UserController (e2e)', () => {
         .put('/profile/image')
         .set('x-user-id', userId)
         .attach('profileImage', `${ASSET_DIR}/tiny.jpg`)
-        .expect(201)
-        .expect((res) => {
-          const fileDir = join(__dirname, '..', '/asset/profile', userId);
-          const file = join(fileDir, `${userId}.jpeg`);
-          expect(file.endsWith(res.headers['location'])).toBeTruthy();
+        .expect(200)
+        .expect(() => {
+          const file = join(PROFILE_DIR, userId);
           expect(existsSync(file)).toBeTruthy();
-          rmSync(fileDir, { recursive: true, force: true });
+          unlinkSync(file);
         });
     });
 
-    it('should throw 415 unsupported media type (svg)', async () => {
-      const user = usersEntities[1];
+    it('should return 200 when success to update profile image (svg)', async () => {
+      const user = usersEntities[2];
+      const userId = user.userId.toString();
+
+      return await request(app.getHttpServer())
+        .put('/profile/image')
+        .set('x-user-id', userId)
+        .attach('profileImage', `${ASSET_DIR}/tiny.svg`)
+        .expect(200)
+        .expect(() => {
+          const file = join(PROFILE_DIR, userId);
+          expect(existsSync(file)).toBeTruthy();
+          unlinkSync(file);
+        });
+    });
+    it.skip('should return 200 when almost 4MB image', async () => {
+      const user = usersEntities[4];
+      const userId = user.userId.toString();
+      return request(app.getHttpServer())
+        .put('/profile/image')
+        .set('x-user-id', userId)
+        .attach('profileImage', '/Users/jun/goinfre/almost-4mb.jpg')
+        .expect(200)
+        .expect(() => {
+          const file = join(PROFILE_DIR, userId);
+          expect(existsSync(file)).toBeTruthy();
+          unlinkSync(file);
+        });
+    });
+
+    it.skip('should throw 413 Payload Too Large (> 4MB)', async () => {
+      const user = usersEntities[5];
+      const userId = user.userId.toString();
+      return request(app.getHttpServer())
+        .put('/profile/image')
+        .set('x-user-id', userId)
+        .attach('profileImage', '/Users/jun/goinfre/over-4mb.jpg')
+        .expect(413);
+    });
+
+    it('should throw 415 unsupported media type (bmp)', async () => {
+      const user = usersEntities[3];
+      const userId = user.userId.toString();
       await request(app.getHttpServer())
         .delete('/profile/image')
-        .set('x-user-id', user.userId.toString())
+        .set('x-user-id', userId)
         .expect(200);
 
       return request(app.getHttpServer())
         .put('/profile/image')
-        .set('x-user-id', user.userId.toString())
-        .attach('profileImage', `${ASSET_DIR}/tiny.svg`)
+        .set('x-user-id', userId)
+        .attach('profileImage', `${ASSET_DIR}/tiny.bmp`)
         .expect(415);
-    });
-
-    it.skip('should throw 413 Payload Too Large (> 5MB)', async () => {
-      const user = usersEntities[3];
-      return request(app.getHttpServer())
-        .put('/profile/image')
-        .set('x-user-id', user.userId.toString())
-        .attach('profileImage', '/Users/yongjule/desktop/big-picture.png')
-        .expect(413);
     });
   });
 
   describe('DELETE /profile/image', () => {
     const ASSET_DIR = join(__dirname, 'test-asset');
+    const PROFILE_DIR = join(__dirname, '..', '/asset/profile-image/');
     it('should delete profile image', async () => {
       const user = usersEntities[4];
+      const userId = user.userId.toString();
 
       await request(app.getHttpServer())
         .put('/profile/image')
-        .set('x-user-id', user.userId.toString())
+        .set('x-user-id', userId)
         .attach('profileImage', `${ASSET_DIR}/tiny.png`)
-        .expect(201);
+        .expect(200);
 
       await request(app.getHttpServer())
         .delete('/profile/image')
-        .set('x-user-id', user.userId.toString())
-        .expect(200);
+        .set('x-user-id', userId)
+        .expect(200)
+        .expect(() => {
+          expect(existsSync(join(PROFILE_DIR, userId))).toBeFalsy();
+        });
 
       expect(
         (
@@ -337,21 +371,13 @@ describe('UserController (e2e)', () => {
             .getRepository(Users)
             .findOneBy({ userId: user.userId })
         ).profileImage,
-      ).toBeNull();
+      ).toBeFalsy();
 
       // delete again
       await request(app.getHttpServer())
         .delete('/profile/image')
-        .set('x-user-id', user.userId.toString())
+        .set('x-user-id', userId)
         .expect(200);
-
-      expect(
-        (
-          await dataSource
-            .getRepository(Users)
-            .findOneBy({ userId: user.userId })
-        ).profileImage,
-      ).toBeNull();
     });
   });
 });

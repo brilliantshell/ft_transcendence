@@ -29,11 +29,7 @@ export class ValidateUserIdPipe
     }
     const userId = Math.floor(Number(value));
     try {
-      if (
-        !(await this.usersRepository.exist({
-          where: { userId },
-        }))
-      ) {
+      if (!(await this.usersRepository.exist({ where: { userId } }))) {
         throw new NotFoundException("The user doesn't exist");
       }
     } catch (e) {
