@@ -17,4 +17,14 @@ export class ApiConfigService {
       autoLoadEntities: true,
     };
   }
+
+  get oauthConfig() {
+    return {
+      authorizationURL: 'https://api.intra.42.fr/oauth/authorize',
+      tokenURL: 'https://api.intra.42.fr/oauth/token',
+      clientID: this.configService.get('OAUTH_CLIENT_ID'),
+      clientSecret: this.configService.get('OAUTH_CLIENT_SECRET'),
+      callbackURL: this.configService.get('OAUTH_CALLBACK_URL'),
+    };
+  }
 }
