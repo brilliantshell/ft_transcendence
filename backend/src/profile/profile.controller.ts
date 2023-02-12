@@ -7,20 +7,17 @@ import {
   Patch,
   Put,
   Req,
-  Res,
-  UploadedFile,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { Response } from 'express';
 
 import { MockAuthGuard } from '../guard/mock-auth.guard';
 import { NicknameDto, TwoFactorEmailDto } from './dto/profile.dto';
 import { ProfileService } from './profile.service';
 import { UserId, VerifiedRequest } from '../util/type';
 import { ValidateUserIdPipe } from './pipe/validate-user-id.pipe';
-import { multerOptions } from './profile.upload-options';
+import { multerOptions } from './option/profile.upload-options';
 
 // FIXME: AuthGuard 구현 후 변경
 @UseGuards(MockAuthGuard)
@@ -66,18 +63,9 @@ export class ProfileController {
   }
 
   @Put('image')
-  // FIXME: formData key, 프론트와 협의 후 수정
   @UseInterceptors(FileInterceptor('profileImage', multerOptions))
-  async updateProfileImage(
-    @Req() req: VerifiedRequest,
-    @UploadedFile() file: Express.Multer.File,
-    @Res() res: Response,
-  ) {
-    await this.profileService.updateProfileImage(
-      req.user.userId,
-      file.filename,
-    );
-    res.status(201).set('location', `/${file.path}`).end();
+  async updateProfileImage(@Req() req: VerifiedRequest) {
+    return this.profileService.updateProfileImage(req.user.userId);
   }
 
   @Delete('image')

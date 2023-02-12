@@ -117,8 +117,12 @@ export class ProfileService {
     } catch (e) {
       this.logger.error(e);
       throw e instanceof EntityNotFoundError
-        ? new NotFoundException('Two-factor Authentication is not enabled')
-        : new InternalServerErrorException('Failed to find two-factor email');
+        ? new NotFoundException(
+            `Two-factor Authentication of a user(${userId}) is not enabled`,
+          )
+        : new InternalServerErrorException(
+            `Failed to find Two-factor email of a user (${userId})`,
+          );
     }
   }
 
@@ -155,7 +159,6 @@ export class ProfileService {
       await this.usersRepository.update(userId, {
         authEmail: null,
       });
-      // TODO: NotFound 를 던질 지 고민해보기
     } catch (e) {
       this.logger.error(e);
       throw new InternalServerErrorException(
@@ -170,9 +173,9 @@ export class ProfileService {
    * @param userId 유저의 ID
    * @param profileImage 변경된 프로필 이미지 경로
    */
-  async updateProfileImage(userId: UserId, profileImage: string) {
+  async updateProfileImage(userId: UserId) {
     try {
-      await this.usersRepository.update(userId, { profileImage });
+      await this.usersRepository.update(userId, { profileImage: true });
     } catch (e) {
       this.logger.error(e);
       throw new InternalServerErrorException(
@@ -188,11 +191,8 @@ export class ProfileService {
    */
   async deleteProfileImage(userId: UserId) {
     try {
-      await this.usersRepository.update(userId, {
-        profileImage: null,
-      });
-      rmSync(join(__dirname, `../../asset/profile/${userId}`), {
-        recursive: true,
+      await this.usersRepository.update(userId, { profileImage: false });
+      rmSync(join(__dirname, `../../asset/profile-image/${userId}`), {
         force: true,
       });
     } catch (e) {

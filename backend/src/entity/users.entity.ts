@@ -12,16 +12,15 @@ export class Users {
   })
   userId: number;
 
-  @Column({ type: 'varchar', length: 16, unique: true, nullable: false })
+  @Column({ type: 'varchar', length: 10, unique: true, nullable: false })
   nickname: string;
 
   @Column({
-    type: 'varchar',
-    length: 256,
+    type: 'boolean',
+    default: false,
     name: 'profile_image',
-    nullable: true,
   })
-  profileImage: string;
+  profileImage: boolean;
 
   @Column({
     type: 'varchar',

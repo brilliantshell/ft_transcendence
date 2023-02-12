@@ -210,7 +210,7 @@ describe('ProfileService', () => {
   it('should update user nickname', async () => {
     const user = usersEntities[0];
     const prevNickname = user.nickname;
-    const nickname = 'new nickname';
+    const nickname = 'newNIname';
     await service.updateNickname(user.userId, nickname);
     const ret = await dataSource.getRepository(Users).findOne({
       where: { userId: user.userId },

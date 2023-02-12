@@ -12,7 +12,7 @@ import { Users } from '../entity/users.entity';
   imports: [
     TypeOrmModule.forFeature([Achievements, Achievers, MatchHistory, Users]),
   ],
-  providers: [ProfileService],
   controllers: [ProfileController],
+  providers: [ProfileService],
 })
 export class ProfileModule {}
