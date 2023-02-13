@@ -11,8 +11,9 @@ import { GameCompleteDto, GameStartedDto } from './dto/game-gateway.dto';
 import { GameId, SocketId, UserId } from '../util/type';
 import { GameStorage } from './game.storage';
 import { RanksGateway } from '../ranks/ranks.gateway';
+import { WEBSOCKET_CONFIG } from '../config/constant/constant-config';
 
-@WebSocketGateway()
+@WebSocketGateway(WEBSOCKET_CONFIG)
 export class GameGateway {
   @WebSocketServer()
   private readonly server: Server;

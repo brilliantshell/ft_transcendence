@@ -2,8 +2,9 @@ import { Server } from 'socket.io';
 import { WebSocketGateway, WebSocketServer } from '@nestjs/websockets';
 
 import { Relationship, SocketId, UserId } from '../util/type';
+import { WEBSOCKET_CONFIG } from '../config/constant/constant-config';
 
-@WebSocketGateway()
+@WebSocketGateway(WEBSOCKET_CONFIG)
 export class UserGateway {
   @WebSocketServer()
   private readonly server: Server;

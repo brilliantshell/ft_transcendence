@@ -3,8 +3,9 @@ import { WebSocketGateway, WebSocketServer } from '@nestjs/websockets';
 
 import { LadderUpdateDto } from './dto/ranks-gateway.dto';
 import { SocketId } from '../util/type';
+import { WEBSOCKET_CONFIG } from '../config/constant/constant-config';
 
-@WebSocketGateway()
+@WebSocketGateway(WEBSOCKET_CONFIG)
 export class RanksGateway {
   @WebSocketServer()
   private readonly server: Server;

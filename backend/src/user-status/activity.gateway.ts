@@ -27,6 +27,7 @@ import { RanksGateway } from '../ranks/ranks.gateway';
 import { UserActivityDto } from './dto/user-status.dto';
 import { UserRelationshipStorage } from './user-relationship.storage';
 import { UserSocketStorage } from './user-socket.storage';
+import { WEBSOCKET_CONFIG } from '../config/constant/constant-config';
 
 @UsePipes(
   new ValidationPipe({
@@ -35,7 +36,7 @@ import { UserSocketStorage } from './user-socket.storage';
     whitelist: true,
   }),
 )
-@WebSocketGateway()
+@WebSocketGateway(WEBSOCKET_CONFIG)
 export class ActivityGateway
   implements OnGatewayConnection, OnGatewayDisconnect
 {
