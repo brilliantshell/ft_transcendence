@@ -2,6 +2,7 @@ import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { GameGateway } from './game.gateway';
+import { GameService } from './game.service';
 import { GameStorage } from './game.storage';
 import { MatchHistory } from '../entity/match-history.entity';
 import { RanksModule } from '../ranks/ranks.module';
@@ -14,7 +15,7 @@ import { Users } from '../entity/users.entity';
     RanksModule,
     forwardRef(() => UserStatusModule),
   ],
-  providers: [GameGateway, GameStorage],
+  providers: [GameGateway, GameService, GameStorage],
   exports: [GameGateway, GameStorage],
 })
 export class GameModule {}
