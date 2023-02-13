@@ -45,7 +45,12 @@ export type CurrentUi =
 export type Activity = 'online' | 'offline' | 'inGame';
 
 export class GameInfo {
-  constructor(leftUser: Users, rightUsers: Users, map, isRank: boolean) {
+  constructor(
+    leftUser: Partial<Users>,
+    rightUsers: Partial<Users>,
+    map: 1 | 2 | 3,
+    isRank: boolean,
+  ) {
     this.leftId = leftUser.userId;
     this.leftNickname = leftUser.nickname;
     this.rightId = rightUsers.userId;

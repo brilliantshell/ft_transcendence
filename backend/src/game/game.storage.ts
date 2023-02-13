@@ -13,7 +13,8 @@ import { Users } from '../entity/users.entity';
 
 @Injectable()
 export class GameStorage {
-  readonly games = new Map<GameId, GameInfo>();
+  readonly players = new Set<UserId>();
+  private readonly games = new Map<GameId, GameInfo>();
   private readonly logger = new Logger(GameStorage.name);
 
   constructor(
@@ -28,6 +29,37 @@ export class GameStorage {
    ****************************************************************************/
 
   /**
+   * @description 게임 생성
+   *
+   * @param gameId 게임 id
+   * @param gameInfo 게임 정보
+   */
+  createGame(gameId: GameId, gameInfo: GameInfo) {
+    this.games.set(gameId, gameInfo);
+    this.players.add(gameInfo.leftId);
+    this.players.add(gameInfo.rightId);
+  }
+
+  /**
+   * @description 게임 getter
+   *
+   * @param gameId 게임 id
+   * @returns 게임 정보
+   */
+  getGame(gameId: GameId) {
+    return this.games.get(gameId);
+  }
+
+  /**
+   * @description 현재 진행중인 게임 목록 반환
+   *
+   * @returns 현재 진행중인 게임 목록
+   */
+  getGames() {
+    return this.games;
+  }
+
+  /**
    * @description 게임 종료 후 게임 결과 업데이트
    *
    * @param id 게임 id
@@ -35,8 +67,8 @@ export class GameStorage {
    * @param isRank ladder ? true : false
    */
   async updateResult(gameId: GameId, scores: [number, number]) {
-    const { leftId, rightId, isRank } = this.games.get(gameId);
-    this.games.delete(gameId);
+    const { leftId, rightId, isRank } = this.getGame(gameId);
+    this.deleteGame(gameId);
     const [winnerId, loserId] =
       scores[0] > scores[1] ? [leftId, rightId] : [rightId, leftId];
     const winnerPartialEntity = { winCount: () => 'win_count + 1' };
@@ -111,5 +143,21 @@ export class GameStorage {
         ? Math.max(Math.floor(scoreGap * (1 - ladderGap / 42)), 1)
         : Math.floor(scoreGap * (1 + ladderGap / 42)))
     );
+  }
+
+  /**
+   * @description 게임 삭제
+   *
+   * @param gameId 게임 id
+   */
+  deleteGame(gameId: GameId) {
+    const gameInfo = this.getGame(gameId);
+    if (gameInfo === undefined) {
+      return;
+    }
+    const { leftId, rightId } = gameInfo;
+    this.games.delete(gameId);
+    this.players.delete(leftId);
+    this.players.delete(rightId);
   }
 }
