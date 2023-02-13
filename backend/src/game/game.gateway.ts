@@ -100,7 +100,7 @@ export class GameGateway {
    * @param userId 플레이어 id
    */
   async abortIfPlayerLeave(gameId: GameId, userId: UserId) {
-    const gameInfo = this.gameStorage.games.get(gameId);
+    const gameInfo = this.gameStorage.getGame(gameId);
     if (
       gameInfo === undefined ||
       (userId !== gameInfo.leftId && userId !== gameInfo.rightId)
@@ -177,7 +177,7 @@ export class GameGateway {
    * @param id 게임 id
    */
   private emitGameEnded(id: GameId) {
-    this.gameStorage.games.get(id).isRank &&
+    this.gameStorage.getGame(id).isRank &&
       this.server.to('waitingRoom').emit('gameEnded', { id });
   }
 }

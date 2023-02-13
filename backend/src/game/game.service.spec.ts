@@ -1,5 +1,10 @@
 import { DataSource } from 'typeorm';
-import { ForbiddenException, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { nanoid } from 'nanoid';
@@ -73,6 +78,7 @@ describe('GameService', () => {
       .overrideProvider(GameGateway)
       .useValue({
         joinRoom: jest.fn((socketId: string, roomId: string) => undefined),
+        emitNewGame: jest.fn((gameId: GameId) => undefined),
       })
       .compile();
     service = module.get<GameService>(GameService);
@@ -115,7 +121,7 @@ describe('GameService', () => {
       const games = [];
       for (let i = 0; i < 10; i++) {
         const newGameId = nanoid();
-        gameStorage.games.set(
+        gameStorage.createGame(
           newGameId,
           new GameInfo(usersEntities[0], usersEntities[1], 1, true),
         );
@@ -132,7 +138,7 @@ describe('GameService', () => {
 
   describe('SPECTATOR', () => {
     it('should return game information when a user tries to spectate a game', () => {
-      gameStorage.games.set(
+      gameStorage.createGame(
         gameId,
         new GameInfo(playerOne, playerTwo, 1, true),
       );
@@ -144,7 +150,7 @@ describe('GameService', () => {
     });
 
     it("should put the spectator's socket into the game's WebSocket room", () => {
-      gameStorage.games.set(
+      gameStorage.createGame(
         gameId,
         new GameInfo(playerOne, playerTwo, 1, true),
       );
@@ -166,7 +172,7 @@ describe('GameService', () => {
         playerOne.userId,
         spectatorOne.userId,
       );
-      gameStorage.games.set(
+      gameStorage.createGame(
         gameId,
         new GameInfo(playerOne, playerTwo, 1, false),
       );
@@ -180,13 +186,64 @@ describe('GameService', () => {
         playerOne.userId,
         spectatorOne.userId,
       );
-      gameStorage.games.set(
+      gameStorage.createGame(
         gameId,
         new GameInfo(playerOne, playerTwo, 1, true),
       );
       expect(() =>
         service.findGameInfo(spectatorOne.userId, gameId),
       ).not.toThrowError(ForbiddenException);
+    });
+  });
+
+  describe('CREATE NORMAL GAME', () => {
+    it('should create a new normal game and notify the invited player', async () => {
+      const newGameId = await service.createNormalGame(
+        playerOne.userId,
+        playerTwo.userId,
+      );
+      expect(gameStorage.getGame(newGameId)).toMatchObject({
+        leftId: playerOne.userId,
+        leftNickname: playerOne.nickname,
+        rightId: playerTwo.userId,
+        rightNickname: playerTwo.nickname,
+        map: 1,
+        isRank: false,
+      });
+      expect(gameGateway.emitNewGame).toHaveBeenCalledWith(newGameId);
+      expect(gameGateway.joinRoom).toHaveBeenCalledTimes(2);
+      expect(gameGateway.joinRoom).toHaveBeenCalledWith(
+        userSocketStorage.clients.get(playerOne.userId),
+        `game-${newGameId}`,
+      );
+      expect(gameGateway.joinRoom).toHaveBeenCalledWith(
+        userSocketStorage.clients.get(playerTwo.userId),
+        `game-${newGameId}`,
+      );
+    });
+
+    it('should throw CONFLICT when the invited is already in a game', async () => {
+      gameStorage.createGame(
+        gameId,
+        new GameInfo(playerOne, playerTwo, 1, false),
+      );
+      expect(async () =>
+        service.createNormalGame(spectatorOne.userId, playerTwo.userId),
+      ).rejects.toThrowError(ConflictException);
+      expect(gameGateway.joinRoom).not.toHaveBeenCalled();
+      expect(gameGateway.emitNewGame).not.toHaveBeenCalled();
+    });
+
+    it('should throw BAD REQUEST when the inviter is already in a game', async () => {
+      gameStorage.createGame(
+        gameId,
+        new GameInfo(playerOne, spectatorOne, 1, false),
+      );
+      expect(async () =>
+        service.createNormalGame(playerOne.userId, playerTwo.userId),
+      ).rejects.toThrowError(BadRequestException);
+      expect(gameGateway.joinRoom).not.toHaveBeenCalled();
+      expect(gameGateway.emitNewGame).not.toHaveBeenCalled();
     });
   });
 });
