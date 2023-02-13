@@ -20,6 +20,23 @@ export class GameService {
   ) {}
 
   /**
+   * @description 현재 진행중인 ladder 게임 목록 반환
+   *
+   * @returns 현재 진행중인 게임 목록
+   */
+  findGames() {
+    const games = [];
+    for (const [gameId, gameInfo] of this.gameStorage.games) {
+      games.push({
+        id: gameId,
+        left: gameInfo.leftNickname,
+        right: gameInfo.rightNickname,
+      });
+    }
+    return games.reverse();
+  }
+
+  /**
    * @description 관전을 요청하는 유저에게 게임의 기본 정보 제공 및 해당 게임 room 에 소켓 추가
    *
    * @param spectatorId 관전자 id
@@ -33,14 +50,16 @@ export class GameService {
         `The game requested by ${spectatorId} does not exist`,
       );
     }
-    const { leftId, leftNickname, rightId, rightNickname, map } = gameInfo;
+    const { leftId, leftNickname, rightId, rightNickname, map, isRank } =
+      gameInfo;
     if (
-      this.userRelationshipStorage
+      !isRank &&
+      (this.userRelationshipStorage
         .getRelationship(spectatorId, leftId)
         ?.startsWith('block') ||
-      this.userRelationshipStorage
-        .getRelationship(spectatorId, rightId)
-        ?.startsWith('block')
+        this.userRelationshipStorage
+          .getRelationship(spectatorId, rightId)
+          ?.startsWith('block'))
     ) {
       throw new ForbiddenException(
         `The requester(${spectatorId}) is either blocked by or a blocker of a game participant`,

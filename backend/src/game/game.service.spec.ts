@@ -106,6 +106,30 @@ describe('GameService', () => {
     async () => await destroyDataSources(TEST_DB, dataSource, initDataSource),
   );
 
+  describe('GAME LIST', () => {
+    it('should return an empty list of games', () => {
+      expect(service.findGames()).toEqual([]);
+    });
+
+    it('should return a list of games', () => {
+      const games = [];
+      for (let i = 0; i < 10; i++) {
+        const newGameId = nanoid();
+        gameStorage.games.set(
+          newGameId,
+          new GameInfo(usersEntities[0], usersEntities[1], 1, true),
+        );
+        games.push({
+          id: newGameId,
+          left: usersEntities[0].nickname,
+          right: usersEntities[1].nickname,
+        });
+      }
+      index += 10;
+      expect(service.findGames()).toEqual(games.reverse());
+    });
+  });
+
   describe('SPECTATOR', () => {
     it('should return game information when a user tries to spectate a game', () => {
       gameStorage.games.set(
@@ -137,7 +161,7 @@ describe('GameService', () => {
       ).toThrowError(NotFoundException);
     });
 
-    it('should throw FORBIDDEN when the spectator is blocked by either of the players', async () => {
+    it('should throw FORBIDDEN when the spectator of a normal game is blocked by either of the players', async () => {
       await userRelationshipStorage.blockUser(
         playerOne.userId,
         spectatorOne.userId,
@@ -149,6 +173,20 @@ describe('GameService', () => {
       expect(() =>
         service.findGameInfo(spectatorOne.userId, gameId),
       ).toThrowError(ForbiddenException);
+    });
+
+    it('should not throw FORBIDDEN when the spectator of a ladder game is blocked by either of the players', async () => {
+      await userRelationshipStorage.blockUser(
+        playerOne.userId,
+        spectatorOne.userId,
+      );
+      gameStorage.games.set(
+        gameId,
+        new GameInfo(playerOne, playerTwo, 1, true),
+      );
+      expect(() =>
+        service.findGameInfo(spectatorOne.userId, gameId),
+      ).not.toThrowError(ForbiddenException);
     });
   });
 });
