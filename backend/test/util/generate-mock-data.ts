@@ -1,18 +1,18 @@
 import { bufferCount, of } from 'rxjs';
 import { faker } from '@faker-js/faker';
 
-import { AccessMode, Channels } from '../src/entity/channels.entity';
-import { Achievers } from '../src/entity/achievers.entity';
-import { Achievements } from '../src/entity/achievements.entity';
-import { BannedMembers } from '../src/entity/banned-members.entity';
-import { BlockedUsers } from '../src/entity/blocked-users.entity';
-import { ChannelId, UserId } from '../src/util/type';
-import { ChannelMembers } from '../src/entity/channel-members.entity';
-import { DateTimeTransformer } from '../src/entity/date-time.transformer';
-import { Friends } from '../src/entity/friends.entity';
-import { MatchHistory } from '../src/entity/match-history.entity';
-import { Messages } from '../src/entity/messages.entity';
-import { Users } from '../src/entity/users.entity';
+import { AccessMode, Channels } from '../../src/entity/channels.entity';
+import { Achievers } from '../../src/entity/achievers.entity';
+import { Achievements } from '../../src/entity/achievements.entity';
+import { BannedMembers } from '../../src/entity/banned-members.entity';
+import { BlockedUsers } from '../../src/entity/blocked-users.entity';
+import { ChannelId, UserId } from '../../src/util/type';
+import { ChannelMembers } from '../../src/entity/channel-members.entity';
+import { DateTimeTransformer } from '../../src/entity/date-time.transformer';
+import { Friends } from '../../src/entity/friends.entity';
+import { MatchHistory } from '../../src/entity/match-history.entity';
+import { Messages } from '../../src/entity/messages.entity';
+import { Users } from '../../src/entity/users.entity';
 
 // SECTION : Users
 const createRandomUser = (): Users => {
@@ -26,7 +26,7 @@ const createRandomUser = (): Users => {
   user.nickname = faker.helpers.unique(faker.word.noun, [
     { length: { min: 4, max: 10 } },
   ]);
-  user.profileImage = faker.datatype.boolean();
+  user.isDefaultImage = faker.datatype.boolean();
   user.winCount = faker.datatype.number(100);
   return user;
 };
@@ -203,29 +203,29 @@ export const generateBannedMembers = (members: ChannelMembers[]) => {
 
 export const ACHIEVEMENTS_ENTITIES = [
   {
-    achievementId: 1,
+    id: 1,
     title: 'one giant leap for mankind.',
     about:
       '누군가에겐 미약해 보일 수 있지만, 분명히 그것은 위대한 첫 걸음 입니다. 당신은 처음으로 승리하였습니다.',
   },
   {
-    achievementId: 2,
+    id: 2,
     title: 'World Best Ping-Pong Player',
     about: '초월적인 온라인 탁구 게임에서 1등을 거머쥐었습니다!',
   },
   {
-    achievementId: 3,
+    id: 3,
     title: 'Social Animal',
     about: '무려 10명의 친구! 아리스토텔레스가 당신을 부러워합니다.',
   },
   {
-    achievementId: 4,
+    id: 4,
     title: ' Born To Be FT',
     about:
       '삶, 우주, 그리고 모든 것에 대한 궁극적인 질문에 대한 해답은 바로 당신!',
   },
   {
-    achievementId: 5,
+    id: 5,
     title: 'So noisy~ ',
     about: 'Join 5 channels',
   },

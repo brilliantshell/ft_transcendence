@@ -171,11 +171,11 @@ export class ProfileService {
    * @description 유저의 프로필 이미지 경로 업데이트
    *
    * @param userId 유저의 ID
-   * @param profileImage 변경된 프로필 이미지 경로
+   * @param isDefaultImage 변경된 프로필 이미지 경로
    */
   async updateProfileImage(userId: UserId) {
     try {
-      await this.usersRepository.update(userId, { profileImage: true });
+      await this.usersRepository.update(userId, { isDefaultImage: true });
     } catch (e) {
       this.logger.error(e);
       throw new InternalServerErrorException(
@@ -191,7 +191,7 @@ export class ProfileService {
    */
   async deleteProfileImage(userId: UserId) {
     try {
-      await this.usersRepository.update(userId, { profileImage: false });
+      await this.usersRepository.update(userId, { isDefaultImage: false });
       rmSync(join(__dirname, `../../asset/profile-image/${userId}`), {
         force: true,
       });

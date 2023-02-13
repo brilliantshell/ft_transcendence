@@ -19,8 +19,8 @@ import {
   createChannelMember,
   generateUsers,
   generateChannels,
-} from './generate-mock-data';
-import { timeout } from './util';
+} from './util/generate-mock-data';
+import { timeout } from './util/util';
 
 process.env.DB_HOST = 'localhost';
 

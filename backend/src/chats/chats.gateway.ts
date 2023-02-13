@@ -4,8 +4,9 @@ import { WebSocketGateway, WebSocketServer } from '@nestjs/websockets';
 
 import { ChannelId, SocketId, UserId, UserRole } from '../util/type';
 import { UserSocketStorage } from '../user-status/user-socket.storage';
+import { WEBSOCKET_CONFIG } from '../config/constant/constant-config';
 
-@WebSocketGateway()
+@WebSocketGateway(WEBSOCKET_CONFIG)
 export class ChatsGateway {
   @WebSocketServer()
   private server: Server;

@@ -12,7 +12,7 @@ import {
   generateMatchHistory,
   generateUsers,
   updateUsersFromMatchHistory,
-} from './generate-mock-data';
+} from './util/generate-mock-data';
 import { Achievements } from '../src/entity/achievements.entity';
 import { Achievers } from '../src/entity/achievers.entity';
 import { AppModule } from '../src/app.module';
@@ -22,7 +22,7 @@ import {
   TYPEORM_SHARED_CONFIG,
   createDataSources,
   destroyDataSources,
-} from './db-resource-manager';
+} from './util/db-resource-manager';
 import { UserRelationshipStorage } from '../src/user-status/user-relationship.storage';
 import { Users } from '../src/entity/users.entity';
 
@@ -372,7 +372,7 @@ describe('UserController (e2e)', () => {
           await dataSource
             .getRepository(Users)
             .findOneBy({ userId: user.userId })
-        ).profileImage,
+        ).isDefaultImage,
       ).toBeFalsy();
 
       // delete again

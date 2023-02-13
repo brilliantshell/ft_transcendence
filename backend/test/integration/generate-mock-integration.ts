@@ -13,7 +13,7 @@ import {
   generateMessages,
   generateUsers,
   updateUsersFromMatchHistory,
-} from '../generate-mock-data';
+} from '../util/generate-mock-data';
 import { Achievements } from '../../src/entity/achievements.entity';
 import { Achievers } from '../../src/entity/achievers.entity';
 import { BannedMembers } from '../../src/entity/banned-members.entity';
@@ -24,7 +24,7 @@ import { Friends } from '../../src/entity/friends.entity';
 import { MatchHistory } from '../../src/entity/match-history.entity';
 import { Messages } from '../../src/entity/messages.entity';
 import { Users } from '../../src/entity/users.entity';
-import { createDataSources } from '../db-resource-manager';
+import { createDataSources } from '../util/db-resource-manager';
 
 const usersEntities = generateUsers(300);
 const baseUsers = usersEntities.slice(0, 99);

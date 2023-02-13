@@ -2,7 +2,7 @@ import { UserId } from '../../../src/util/type';
 
 export interface UserProfileDto {
   nickname: string;
-  profileImage: boolean;
+  isDefaultImage: boolean;
 }
 
 export interface FriendListDto {
