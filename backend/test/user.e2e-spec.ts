@@ -905,14 +905,16 @@ describe('UserModule - /user (e2e)', () => {
   describe('GET /:userId/info', () => {
     it('should return null profileImage', async () => {
       const [requesterId, targetId] = userIds;
-      await dataSource.manager.update(Users, targetId, { profileImage: false });
+      await dataSource.manager.update(Users, targetId, {
+        isDefaultImage: false,
+      });
       const response = await request(app.getHttpServer())
         .get(`/user/${targetId}/info`)
         .set('x-user-id', requesterId.toString());
       expect(response.status).toEqual(200);
       expect(response.body).toEqual({
         nickname: usersEntities[index + 1].nickname,
-        profileImage: false,
+        isDefaultImage: false,
       });
     });
 
@@ -936,7 +938,7 @@ describe('UserModule - /user (e2e)', () => {
       expect(response.status).toEqual(200);
       expect(response.body).toEqual({
         nickname: usersEntities[index + 1].nickname,
-        profileImage: usersEntities[index + 1].profileImage,
+        isDefaultImage: usersEntities[index + 1].isDefaultImage,
       });
     });
 
@@ -964,7 +966,7 @@ describe('UserModule - /user (e2e)', () => {
       expect(response.status).toEqual(200);
       expect(response.body).toEqual({
         nickname: usersEntities[index + 1].nickname,
-        profileImage: usersEntities[index + 1].profileImage,
+        isDefaultImage: usersEntities[index + 1].isDefaultImage,
       });
     });
 

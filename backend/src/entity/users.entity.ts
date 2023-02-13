@@ -18,9 +18,9 @@ export class Users {
   @Column({
     type: 'boolean',
     default: false,
-    name: 'profile_image',
+    name: 'is_default_image',
   })
-  profileImage: boolean;
+  isDefaultImage: boolean;
 
   @Column({
     type: 'varchar',

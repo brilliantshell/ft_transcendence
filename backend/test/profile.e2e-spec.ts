@@ -372,7 +372,7 @@ describe('UserController (e2e)', () => {
           await dataSource
             .getRepository(Users)
             .findOneBy({ userId: user.userId })
-        ).profileImage,
+        ).isDefaultImage,
       ).toBeFalsy();
 
       // delete again

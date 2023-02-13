@@ -132,7 +132,7 @@ describe('UserService', () => {
       const [requesterId, targetId] = userIds;
       expect(await service.findProfile(requesterId, targetId)).toEqual(
         await usersRepository.findOne({
-          select: ['nickname', 'profileImage'],
+          select: ['nickname', 'isDefaultImage'],
           where: { userId: targetId },
         }),
       );

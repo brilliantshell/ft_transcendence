@@ -26,7 +26,7 @@ const createRandomUser = (): Users => {
   user.nickname = faker.helpers.unique(faker.word.noun, [
     { length: { min: 4, max: 10 } },
   ]);
-  user.profileImage = faker.datatype.boolean();
+  user.isDefaultImage = faker.datatype.boolean();
   user.winCount = faker.datatype.number(100);
   return user;
 };

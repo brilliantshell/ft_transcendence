@@ -237,13 +237,13 @@ export class UserService {
     let profile: UserProfileDto;
     try {
       profile = await this.usersRepository.findOne({
-        select: ['nickname', 'profileImage'],
+        select: ['nickname', 'isDefaultImage'],
         where: { userId: targetId },
       });
     } catch (e) {
       this.logger.error(e);
       throw new InternalServerErrorException(
-        `Failed to find nickname and profileImage of a user(${requesterId})`,
+        `Failed to find info of a user(${requesterId})`,
       );
     }
     const requesterSocketId = this.userSocketStorage.clients.get(requesterId);
