@@ -13,7 +13,7 @@ import {
   TYPEORM_SHARED_CONFIG,
   createDataSources,
   destroyDataSources,
-} from '../../test/db-resource-manager';
+} from '../../test/util/db-resource-manager';
 import { UserRelationshipStorage } from './user-relationship.storage';
 import { Users } from '../entity/users.entity';
 import {
@@ -21,7 +21,7 @@ import {
   generateChannels,
   generateFriends,
   generateUsers,
-} from '../../test/generate-mock-data';
+} from '../../test/util/generate-mock-data';
 
 const TEST_DB = 'test_db_user_relationship';
 const ENTITIES = [BlockedUsers, Friends, Users, Channels];

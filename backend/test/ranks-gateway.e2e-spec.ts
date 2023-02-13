@@ -15,10 +15,10 @@ import {
   TYPEORM_SHARED_CONFIG,
   createDataSources,
   destroyDataSources,
-} from './db-resource-manager';
+} from './util/db-resource-manager';
 import { Users } from '../src/entity/users.entity';
-import { calculateLadderRise, listenPromise, timeout } from './util';
-import { generateUsers } from './generate-mock-data';
+import { calculateLadderRise, listenPromise, timeout } from './util/util';
+import { generateUsers } from './util/generate-mock-data';
 
 const PORT = 4246;
 const URL = `http://localhost:${PORT}`;

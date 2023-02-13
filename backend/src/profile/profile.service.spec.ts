@@ -10,7 +10,7 @@ import {
   generateMatchHistory,
   generateUsers,
   updateUsersFromMatchHistory,
-} from '../../test/generate-mock-data';
+} from '../../test/util/generate-mock-data';
 import { Achievements } from '../entity/achievements.entity';
 import { Achievers } from '../entity/achievers.entity';
 import { MatchHistory } from '../entity/match-history.entity';
@@ -20,7 +20,7 @@ import {
   TYPEORM_SHARED_CONFIG,
   createDataSources,
   destroyDataSources,
-} from '../../test/db-resource-manager';
+} from '../../test/util/db-resource-manager';
 
 const TEST_DB = 'test_db_profile_service';
 const ENTITIES = [Achievements, Achievers, MatchHistory, Users];

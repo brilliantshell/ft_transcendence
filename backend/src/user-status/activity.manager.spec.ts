@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 
 import { ActivityManager } from './activity.manager';
 import { Users } from '../entity/users.entity';
-import { generateUsers } from '../../test/generate-mock-data';
+import { generateUsers } from '../../test/util/generate-mock-data';
 
 describe('ActivityService', () => {
   let manager: ActivityManager;

@@ -1,18 +1,18 @@
 import { bufferCount, of } from 'rxjs';
 import { faker } from '@faker-js/faker';
 
-import { AccessMode, Channels } from '../src/entity/channels.entity';
-import { Achievers } from '../src/entity/achievers.entity';
-import { Achievements } from '../src/entity/achievements.entity';
-import { BannedMembers } from '../src/entity/banned-members.entity';
-import { BlockedUsers } from '../src/entity/blocked-users.entity';
-import { ChannelId, UserId } from '../src/util/type';
-import { ChannelMembers } from '../src/entity/channel-members.entity';
-import { DateTimeTransformer } from '../src/entity/date-time.transformer';
-import { Friends } from '../src/entity/friends.entity';
-import { MatchHistory } from '../src/entity/match-history.entity';
-import { Messages } from '../src/entity/messages.entity';
-import { Users } from '../src/entity/users.entity';
+import { AccessMode, Channels } from '../../src/entity/channels.entity';
+import { Achievers } from '../../src/entity/achievers.entity';
+import { Achievements } from '../../src/entity/achievements.entity';
+import { BannedMembers } from '../../src/entity/banned-members.entity';
+import { BlockedUsers } from '../../src/entity/blocked-users.entity';
+import { ChannelId, UserId } from '../../src/util/type';
+import { ChannelMembers } from '../../src/entity/channel-members.entity';
+import { DateTimeTransformer } from '../../src/entity/date-time.transformer';
+import { Friends } from '../../src/entity/friends.entity';
+import { MatchHistory } from '../../src/entity/match-history.entity';
+import { Messages } from '../../src/entity/messages.entity';
+import { Users } from '../../src/entity/users.entity';
 
 // SECTION : Users
 const createRandomUser = (): Users => {

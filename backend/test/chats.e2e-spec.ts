@@ -19,13 +19,13 @@ import {
   TYPEORM_SHARED_CONFIG,
   createDataSources,
   destroyDataSources,
-} from './db-resource-manager';
+} from './util/db-resource-manager';
 import {
   generateChannels,
   generateChannelMembers,
   generateMessages,
   generateUsers,
-} from './generate-mock-data';
+} from './util/generate-mock-data';
 
 const TEST_DB = 'test_db_chats_e2e';
 const ENTITIES = [

@@ -9,10 +9,10 @@ import {
   TYPEORM_SHARED_CONFIG,
   createDataSources,
   destroyDataSources,
-} from './db-resource-manager';
+} from './util/db-resource-manager';
 import { UserId } from '../src/util/type';
 import { Users } from '../src/entity/users.entity';
-import { generateUsers } from './generate-mock-data';
+import { generateUsers } from './util/generate-mock-data';
 
 const TEST_DB = 'test_db_ranks_e2e';
 const ENTITIES = [Users];

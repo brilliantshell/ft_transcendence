@@ -19,7 +19,7 @@ import {
   TYPEORM_SHARED_CONFIG,
   createDataSources,
   destroyDataSources,
-} from '../../test/db-resource-manager';
+} from '../../test/util/db-resource-manager';
 import { UserRelationshipStorage } from '../user-status/user-relationship.storage';
 import { UserStatusModule } from '../user-status/user-status.module';
 import { Users } from '../entity/users.entity';
@@ -29,7 +29,7 @@ import {
   generateChannels,
   generateMessages,
   generateUsers,
-} from '../../test/generate-mock-data';
+} from '../../test/util/generate-mock-data';
 import { ValidateNewChannelPipe } from './pipe/validate-new-channel.pipe';
 
 const TEST_DB = 'test_db_chat_service';

@@ -24,13 +24,13 @@ import {
   TYPEORM_SHARED_CONFIG,
   createDataSources,
   destroyDataSources,
-} from './db-resource-manager';
+} from './util/db-resource-manager';
 import {
   generateUsers,
   generateBlockedUsers,
   generateFriends,
-} from './generate-mock-data';
-import { timeout } from './util';
+} from './util/generate-mock-data';
+import { timeout } from './util/util';
 
 process.env.NODE_ENV = 'development';
 process.env.DB_HOST = 'localhost';

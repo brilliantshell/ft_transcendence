@@ -14,7 +14,7 @@ import {
   TYPEORM_SHARED_CONFIG,
   createDataSources,
   destroyDataSources,
-} from '../../test/db-resource-manager';
+} from '../../test/util/db-resource-manager';
 import { Users } from '../entity/users.entity';
 import { UserId, UserRole } from '../util/type';
 import { UserRelationshipStorage } from './user-relationship.storage';
@@ -24,7 +24,7 @@ import {
   generateChannels,
   generateMessages,
   generateUsers,
-} from '../../test/generate-mock-data';
+} from '../../test/util/generate-mock-data';
 
 const TEST_DB = 'test_db_channel_storage';
 const ENTITIES = [
