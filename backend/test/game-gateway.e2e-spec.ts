@@ -184,7 +184,7 @@ describe('GameGateway (e2e)', () => {
       const [wsMessageOne, wsMessageTwo] = await Promise.all([
         listenPromise(playerOne, 'newGame'),
         listenPromise(playerTwo, 'newGame'),
-        gateway.emitNewGame(`game-${gameId}`, gameId),
+        gateway.emitNewGame(gameId),
       ]);
       expect(wsMessageOne).toEqual({ gameId });
       expect(wsMessageTwo).toEqual({ gameId });
@@ -199,7 +199,7 @@ describe('GameGateway (e2e)', () => {
       const [wsMessageOne, wsError] = await Promise.allSettled([
         listenPromise(playerOne, 'newGame'),
         timeout(1000, listenPromise(playerTwo, 'newGame')),
-        gateway.emitNewGame(`game-${gameId}`, gameId),
+        gateway.emitNewGame(gameId),
       ]);
       if (wsMessageOne.status === 'rejected') {
         fail();
@@ -270,7 +270,7 @@ describe('GameGateway (e2e)', () => {
         timeout(1000, listenPromise(playerTwo, 'gameStarted')),
         listenPromise(userOne, 'gameStarted'),
         listenPromise(userTwo, 'gameStarted'),
-        gateway.emitNewGame(`game-${gameId}`, gameId),
+        gateway.emitNewGame(gameId),
         gateway.emitGameStarted({
           id: gameId,
           left: users[0].nickname,
@@ -331,7 +331,7 @@ describe('GameGateway (e2e)', () => {
         timeout(1000, listenPromise(playerTwo, 'gameStarted')),
         timeout(1000, listenPromise(userOne, 'gameStarted')),
         listenPromise(userTwo, 'gameStarted'),
-        gateway.emitNewGame(`game-${gameId}`, gameId),
+        gateway.emitNewGame(gameId),
         gateway.emitGameStarted({
           id: gameId,
           left: users[0].nickname,
@@ -376,7 +376,7 @@ describe('GameGateway (e2e)', () => {
         new Promise((resolve) =>
           playerOne.on('gameOption', (data) => resolve(data)),
         ),
-        gateway.emitGameOption(`game-${gameId}`, 3),
+        gateway.emitGameOption(gameId, 3),
       ]);
       expect(wsMessageOne).toEqual({ map: 3 });
     });
