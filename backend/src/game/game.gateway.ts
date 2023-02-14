@@ -55,15 +55,6 @@ export class GameGateway {
     this.server.in(socketId).socketsLeave(room);
   }
 
-  /**
-   * @description socket room 삭제
-   *
-   * @param room 삭제할 room
-   */
-  destroyRoom(room: `game-${GameId}`) {
-    this.server.socketsLeave(room);
-  }
-
   /*****************************************************************************
    *                                                                           *
    * SECTION : Game management                                                 *
@@ -73,21 +64,20 @@ export class GameGateway {
   /**
    * @description 게임 player 들에게 매칭되었다고 알림
    *
-   * @param room 게임 방
    * @param gameId 게임 id
    */
-  emitNewGame(room: `game-${GameId}`, gameId: GameId) {
-    this.server.to(room).emit('newGame', { gameId });
+  emitNewGame(gameId: GameId) {
+    this.server.to(`game-${gameId}`).emit('newGame', { gameId });
   }
 
   /**
    * @description: 게임 옵션 전송
    *
-   * @param room 게임 방
+   * @param invitedSocketId 초대된 유저의 socket id
    * @param map 맵
    */
-  emitGameOption(room: `game-${GameId}`, map: 1 | 2 | 3) {
-    this.server.to(room).emit('gameOption', { map });
+  emitGameOption(invitedSocketId: SocketId, map: 1 | 2 | 3) {
+    this.server.to(invitedSocketId).emit('gameOption', { map });
   }
 
   // NOTE : ladder 일 때만 호출
@@ -110,7 +100,7 @@ export class GameGateway {
    * @param userId 플레이어 id
    */
   async abortIfPlayerLeave(gameId: GameId, userId: UserId) {
-    const gameInfo = this.gameStorage.games.get(gameId);
+    const gameInfo = this.gameStorage.getGame(gameId);
     if (
       gameInfo === undefined ||
       (userId !== gameInfo.leftId && userId !== gameInfo.rightId)
@@ -118,11 +108,10 @@ export class GameGateway {
       return;
     }
     await this.emitGameAborted(
-      `game-${gameId}`,
       gameId,
       gameInfo.leftId === userId ? 'left' : 'right',
     );
-    this.destroyRoom(`game-${gameId}`);
+    this.destroyGameRoom(gameId);
   }
 
   /**
@@ -157,24 +146,28 @@ export class GameGateway {
    ****************************************************************************/
 
   /**
+   * @description socket room 삭제
+   *
+   * @param gameId 게임 id
+   */
+  destroyGameRoom(gameId: GameId) {
+    this.server.socketsLeave(`game-${gameId}`);
+  }
+
+  /**
    * @description 플레이어가 게임 방을 나거가나 연결이 끊길 경우, 결과 업데이트 및
    *              다른 플레이어와 관전자에게 알림
    *
-   * @param room 게임 방
    * @param gameId 게임 id
    * @param abortedSide 게임 종료한 쪽
    */
-  private async emitGameAborted(
-    room: `game-${GameId}`,
-    gameId: GameId,
-    abortedSide: 'left' | 'right',
-  ) {
+  private async emitGameAborted(gameId: GameId, abortedSide: 'left' | 'right') {
     this.emitGameEnded(gameId);
     const ladderUpdate = await this.gameStorage.updateResult(
       gameId,
       abortedSide === 'left' ? [0, 5] : [5, 0],
     );
-    this.server.to(room).emit('gameAborted', { abortedSide });
+    this.server.to(`game-${gameId}`).emit('gameAborted', { abortedSide });
     ladderUpdate && this.ranksGateway.emitLadderUpdate(ladderUpdate);
   }
 
@@ -184,7 +177,7 @@ export class GameGateway {
    * @param id 게임 id
    */
   private emitGameEnded(id: GameId) {
-    this.gameStorage.games.get(id).isRank &&
+    this.gameStorage.getGame(id).isRank &&
       this.server.to('waitingRoom').emit('gameEnded', { id });
   }
 }

@@ -45,20 +45,23 @@ export type CurrentUi =
 export type Activity = 'online' | 'offline' | 'inGame';
 
 export class GameInfo {
-  constructor(leftUser: Users, rightUsers: Users, map, isRank: boolean) {
-    this.leftId = leftUser.userId;
-    this.leftNickname = leftUser.nickname;
-    this.rightId = rightUsers.userId;
-    this.rightNickname = rightUsers.nickname;
+  constructor(
+    leftId: UserId,
+    rightId: UserId,
+    map: 1 | 2 | 3,
+    isRank: boolean,
+  ) {
+    this.leftId = leftId;
+    this.rightId = rightId;
     this.map = map;
     this.isRank = isRank;
   }
 
   isRank: boolean;
   leftId: UserId;
-  leftNickname: string;
+  leftNickname?: string;
   rightId: UserId;
-  rightNickname: string;
+  rightNickname?: string;
   map: 1 | 2 | 3;
 }
 

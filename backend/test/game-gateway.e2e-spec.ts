@@ -129,7 +129,10 @@ describe('GameGateway (e2e)', () => {
       await new Promise((resolve) =>
         clientSockets[2].on('connect', () => resolve('done')),
       );
-      gameStorage.games.set(gameId, new GameInfo(users[0], users[1], 1, true));
+      gameStorage.createGame(
+        gameId,
+        new GameInfo(userIds[0], userIds[1], 1, true),
+      );
     });
 
     it('should join and leave rooms', async () => {
@@ -184,7 +187,7 @@ describe('GameGateway (e2e)', () => {
       const [wsMessageOne, wsMessageTwo] = await Promise.all([
         listenPromise(playerOne, 'newGame'),
         listenPromise(playerTwo, 'newGame'),
-        gateway.emitNewGame(`game-${gameId}`, gameId),
+        gateway.emitNewGame(gameId),
       ]);
       expect(wsMessageOne).toEqual({ gameId });
       expect(wsMessageTwo).toEqual({ gameId });
@@ -199,7 +202,7 @@ describe('GameGateway (e2e)', () => {
       const [wsMessageOne, wsError] = await Promise.allSettled([
         listenPromise(playerOne, 'newGame'),
         timeout(1000, listenPromise(playerTwo, 'newGame')),
-        gateway.emitNewGame(`game-${gameId}`, gameId),
+        gateway.emitNewGame(gameId),
       ]);
       if (wsMessageOne.status === 'rejected') {
         fail();
@@ -270,7 +273,7 @@ describe('GameGateway (e2e)', () => {
         timeout(1000, listenPromise(playerTwo, 'gameStarted')),
         listenPromise(userOne, 'gameStarted'),
         listenPromise(userTwo, 'gameStarted'),
-        gateway.emitNewGame(`game-${gameId}`, gameId),
+        gateway.emitNewGame(gameId),
         gateway.emitGameStarted({
           id: gameId,
           left: users[0].nickname,
@@ -331,7 +334,7 @@ describe('GameGateway (e2e)', () => {
         timeout(1000, listenPromise(playerTwo, 'gameStarted')),
         timeout(1000, listenPromise(userOne, 'gameStarted')),
         listenPromise(userTwo, 'gameStarted'),
-        gateway.emitNewGame(`game-${gameId}`, gameId),
+        gateway.emitNewGame(gameId),
         gateway.emitGameStarted({
           id: gameId,
           left: users[0].nickname,
@@ -372,13 +375,13 @@ describe('GameGateway (e2e)', () => {
         userSocketStorage.clients.get(userIds[0]),
         `game-${gameId}`,
       );
-      const [wsMessageOne] = await Promise.all([
+      const [wsMessage] = await Promise.all([
         new Promise((resolve) =>
           playerOne.on('gameOption', (data) => resolve(data)),
         ),
-        gateway.emitGameOption(`game-${gameId}`, 3),
+        gateway.emitGameOption(userSocketStorage.clients.get(userIds[0]), 3),
       ]);
-      expect(wsMessageOne).toEqual({ map: 3 });
+      expect(wsMessage).toEqual({ map: 3 });
     });
   });
 
@@ -403,26 +406,29 @@ describe('GameGateway (e2e)', () => {
         userSocketStorage.clients.get(userIds[1]),
         `game-${gameId}`,
       );
-      gameStorage.games.set(gameId, new GameInfo(users[0], users[1], 1, true));
+      await gameStorage.createGame(
+        gameId,
+        new GameInfo(userIds[0], userIds[1], 1, true),
+      );
       playerOne.emit('gameComplete', { id: gameId }); // no scores
       await new Promise((resolve) => setTimeout(resolve, 300));
-      expect(gameStorage.games.get(gameId)).toBeDefined();
+      expect(gameStorage.getGame(gameId)).toBeDefined();
       expect(gateway.doesRoomExist(`game-${gameId}`)).toBeTruthy();
       playerOne.emit('gameComplete', { id: '0123456789abcdefghij' }); // invalid gameId (20 bytes)
       await new Promise((resolve) => setTimeout(resolve, 300));
-      expect(gameStorage.games.get(gameId)).toBeDefined();
+      expect(gameStorage.getGame(gameId)).toBeDefined();
       expect(gateway.doesRoomExist(`game-${gameId}`)).toBeTruthy();
       playerOne.emit('gameComplete', { id: gameId, scores: [0, 'a'] }); // invalid scores
       await new Promise((resolve) => setTimeout(resolve, 300));
-      expect(gameStorage.games.get(gameId)).toBeDefined();
+      expect(gameStorage.getGame(gameId)).toBeDefined();
       expect(gateway.doesRoomExist(`game-${gameId}`)).toBeTruthy();
       playerOne.emit('gameComplete', { id: gameId, scores: [0, 6] }); // invalid scores out of range
       await new Promise((resolve) => setTimeout(resolve, 300));
-      expect(gameStorage.games.get(gameId)).toBeDefined();
+      expect(gameStorage.getGame(gameId)).toBeDefined();
       expect(gateway.doesRoomExist(`game-${gameId}`)).toBeTruthy();
       playerOne.emit('gameComplete', { id: gameId, scores: [0, 6], hi: 'hi' }); // non existing property
       await new Promise((resolve) => setTimeout(resolve, 300));
-      expect(gameStorage.games.get(gameId)).toBeDefined();
+      expect(gameStorage.getGame(gameId)).toBeDefined();
       expect(gateway.doesRoomExist(`game-${gameId}`)).toBeTruthy();
     });
 
@@ -441,14 +447,17 @@ describe('GameGateway (e2e)', () => {
         userSocketStorage.clients.get(userIds[1]),
         `game-${gameId}`,
       );
-      gameStorage.games.set(gameId, new GameInfo(users[0], users[1], 1, true));
+      await gameStorage.createGame(
+        gameId,
+        new GameInfo(userIds[0], userIds[1], 1, true),
+      );
       const scores = [5, faker.datatype.number({ min: 0, max: 4 })];
       playerOne.emit('gameComplete', {
         id: gameId,
         scores,
       });
       await waitForExpect(async () => {
-        expect(gameStorage.games.get(gameId)).toBeUndefined();
+        expect(gameStorage.getGame(gameId)).toBeUndefined();
         expect(gateway.doesRoomExist(`game-${gameId}`)).toBeFalsy();
         expect(
           await dataSource.manager.countBy(MatchHistory, {
@@ -499,14 +508,17 @@ describe('GameGateway (e2e)', () => {
         userSocketStorage.clients.get(userIds[1]),
         `game-${gameId}`,
       );
-      gameStorage.games.set(gameId, new GameInfo(users[0], users[1], 1, true));
+      await gameStorage.createGame(
+        gameId,
+        new GameInfo(userIds[0], userIds[1], 1, true),
+      );
       const scores = [faker.datatype.number({ min: 0, max: 4 }), 5];
       playerTwo.emit('gameComplete', {
         id: gameId,
         scores,
       });
       await waitForExpect(async () => {
-        expect(gameStorage.games.get(gameId)).toBeUndefined();
+        expect(gameStorage.getGame(gameId)).toBeUndefined();
         expect(gateway.doesRoomExist(`game-${gameId}`)).toBeFalsy();
         expect(
           await dataSource.manager.countBy(MatchHistory, {
@@ -557,14 +569,17 @@ describe('GameGateway (e2e)', () => {
         userSocketStorage.clients.get(userIds[1]),
         `game-${gameId}`,
       );
-      gameStorage.games.set(gameId, new GameInfo(users[0], users[1], 1, false));
+      await gameStorage.createGame(
+        gameId,
+        new GameInfo(userIds[0], userIds[1], 1, false),
+      );
       const scores = [5, faker.datatype.number({ min: 0, max: 4 })];
       playerOne.emit('gameComplete', {
         id: gameId,
         scores,
       });
       await waitForExpect(async () => {
-        expect(gameStorage.games.get(gameId)).toBeUndefined();
+        expect(gameStorage.getGame(gameId)).toBeUndefined();
         expect(gateway.doesRoomExist(`game-${gameId}`)).toBeFalsy();
         expect(
           await dataSource.manager.countBy(MatchHistory, {
@@ -635,7 +650,10 @@ describe('GameGateway (e2e)', () => {
           `game-${gameId}`,
         );
       });
-      gameStorage.games.set(gameId, new GameInfo(users[0], users[1], 1, true));
+      await gameStorage.createGame(
+        gameId,
+        new GameInfo(userIds[0], userIds[1], 1, true),
+      );
       playerOne = clientSockets[0];
       playerTwo = clientSockets[1];
       spectator = clientSockets[2];
@@ -689,7 +707,7 @@ describe('GameGateway (e2e)', () => {
         lossCount: prevLoser.lossCount + 1,
         ladder: prevLoser.ladder,
       });
-      expect(gameStorage.games.has(gameId)).toBeFalsy();
+      expect(gameStorage.getGame(gameId)).toBeUndefined();
       expect(gateway.doesRoomExist(`game-${gameId}`)).toBeFalsy();
     });
 
@@ -702,7 +720,7 @@ describe('GameGateway (e2e)', () => {
       ]);
       expect(wsErrorOne.status).toBe('rejected');
       expect(wsErrorTwo.status).toBe('rejected');
-      expect(gameStorage.games.has(gameId)).toBeTruthy();
+      expect(gameStorage.getGame(gameId)).toBeDefined();
       expect(gateway.doesRoomExist(`game-${gameId}`)).toBeTruthy();
       expect(
         await dataSource.manager.exists(MatchHistory, {
@@ -760,7 +778,7 @@ describe('GameGateway (e2e)', () => {
         lossCount: prevLoser.lossCount + 1,
         ladder: prevLoser.ladder,
       });
-      expect(gameStorage.games.has(gameId)).toBeFalsy();
+      expect(gameStorage.getGame(gameId)).toBeUndefined();
       expect(gateway.doesRoomExist(`game-${gameId}`)).toBeFalsy();
     });
 
@@ -773,7 +791,7 @@ describe('GameGateway (e2e)', () => {
       ]);
       expect(wsErrorOne.status).toBe('rejected');
       expect(wsErrorTwo.status).toBe('rejected');
-      expect(gameStorage.games.has(gameId)).toBeTruthy();
+      expect(gameStorage.getGame(gameId)).toBeDefined();
       expect(gateway.doesRoomExist(`game-${gameId}`)).toBeTruthy();
       expect(
         await dataSource.manager.exists(MatchHistory, {
@@ -817,7 +835,10 @@ describe('GameGateway (e2e)', () => {
 
     it('should notify the users in waiting-room when the ladder game is ended', async () => {
       const [playerOne, playerTwo, waitingOne, waitingTwo] = clientSockets;
-      gameStorage.games.set(gameId, new GameInfo(users[0], users[1], 1, true));
+      await gameStorage.createGame(
+        gameId,
+        new GameInfo(userIds[0], userIds[1], 1, true),
+      );
       playerOne.emit('currentUi', { userId: userIds[0], ui: `game-${gameId}` });
       playerTwo.emit('currentUi', { userId: userIds[1], ui: `game-${gameId}` });
       waitingOne.emit('currentUi', { userId: userIds[2], ui: 'waitingRoom' });
@@ -825,7 +846,7 @@ describe('GameGateway (e2e)', () => {
       await waitForExpect(() => {
         expect(gateway.doesRoomExist(`game-${gameId}`)).toBeTruthy();
         expect(gateway.doesRoomExist('waitingRoom')).toBeTruthy();
-        expect(gameStorage.games.has(gameId)).toBeTruthy();
+        expect(gameStorage.getGame(gameId)).toBeDefined();
         expect(activityManager.getActivity(userIds[0])).toEqual(
           `game-${gameId}`,
         );
@@ -842,7 +863,7 @@ describe('GameGateway (e2e)', () => {
         listenPromise(waitingTwo, 'gameEnded'),
         playerOne.emit('gameComplete', { id: gameId, scores: [5, 3] }),
       ]);
-      expect(gameStorage.games.has(gameId)).toBeFalsy();
+      expect(gameStorage.getGame(gameId)).toBeUndefined();
       expect(gateway.doesRoomExist(`game-${gameId}`)).toBeFalsy();
       expect(wsErrorOne.status).toEqual('rejected');
       expect(wsErrorTwo.status).toEqual('rejected');
@@ -855,7 +876,10 @@ describe('GameGateway (e2e)', () => {
 
     it('should notify the users in waiting-room when the ladder game is aborted', async () => {
       const [playerOne, playerTwo, waitingOne, waitingTwo] = clientSockets;
-      gameStorage.games.set(gameId, new GameInfo(users[0], users[1], 1, true));
+      await gameStorage.createGame(
+        gameId,
+        new GameInfo(userIds[0], userIds[1], 1, true),
+      );
       playerOne.emit('currentUi', { userId: userIds[0], ui: `game-${gameId}` });
       playerTwo.emit('currentUi', { userId: userIds[1], ui: `game-${gameId}` });
       waitingOne.emit('currentUi', { userId: userIds[2], ui: 'waitingRoom' });
@@ -863,7 +887,7 @@ describe('GameGateway (e2e)', () => {
       await waitForExpect(() => {
         expect(gateway.doesRoomExist(`game-${gameId}`)).toBeTruthy();
         expect(gateway.doesRoomExist('waitingRoom')).toBeTruthy();
-        expect(gameStorage.games.has(gameId)).toBeTruthy();
+        expect(gameStorage.getGame(gameId)).toBeDefined();
         expect(activityManager.getActivity(userIds[0])).toEqual(
           `game-${gameId}`,
         );
@@ -880,7 +904,7 @@ describe('GameGateway (e2e)', () => {
         listenPromise(waitingTwo, 'gameEnded'),
         playerOne.emit('currentUi', { userId: userIds[0], ui: 'profile' }),
       ]);
-      expect(gameStorage.games.has(gameId)).toBeFalsy();
+      expect(gameStorage.getGame(gameId)).toBeUndefined();
       expect(gateway.doesRoomExist(`game-${gameId}`)).toBeFalsy();
       expect(wsErrorOne.status).toEqual('rejected');
       expect(wsErrorTwo.status).toEqual('rejected');
@@ -893,7 +917,10 @@ describe('GameGateway (e2e)', () => {
 
     it('should not notify the users in waiting-room when the non-ladder game is ended', async () => {
       const [playerOne, playerTwo, waitingOne, waitingTwo] = clientSockets;
-      gameStorage.games.set(gameId, new GameInfo(users[0], users[1], 1, false));
+      await gameStorage.createGame(
+        gameId,
+        new GameInfo(userIds[0], userIds[1], 1, false),
+      );
       playerOne.emit('currentUi', { userId: userIds[0], ui: `game-${gameId}` });
       playerTwo.emit('currentUi', { userId: userIds[1], ui: `game-${gameId}` });
       waitingOne.emit('currentUi', { userId: userIds[2], ui: 'waitingRoom' });
@@ -901,7 +928,7 @@ describe('GameGateway (e2e)', () => {
       await waitForExpect(() => {
         expect(gateway.doesRoomExist(`game-${gameId}`)).toBeTruthy();
         expect(gateway.doesRoomExist('waitingRoom')).toBeTruthy();
-        expect(gameStorage.games.has(gameId)).toBeTruthy();
+        expect(gameStorage.getGame(gameId)).toBeDefined();
         expect(activityManager.getActivity(userIds[0])).toEqual(
           `game-${gameId}`,
         );
@@ -926,7 +953,10 @@ describe('GameGateway (e2e)', () => {
 
     it('should not notify the users in waiting-room when the non-ladder game is aborted', async () => {
       const [playerOne, playerTwo, waitingOne, waitingTwo] = clientSockets;
-      gameStorage.games.set(gameId, new GameInfo(users[0], users[1], 1, false));
+      await gameStorage.createGame(
+        gameId,
+        new GameInfo(userIds[0], userIds[1], 1, false),
+      );
       playerOne.emit('currentUi', { userId: userIds[0], ui: `game-${gameId}` });
       playerTwo.emit('currentUi', { userId: userIds[1], ui: `game-${gameId}` });
       waitingOne.emit('currentUi', { userId: userIds[2], ui: 'waitingRoom' });
@@ -934,7 +964,7 @@ describe('GameGateway (e2e)', () => {
       await waitForExpect(() => {
         expect(gateway.doesRoomExist(`game-${gameId}`)).toBeTruthy();
         expect(gateway.doesRoomExist('waitingRoom')).toBeTruthy();
-        expect(gameStorage.games.has(gameId)).toBeTruthy();
+        expect(gameStorage.getGame(gameId)).toBeDefined();
         expect(activityManager.getActivity(userIds[0])).toEqual(
           `game-${gameId}`,
         );
