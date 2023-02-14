@@ -104,7 +104,6 @@ export class GameService {
     return { isLeft, playerId, playerNickname, opponentId, opponentNickname };
   }
 
-  // NOTE : UserModule 의 Guard 가 block 확인
   /**
    * @description 일반 게임 생성
    *
@@ -113,17 +112,6 @@ export class GameService {
    * @returns 생성된 게임의 id
    */
   async createNormalGame(inviterId: UserId, invitedId: UserId) {
-    // FIXME : Guard 로 분리
-    if (this.gameStorage.players.has(inviterId)) {
-      throw new BadRequestException(
-        `The inviter(${inviterId}) is already in a game`,
-      );
-    }
-    if (this.gameStorage.players.has(invitedId)) {
-      throw new ConflictException(
-        `The inviter(${inviterId}) is already in a game`,
-      );
-    }
     const gameId = nanoid();
     await this.gameStorage.createGame(
       gameId,

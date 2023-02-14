@@ -4,6 +4,7 @@ import { Socket, io } from 'socket.io-client';
 import { Test, TestingModule } from '@nestjs/testing';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { faker } from '@faker-js/faker';
+import { nanoid } from 'nanoid';
 import * as request from 'supertest';
 import waitForExpect from 'wait-for-expect';
 
@@ -11,13 +12,13 @@ import { ActivityManager } from '../src/user-status/activity.manager';
 import { AppModule } from '../src/app.module';
 import { BannedMembers } from '../src/entity/banned-members.entity';
 import { BlockedUsers } from '../src/entity/blocked-users.entity';
-import { ChannelId, UserId } from '../src/util/type';
+import { ChannelId, GameInfo, UserId } from '../src/util/type';
 import { ChannelMembers } from '../src/entity/channel-members.entity';
 import { ChannelStorage } from '../src/user-status/channel.storage';
 import { Channels } from '../src/entity/channels.entity';
 import { Friends } from '../src/entity/friends.entity';
+import { GameStorage } from '../src/game/game.storage';
 import { Messages } from '../src/entity/messages.entity';
-import { UserActivityDto } from '../src/user-status/dto/user-status.dto';
 import { UserRelationshipStorage } from '../src/user-status/user-relationship.storage';
 import { Users } from '../src/entity/users.entity';
 import {
@@ -30,7 +31,7 @@ import {
   generateBlockedUsers,
   generateFriends,
 } from './util/generate-mock-data';
-import { timeout } from './util/util';
+import { listenPromise, timeout } from './util/util';
 
 process.env.NODE_ENV = 'development';
 process.env.DB_HOST = 'localhost';
@@ -55,6 +56,7 @@ describe('UserModule - /user (e2e)', () => {
   let allUserIds: UserId[];
   let userIds: UserId[];
   let activityManager: ActivityManager;
+  let gameStorage: GameStorage;
   let userRelationshipStorage: UserRelationshipStorage;
   let index = 0;
 
@@ -80,6 +82,7 @@ describe('UserModule - /user (e2e)', () => {
     await app.init();
     await app.listen(4241);
     activityManager = app.get(ActivityManager);
+    gameStorage = app.get(GameStorage);
     userRelationshipStorage = app.get(UserRelationshipStorage);
   });
 
@@ -99,8 +102,8 @@ describe('UserModule - /user (e2e)', () => {
           new Promise((resolve) => socket.on('connect', () => resolve('done'))),
       ),
     );
-    clientSockets.forEach((clientSocket, index) =>
-      clientSocket.emit('currentUi', { userId: userIds[index], ui: 'profile' }),
+    clientSockets.forEach((clientSocket, i) =>
+      clientSocket.emit('currentUi', { userId: userIds[i], ui: 'profile' }),
     );
     await waitForExpect(() => {
       expect(activityManager.getActivity(userIds[0])).not.toBeNull();
@@ -145,7 +148,6 @@ describe('UserModule - /user (e2e)', () => {
           { path: `/user/${targetId}/friend`, method: reqObj.delete },
           { path: `/user/${targetId}/friend`, method: reqObj.patch },
           { path: `/user/${targetId}/game`, method: reqObj.post },
-          { path: `/user/${targetId}/game/1`, method: reqObj.get },
           { path: `/user/${targetId}/info`, method: reqObj.get },
         ])
         .flat();
@@ -179,7 +181,6 @@ describe('UserModule - /user (e2e)', () => {
             { path: `/user/${targetId}/friend`, method: reqObj.delete },
             { path: `/user/${targetId}/friend`, method: reqObj.patch },
             { path: `/user/${targetId}/game`, method: reqObj.post },
-            { path: `/user/${targetId}/game/1`, method: reqObj.get },
             { path: `/user/${targetId}/info`, method: reqObj.get },
           ].map(({ path, method }) =>
             method(path)
@@ -207,7 +208,6 @@ describe('UserModule - /user (e2e)', () => {
             { path: `/user/${blockerId}/friend`, method: reqObj.delete },
             { path: `/user/${blockerId}/friend`, method: reqObj.patch },
             { path: `/user/${blockerId}/game`, method: reqObj.post },
-            { path: `/user/${blockerId}/game/1`, method: reqObj.get },
           ].map(({ path, method }) =>
             method(path)
               .set('x-user-id', blockedId.toString())
@@ -229,7 +229,6 @@ describe('UserModule - /user (e2e)', () => {
             { path: `/user/${userIds[0]}/friend`, method: reqObj.delete },
             { path: `/user/${userIds[0]}/friend`, method: reqObj.patch },
             { path: `/user/${userIds[0]}/game`, method: reqObj.post },
-            { path: `/user/${userIds[0]}/game/1`, method: reqObj.get },
           ].map(({ path, method }) =>
             method(path)
               .set('x-user-id', userIds[0].toString())
@@ -405,9 +404,7 @@ describe('UserModule - /user (e2e)', () => {
   describe('PUT /user/:userId/block', () => {
     it('should block a user (201)', async () => {
       const [wsMessage, response] = await Promise.all([
-        new Promise((resolve) =>
-          clientSockets[1].on('userRelationship', (data) => resolve(data)),
-        ),
+        listenPromise(clientSockets[1], 'userRelationship'),
         request(app.getHttpServer())
           .put(`/user/${userIds[1]}/block`)
           .set('x-user-id', userIds[0].toString()),
@@ -422,9 +419,7 @@ describe('UserModule - /user (e2e)', () => {
 
     it('should not resend blocked event (200)', async () => {
       const [wsMessage, responseOne] = await Promise.all([
-        new Promise((resolve) =>
-          clientSockets[1].on('userRelationship', (data) => resolve(data)),
-        ),
+        listenPromise(clientSockets[1], 'userRelationship'),
         request(app.getHttpServer())
           .put(`/user/${userIds[1]}/block`)
           .set('x-user-id', userIds[0].toString()),
@@ -436,12 +431,7 @@ describe('UserModule - /user (e2e)', () => {
       expect(responseOne.status).toEqual(201);
       expect(responseOne.body).toEqual({});
       const [wsError, responseTwo] = await Promise.allSettled([
-        timeout(
-          1000,
-          new Promise((resolve) =>
-            clientSockets[1].on('userRelationship', (data) => resolve(data)),
-          ),
-        ),
+        timeout(1000, listenPromise(clientSockets[1], 'userRelationship')),
         request(app.getHttpServer())
           .put(`/user/${userIds[1]}/block`)
           .set('x-user-id', userIds[0].toString()),
@@ -469,9 +459,7 @@ describe('UserModule - /user (e2e)', () => {
       await dataSource.manager.save(BlockedUsers, blockEntities);
       await userRelationshipStorage.load(userIds[0]);
       const [wsMessage, response] = await Promise.all([
-        new Promise((resolve) =>
-          clientSockets[1].on('userRelationship', (data) => resolve(data)),
-        ),
+        listenPromise(clientSockets[1], 'userRelationship'),
         request(app.getHttpServer())
           .delete(`/user/${userIds[1]}/block`)
           .set('x-user-id', userIds[0].toString()),
@@ -625,12 +613,8 @@ describe('UserModule - /user (e2e)', () => {
   describe('PUT /user/:userId/friend', () => {
     it('should send a friend request (201)', async () => {
       const [wsRelationship, wsRequestDiff, response] = await Promise.all([
-        new Promise((resolve) =>
-          clientSockets[1].on('userRelationship', (data) => resolve(data)),
-        ),
-        new Promise((resolve) => {
-          clientSockets[1].on('friendRequestDiff', (data) => resolve(data));
-        }),
+        listenPromise(clientSockets[1], 'userRelationship'),
+        listenPromise(clientSockets[1], 'friendRequestDiff'),
         request(app.getHttpServer())
           .put(`/user/${userIds[1]}/friend`)
           .set('x-user-id', userIds[0].toString()),
@@ -646,18 +630,8 @@ describe('UserModule - /user (e2e)', () => {
 
     it('should not resend the friend request (200)', async () => {
       const [wsRelationship, wsRequestDiff, responseOne] = await Promise.all([
-        timeout(
-          1000,
-          new Promise((resolve) =>
-            clientSockets[1].on('userRelationship', (data) => resolve(data)),
-          ),
-        ),
-        timeout(
-          1000,
-          new Promise((resolve) => {
-            clientSockets[1].on('friendRequestDiff', (data) => resolve(data));
-          }),
-        ),
+        timeout(1000, listenPromise(clientSockets[1], 'userRelationship')),
+        timeout(1000, listenPromise(clientSockets[1], 'friendRequestDiff')),
         request(app.getHttpServer())
           .put(`/user/${userIds[1]}/friend`)
           .set('x-user-id', userIds[0].toString()),
@@ -671,18 +645,8 @@ describe('UserModule - /user (e2e)', () => {
       expect(responseOne.body).toEqual({});
       const [wsErrorRelationship, wsErrorRequestDiff, responseTwo] =
         await Promise.allSettled([
-          timeout(
-            1000,
-            new Promise((resolve) => {
-              clientSockets[1].on('userRelationship', (data) => resolve(data));
-            }),
-          ),
-          timeout(
-            1000,
-            new Promise((resolve) => {
-              clientSockets[1].on('friendRequestDiff', (data) => resolve(data));
-            }),
-          ),
+          timeout(1000, listenPromise(clientSockets[1], 'userRelationship')),
+          timeout(1000, listenPromise(clientSockets[1], 'friendRequestDiff')),
           request(app.getHttpServer())
             .put(`/user/${userIds[1]}/friend`)
             .set('x-user-id', userIds[0].toString()),
@@ -712,9 +676,7 @@ describe('UserModule - /user (e2e)', () => {
       await dataSource.manager.save(Friends, friendEntities);
       await userRelationshipStorage.load(userIds[0]);
       const [wsMessage, response] = await Promise.all([
-        new Promise((resolve) =>
-          clientSockets[1].on('userRelationship', (data) => resolve(data)),
-        ),
+        listenPromise(clientSockets[1], 'userRelationship'),
         request(app.getHttpServer())
           .delete(`/user/${userIds[1]}/friend`)
           .set('x-user-id', userIds[0].toString()),
@@ -735,9 +697,7 @@ describe('UserModule - /user (e2e)', () => {
       await dataSource.manager.save(Friends, friendEntities);
       await userRelationshipStorage.load(userIds[1]);
       const [wsMessage, response] = await Promise.all([
-        new Promise((resolve) =>
-          clientSockets[0].on('userRelationship', (data) => resolve(data)),
-        ),
+        listenPromise(clientSockets[0], 'userRelationship'),
         request(app.getHttpServer())
           .delete(`/user/${userIds[0]}/friend`)
           .set('x-user-id', userIds[1].toString()),
@@ -758,9 +718,7 @@ describe('UserModule - /user (e2e)', () => {
       await dataSource.manager.save(Friends, friendEntities);
       await userRelationshipStorage.load(userIds[0]);
       const [wsMessage, response] = await Promise.all([
-        new Promise((resolve) =>
-          clientSockets[1].on('userRelationship', (data) => resolve(data)),
-        ),
+        listenPromise(clientSockets[1], 'userRelationship'),
         request(app.getHttpServer())
           .delete(`/user/${userIds[1]}/friend`)
           .set('x-user-id', userIds[0].toString()),
@@ -781,9 +739,7 @@ describe('UserModule - /user (e2e)', () => {
       await dataSource.manager.save(Friends, friendEntities);
       await userRelationshipStorage.load(userIds[1]);
       const [wsMessage, response] = await Promise.all([
-        new Promise((resolve) =>
-          clientSockets[0].on('userRelationship', (data) => resolve(data)),
-        ),
+        listenPromise(clientSockets[0], 'userRelationship'),
         request(app.getHttpServer())
           .delete(`/user/${userIds[0]}/friend`)
           .set('x-user-id', userIds[1].toString()),
@@ -812,9 +768,7 @@ describe('UserModule - /user (e2e)', () => {
       await dataSource.manager.save(Friends, friendEntities);
       await userRelationshipStorage.load(userIds[1]);
       const [wsMessage, response] = await Promise.all([
-        new Promise((resolve) =>
-          clientSockets[0].on('userRelationship', (data) => resolve(data)),
-        ),
+        listenPromise(clientSockets[0], 'userRelationship'),
         request(app.getHttpServer())
           .patch(`/user/${userIds[0]}/friend`)
           .set('x-user-id', userIds[1].toString()),
@@ -835,14 +789,7 @@ describe('UserModule - /user (e2e)', () => {
       await dataSource.manager.save(Friends, friendEntities);
       await userRelationshipStorage.load(userIds[1]);
       const [wsError, response] = await Promise.allSettled([
-        timeout(
-          1000,
-          new Promise((resolve) =>
-            clientSockets[0]
-              .timeout(1000)
-              .on('userRelationship', (data) => resolve(data)),
-          ),
-        ),
+        timeout(1000, listenPromise(clientSockets[0], 'userRelationship')),
         request(app.getHttpServer())
           .patch(`/user/${userIds[0]}/friend`)
           .set('x-user-id', userIds[1].toString()),
@@ -864,15 +811,87 @@ describe('UserModule - /user (e2e)', () => {
 
   /*****************************************************************************
    *                                                                           *
-   * TODO : POST /user/:userId/game                                            *
+   * ANCHOR : POST /user/:userId/game                                          *
    *                                                                           *
    ****************************************************************************/
 
-  /*****************************************************************************
-   *                                                                           *
-   * TODO : GET /user/:userId/:gameId                                          *
-   *                                                                           *
-   ****************************************************************************/
+  describe('POST /user/:userId/game', () => {
+    beforeEach(async () => {
+      userIds.push(allUserIds[index + 2]);
+      clientSockets.push(
+        io('http://localhost:4241', {
+          extraHeaders: { 'x-user-id': userIds[2].toString() },
+        }),
+      );
+      await listenPromise(clientSockets[2], 'connect');
+      clientSockets[2].emit('currentUi', { userId: userIds[2], ui: 'profile' }),
+        await waitForExpect(() => {
+          expect(activityManager.getActivity(userIds[2])).not.toBeNull();
+        });
+    });
+
+    afterEach(() => {
+      index++;
+    });
+
+    it('should create a normal game (201)', async () => {
+      const [inviterId, invitedId] = userIds;
+      const [wsMessage, { headers, status }] = await Promise.all([
+        listenPromise(clientSockets[1], 'newGame'),
+        request(app.getHttpServer())
+          .post(`/user/${invitedId}/game`)
+          .set('x-user-id', inviterId.toString())
+          .then(({ headers, status }) => {
+            return { headers, status };
+          }),
+      ]);
+      expect(status).toEqual(201);
+      expect(headers.location).toMatch(/\/game\/[0-9A-Za-z_-]{21}$/);
+      const gameId = headers.location.split('/').pop();
+      const gameInfo = gameStorage.getGame(gameId);
+      expect(gameInfo).toBeDefined();
+      expect(gameInfo.isRank).toBeFalsy();
+      expect(wsMessage).toEqual({ gameId });
+    });
+
+    it('should throw BAD REQUEST if the inviter is in game ', async () => {
+      const [inviterId, invitedId, playerId] = userIds;
+      const gameId = nanoid();
+      await gameStorage.createGame(
+        gameId,
+        new GameInfo(inviterId, playerId, 1, false),
+      );
+      const [success, fail] = await Promise.allSettled([
+        request(app.getHttpServer())
+          .post(`/user/${invitedId}/game`)
+          .set('x-user-id', inviterId.toString())
+          .expect(400),
+        timeout(1000, listenPromise(clientSockets[1], 'newGame')),
+      ]);
+      expect(success.status).toBe('fulfilled');
+      expect(fail.status).toBe('rejected');
+      gameStorage.deleteGame(gameId);
+    });
+
+    it('should throw CONFLICT if the invited is in game ', async () => {
+      const [inviterId, invitedId, playerId] = userIds;
+      const gameId = nanoid();
+      await gameStorage.createGame(
+        gameId,
+        new GameInfo(invitedId, playerId, 1, false),
+      );
+      const [success, fail] = await Promise.allSettled([
+        request(app.getHttpServer())
+          .post(`/user/${invitedId}/game`)
+          .set('x-user-id', inviterId.toString())
+          .expect(409),
+        timeout(1000, listenPromise(clientSockets[1], 'newGame')),
+      ]);
+      expect(success.status).toBe('fulfilled');
+      expect(fail.status).toBe('rejected');
+      gameStorage.deleteGame(gameId);
+    });
+  });
 
   /*****************************************************************************
    *                                                                           *
@@ -921,11 +940,7 @@ describe('UserModule - /user (e2e)', () => {
     it('should return nickname, profileImage (HTTP) & online, normal (WS) (both are logged in)', async () => {
       const [requesterId, targetId] = userIds;
       const [wsMessage, response] = await Promise.all([
-        new Promise<UserActivityDto>((resolve) =>
-          clientSockets[0].on('userActivity', (data: UserActivityDto) =>
-            resolve(data),
-          ),
-        ),
+        listenPromise(clientSockets[0], 'userActivity'),
         request(app.getHttpServer())
           .get(`/user/${targetId}/info`)
           .set('x-user-id', requesterId.toString()),
@@ -949,11 +964,7 @@ describe('UserModule - /user (e2e)', () => {
         expect(activityManager.getActivity(targetId)).toBeNull();
       });
       const [wsMessage, response] = await Promise.all([
-        new Promise<UserActivityDto>((resolve) =>
-          clientSockets[0].on('userActivity', (data: UserActivityDto) =>
-            resolve(data),
-          ),
-        ),
+        listenPromise(clientSockets[0], 'userActivity'),
         request(app.getHttpServer())
           .get(`/user/${targetId}/info`)
           .set('x-user-id', requesterId.toString()),
@@ -978,11 +989,7 @@ describe('UserModule - /user (e2e)', () => {
       await dataSource.manager.save(BlockedUsers, blockedUsersEntities);
       await userRelationshipStorage.load(requesterId);
       const [wsMessage] = await Promise.all([
-        new Promise<UserActivityDto>((resolve) =>
-          clientSockets[0].on('userActivity', (data: UserActivityDto) =>
-            resolve(data),
-          ),
-        ),
+        listenPromise(clientSockets[0], 'userActivity'),
         request(app.getHttpServer())
           .get(`/user/${targetId}/info`)
           .set('x-user-id', requesterId.toString()),
@@ -1006,11 +1013,7 @@ describe('UserModule - /user (e2e)', () => {
         expect(activityManager.getActivity(targetId)).toBeNull();
       });
       const [wsMessage] = await Promise.all([
-        new Promise<UserActivityDto>((resolve) =>
-          clientSockets[1].on('userActivity', (data: UserActivityDto) =>
-            resolve(data),
-          ),
-        ),
+        listenPromise(clientSockets[1], 'userActivity'),
         request(app.getHttpServer())
           .get(`/user/${targetId}/info`)
           .set('x-user-id', requesterId.toString()),
@@ -1031,11 +1034,7 @@ describe('UserModule - /user (e2e)', () => {
       await dataSource.manager.save(Friends, friendsEntities);
       await userRelationshipStorage.load(requesterId);
       const [wsMessage] = await Promise.all([
-        new Promise<UserActivityDto>((resolve) =>
-          clientSockets[0].on('userActivity', (data: UserActivityDto) =>
-            resolve(data),
-          ),
-        ),
+        listenPromise(clientSockets[0], 'userActivity'),
         request(app.getHttpServer())
           .get(`/user/${targetId}/info`)
           .set('x-user-id', requesterId.toString()),
@@ -1060,11 +1059,7 @@ describe('UserModule - /user (e2e)', () => {
         expect(activityManager.getActivity(targetId)).toBeNull();
       });
       const [wsMessage] = await Promise.all([
-        new Promise<UserActivityDto>((resolve) =>
-          clientSockets[1].on('userActivity', (data: UserActivityDto) =>
-            resolve(data),
-          ),
-        ),
+        listenPromise(clientSockets[1], 'userActivity'),
         request(app.getHttpServer())
           .get(`/user/${targetId}/info`)
           .set('x-user-id', requesterId.toString()),
@@ -1085,11 +1080,7 @@ describe('UserModule - /user (e2e)', () => {
       await dataSource.manager.save(Friends, friendsEntities);
       await userRelationshipStorage.load(requesterId);
       const [wsMessage] = await Promise.all([
-        new Promise<UserActivityDto>((resolve) =>
-          clientSockets[0].on('userActivity', (data: UserActivityDto) =>
-            resolve(data),
-          ),
-        ),
+        listenPromise(clientSockets[0], 'userActivity'),
         request(app.getHttpServer())
           .get(`/user/${targetId}/info`)
           .set('x-user-id', requesterId.toString()),

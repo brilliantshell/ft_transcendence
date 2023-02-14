@@ -227,30 +227,6 @@ describe('GameService', () => {
         `game-${newGameId}`,
       );
     });
-
-    it('should throw CONFLICT when the invited is already in a game', async () => {
-      await gameStorage.createGame(
-        gameId,
-        new GameInfo(playerOne.userId, playerTwo.userId, 1, false),
-      );
-      expect(async () =>
-        service.createNormalGame(spectatorOne.userId, playerTwo.userId),
-      ).rejects.toThrowError(ConflictException);
-      expect(gameGateway.joinRoom).not.toHaveBeenCalled();
-      expect(gameGateway.emitNewGame).not.toHaveBeenCalled();
-    });
-
-    it('should throw BAD REQUEST when the inviter is already in a game', async () => {
-      await gameStorage.createGame(
-        gameId,
-        new GameInfo(playerOne.userId, spectatorOne.userId, 1, false),
-      );
-      expect(async () =>
-        service.createNormalGame(playerOne.userId, playerTwo.userId),
-      ).rejects.toThrowError(BadRequestException);
-      expect(gameGateway.joinRoom).not.toHaveBeenCalled();
-      expect(gameGateway.emitNewGame).not.toHaveBeenCalled();
-    });
   });
 
   describe('CHANGE MAP', () => {
