@@ -1,23 +1,21 @@
+import { UserRelationshipStorage } from './../user-status/user-relationship.storage';
 import {
-  Injectable,
-  ForbiddenException,
-  Logger,
-  NotFoundException,
-  ConflictException,
   BadRequestException,
+  ConflictException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
 } from '@nestjs/common';
 import { nanoid } from 'nanoid';
 
-import { GameId, GameInfo, UserId } from '../util/type';
 import { GameGateway } from './game.gateway';
+import { GameId, GameInfo, UserId } from '../util/type';
 import { GameStorage } from './game.storage';
 import { UserRelationshipStorage } from '../user-status/user-relationship.storage';
 import { UserSocketStorage } from '../user-status/user-socket.storage';
 
 @Injectable()
 export class GameService {
-  private readonly logger: Logger;
-
   constructor(
     private readonly gameGateway: GameGateway,
     private readonly gameStorage: GameStorage,
@@ -58,14 +56,14 @@ export class GameService {
     }
     const { leftId, leftNickname, rightId, rightNickname, map, isRank } =
       gameInfo;
+    const [leftRelationship, rightRelationship] = [
+      this.userRelationshipStorage.getRelationship(spectatorId, leftId),
+      this.userRelationshipStorage.getRelationship(spectatorId, rightId),
+    ];
     if (
       !isRank &&
-      (this.userRelationshipStorage
-        .getRelationship(spectatorId, leftId)
-        ?.startsWith('block') ||
-        this.userRelationshipStorage
-          .getRelationship(spectatorId, rightId)
-          ?.startsWith('block'))
+      (leftRelationship?.startsWith('block') ||
+        rightRelationship?.startsWith('block'))
     ) {
       throw new ForbiddenException(
         `The requester(${spectatorId}) is either blocked by or a blocker of a game participant`,
