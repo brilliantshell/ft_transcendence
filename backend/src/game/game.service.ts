@@ -156,7 +156,7 @@ export class GameService {
         `The game(${gameId}) requested by ${requesterId} does not exist`,
       );
     }
-    if (!this.gameStorage.players.has(requesterId)) {
+    if (gameInfo.leftId !== requesterId && gameInfo.rightId !== requesterId) {
       throw new ForbiddenException(
         `The requester(${requesterId}) is not a participant of the game`,
       );
