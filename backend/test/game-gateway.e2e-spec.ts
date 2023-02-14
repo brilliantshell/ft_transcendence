@@ -129,7 +129,10 @@ describe('GameGateway (e2e)', () => {
       await new Promise((resolve) =>
         clientSockets[2].on('connect', () => resolve('done')),
       );
-      gameStorage.createGame(gameId, new GameInfo(users[0], users[1], 1, true));
+      gameStorage.createGame(
+        gameId,
+        new GameInfo(userIds[0], userIds[1], 1, true),
+      );
     });
 
     it('should join and leave rooms', async () => {
@@ -403,7 +406,10 @@ describe('GameGateway (e2e)', () => {
         userSocketStorage.clients.get(userIds[1]),
         `game-${gameId}`,
       );
-      gameStorage.createGame(gameId, new GameInfo(users[0], users[1], 1, true));
+      await gameStorage.createGame(
+        gameId,
+        new GameInfo(userIds[0], userIds[1], 1, true),
+      );
       playerOne.emit('gameComplete', { id: gameId }); // no scores
       await new Promise((resolve) => setTimeout(resolve, 300));
       expect(gameStorage.getGame(gameId)).toBeDefined();
@@ -441,7 +447,10 @@ describe('GameGateway (e2e)', () => {
         userSocketStorage.clients.get(userIds[1]),
         `game-${gameId}`,
       );
-      gameStorage.createGame(gameId, new GameInfo(users[0], users[1], 1, true));
+      await gameStorage.createGame(
+        gameId,
+        new GameInfo(userIds[0], userIds[1], 1, true),
+      );
       const scores = [5, faker.datatype.number({ min: 0, max: 4 })];
       playerOne.emit('gameComplete', {
         id: gameId,
@@ -499,7 +508,10 @@ describe('GameGateway (e2e)', () => {
         userSocketStorage.clients.get(userIds[1]),
         `game-${gameId}`,
       );
-      gameStorage.createGame(gameId, new GameInfo(users[0], users[1], 1, true));
+      await gameStorage.createGame(
+        gameId,
+        new GameInfo(userIds[0], userIds[1], 1, true),
+      );
       const scores = [faker.datatype.number({ min: 0, max: 4 }), 5];
       playerTwo.emit('gameComplete', {
         id: gameId,
@@ -557,9 +569,9 @@ describe('GameGateway (e2e)', () => {
         userSocketStorage.clients.get(userIds[1]),
         `game-${gameId}`,
       );
-      gameStorage.createGame(
+      await gameStorage.createGame(
         gameId,
-        new GameInfo(users[0], users[1], 1, false),
+        new GameInfo(userIds[0], userIds[1], 1, false),
       );
       const scores = [5, faker.datatype.number({ min: 0, max: 4 })];
       playerOne.emit('gameComplete', {
@@ -638,7 +650,10 @@ describe('GameGateway (e2e)', () => {
           `game-${gameId}`,
         );
       });
-      gameStorage.createGame(gameId, new GameInfo(users[0], users[1], 1, true));
+      await gameStorage.createGame(
+        gameId,
+        new GameInfo(userIds[0], userIds[1], 1, true),
+      );
       playerOne = clientSockets[0];
       playerTwo = clientSockets[1];
       spectator = clientSockets[2];
@@ -820,7 +835,10 @@ describe('GameGateway (e2e)', () => {
 
     it('should notify the users in waiting-room when the ladder game is ended', async () => {
       const [playerOne, playerTwo, waitingOne, waitingTwo] = clientSockets;
-      gameStorage.createGame(gameId, new GameInfo(users[0], users[1], 1, true));
+      await gameStorage.createGame(
+        gameId,
+        new GameInfo(userIds[0], userIds[1], 1, true),
+      );
       playerOne.emit('currentUi', { userId: userIds[0], ui: `game-${gameId}` });
       playerTwo.emit('currentUi', { userId: userIds[1], ui: `game-${gameId}` });
       waitingOne.emit('currentUi', { userId: userIds[2], ui: 'waitingRoom' });
@@ -858,7 +876,10 @@ describe('GameGateway (e2e)', () => {
 
     it('should notify the users in waiting-room when the ladder game is aborted', async () => {
       const [playerOne, playerTwo, waitingOne, waitingTwo] = clientSockets;
-      gameStorage.createGame(gameId, new GameInfo(users[0], users[1], 1, true));
+      await gameStorage.createGame(
+        gameId,
+        new GameInfo(userIds[0], userIds[1], 1, true),
+      );
       playerOne.emit('currentUi', { userId: userIds[0], ui: `game-${gameId}` });
       playerTwo.emit('currentUi', { userId: userIds[1], ui: `game-${gameId}` });
       waitingOne.emit('currentUi', { userId: userIds[2], ui: 'waitingRoom' });
@@ -896,9 +917,9 @@ describe('GameGateway (e2e)', () => {
 
     it('should not notify the users in waiting-room when the non-ladder game is ended', async () => {
       const [playerOne, playerTwo, waitingOne, waitingTwo] = clientSockets;
-      gameStorage.createGame(
+      await gameStorage.createGame(
         gameId,
-        new GameInfo(users[0], users[1], 1, false),
+        new GameInfo(userIds[0], userIds[1], 1, false),
       );
       playerOne.emit('currentUi', { userId: userIds[0], ui: `game-${gameId}` });
       playerTwo.emit('currentUi', { userId: userIds[1], ui: `game-${gameId}` });
@@ -932,9 +953,9 @@ describe('GameGateway (e2e)', () => {
 
     it('should not notify the users in waiting-room when the non-ladder game is aborted', async () => {
       const [playerOne, playerTwo, waitingOne, waitingTwo] = clientSockets;
-      gameStorage.createGame(
+      await gameStorage.createGame(
         gameId,
-        new GameInfo(users[0], users[1], 1, false),
+        new GameInfo(userIds[0], userIds[1], 1, false),
       );
       playerOne.emit('currentUi', { userId: userIds[0], ui: `game-${gameId}` });
       playerTwo.emit('currentUi', { userId: userIds[1], ui: `game-${gameId}` });

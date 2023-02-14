@@ -123,9 +123,9 @@ describe('RanksGateway (e2e)', () => {
   describe('ladderUpdate', () => {
     it('should not notify the users in the ranks UI when a player wins a non-ladder game', async () => {
       const gameId = nanoid();
-      gameStorage.createGame(
+      await gameStorage.createGame(
         gameId,
-        new GameInfo(users[0], users[1], 1, false),
+        new GameInfo(userIds[0], userIds[1], 1, false),
       );
       const [playerOne, playerTwo, ranksOne, ranksTwo, profile, waitingRoom] =
         clientSockets;
@@ -169,9 +169,9 @@ describe('RanksGateway (e2e)', () => {
 
     it('should not notify the users in the ranks UI when a player aborts a non-ladder game', async () => {
       const gameId = nanoid();
-      gameStorage.createGame(
+      await gameStorage.createGame(
         gameId,
-        new GameInfo(users[0], users[1], 1, false),
+        new GameInfo(userIds[0], userIds[1], 1, false),
       );
       const [playerOne, playerTwo, ranksOne, ranksTwo, profile, waitingRoom] =
         clientSockets;
@@ -220,7 +220,10 @@ describe('RanksGateway (e2e)', () => {
       });
       expect(prevGame.length).toBe(2);
       const gameId = nanoid();
-      gameStorage.createGame(gameId, new GameInfo(users[0], users[1], 1, true));
+      await gameStorage.createGame(
+        gameId,
+        new GameInfo(userIds[0], userIds[1], 1, true),
+      );
       const [playerOne, playerTwo, ranksOne, ranksTwo, profile, waitingRoom] =
         clientSockets;
       playerOne.emit('currentUi', { userId: userIds[0], ui: `game-${gameId}` });
@@ -288,7 +291,10 @@ describe('RanksGateway (e2e)', () => {
       });
       expect(prevGame.length).toBe(2);
       const gameId = nanoid();
-      gameStorage.createGame(gameId, new GameInfo(users[0], users[1], 1, true));
+      await gameStorage.createGame(
+        gameId,
+        new GameInfo(userIds[0], userIds[1], 1, true),
+      );
       const [playerOne, playerTwo, ranksOne, ranksTwo, profile, waitingRoom] =
         clientSockets;
       playerOne.emit('currentUi', { userId: userIds[0], ui: `game-${gameId}` });

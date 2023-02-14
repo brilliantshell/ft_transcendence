@@ -1,7 +1,5 @@
-import { InjectRepository } from '@nestjs/typeorm';
 import {
   Injectable,
-  InternalServerErrorException,
   ForbiddenException,
   Logger,
   NotFoundException,
@@ -15,8 +13,6 @@ import { GameGateway } from './game.gateway';
 import { GameStorage } from './game.storage';
 import { UserRelationshipStorage } from '../user-status/user-relationship.storage';
 import { UserSocketStorage } from '../user-status/user-socket.storage';
-import { Users } from './../entity/users.entity';
-import { In, Repository } from 'typeorm';
 
 @Injectable()
 export class GameService {
@@ -26,8 +22,6 @@ export class GameService {
     private readonly gameGateway: GameGateway,
     private readonly gameStorage: GameStorage,
     private readonly userRelationshipStorage: UserRelationshipStorage,
-    @InjectRepository(Users)
-    private readonly usersRepository: Repository<Users>,
     private readonly userSocketStorage: UserSocketStorage,
   ) {}
 
@@ -84,6 +78,35 @@ export class GameService {
     return { leftPlayer: leftNickname, rightPlayer: rightNickname, map };
   }
 
+  // TODO : `game-${gameId}` ui 밖에서 요청하면 400 Guard 로 처리
+  // TODO : interceptor 로 두 플레이어 모두 해당 요청에 응답 보냈을 때 게임 시작 event emit
+  /**
+   * @description 게임에 참여하는 유저에게 게임의 기본 정보 제공
+   *
+   * @param playerId 요청을 보낸 플레이어 id
+   * @param gameId 게임 id
+   * @returns 게임의 기본 정보
+   */
+  findPlayers(playerId: UserId, gameId: GameId) {
+    const gameInfo = this.gameStorage.getGame(gameId);
+    if (gameInfo === undefined) {
+      throw new NotFoundException(
+        `The game requested by ${playerId} does not exist`,
+      );
+    }
+    if (gameInfo.leftId !== playerId && gameInfo.rightId !== playerId) {
+      throw new ForbiddenException(
+        `The requester(${playerId}) is not a participant of the game`,
+      );
+    }
+    const { leftId, leftNickname, rightId, rightNickname } = gameInfo;
+    const isLeft = gameInfo.leftId === playerId;
+    const [playerNickname, opponentId, opponentNickname] = isLeft
+      ? [leftNickname, rightId, rightNickname]
+      : [rightNickname, leftId, leftNickname];
+    return { isLeft, playerId, playerNickname, opponentId, opponentNickname };
+  }
+
   // NOTE : UserModule 의 Guard 가 block 확인
   /**
    * @description 일반 게임 생성
@@ -104,24 +127,10 @@ export class GameService {
         `The inviter(${inviterId}) is already in a game`,
       );
     }
-    let players: Users[];
-    try {
-      players = await this.usersRepository.find({
-        select: ['userId', 'nickname'],
-        where: { userId: In([inviterId, invitedId]) },
-      });
-    } catch (e) {
-      this.logger.error(e);
-      throw new InternalServerErrorException(
-        `Failed to create a normal game between the users, ${inviterId} and ${invitedId}`,
-      );
-    }
     const gameId = nanoid();
-    const [inviter, invited] =
-      players[0].userId === inviterId ? players : [players[1], players[0]];
-    this.gameStorage.createGame(
+    await this.gameStorage.createGame(
       gameId,
-      new GameInfo(inviter, invited, 1, false),
+      new GameInfo(inviterId, invitedId, 1, false),
     );
     this.gameGateway.joinRoom(
       this.userSocketStorage.clients.get(invitedId),
@@ -135,6 +144,7 @@ export class GameService {
     return gameId;
   }
 
+  // TODO : `game-${gameId}` ui 밖에서 요청하면 400 Guard 로 처리
   /**
    * @description 게임 맵 변경
    *

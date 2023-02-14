@@ -14,7 +14,7 @@ import { Users } from '../entity/users.entity';
 @Injectable()
 export class GameStorage {
   readonly players = new Set<UserId>();
-  private readonly games = new Map<GameId, GameInfo>();
+  private readonly games = new Map<GameId, Required<GameInfo>>();
   private readonly logger = new Logger(GameStorage.name);
 
   constructor(
@@ -27,18 +27,6 @@ export class GameStorage {
    * SECTION : Public Methods                                                  *
    *                                                                           *
    ****************************************************************************/
-
-  /**
-   * @description 게임 생성
-   *
-   * @param gameId 게임 id
-   * @param gameInfo 게임 정보
-   */
-  createGame(gameId: GameId, gameInfo: GameInfo) {
-    this.games.set(gameId, gameInfo);
-    this.players.add(gameInfo.leftId);
-    this.players.add(gameInfo.rightId);
-  }
 
   /**
    * @description 게임 getter
@@ -57,6 +45,35 @@ export class GameStorage {
    */
   getGames() {
     return this.games;
+  }
+
+  /**
+   * @description 게임 생성
+   *
+   * @param gameId 게임 id
+   * @param gameInfo 게임 정보
+   */
+  async createGame(gameId: GameId, gameInfo: GameInfo) {
+    const { leftId, rightId } = gameInfo;
+    let players: Users[];
+    try {
+      players = await this.dataSource.manager.find(Users, {
+        select: ['userId', 'nickname'],
+        where: { userId: In([leftId, rightId]) },
+      });
+    } catch (e) {
+      this.logger.error(e);
+      throw new InternalServerErrorException(
+        `Failed to create a normal game between the users, ${leftId} and ${rightId}`,
+      );
+    }
+    const [{ nickname: leftNickname }, { nickname: rightNickname }] =
+      players[0].userId === leftId ? players : [players[1], players[0]];
+    gameInfo.leftNickname = leftNickname;
+    gameInfo.rightNickname = rightNickname;
+    this.games.set(gameId, gameInfo as Required<GameInfo>);
+    this.players.add(gameInfo.leftId);
+    this.players.add(gameInfo.rightId);
   }
 
   /**

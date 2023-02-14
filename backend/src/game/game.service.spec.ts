@@ -106,6 +106,7 @@ describe('GameService', () => {
     await Promise.all(
       currentUsers.map(({ userId }) => userRelationshipStorage.unload(userId)),
     );
+    (gameStorage as any).games.clear();
   });
 
   afterAll(
@@ -117,18 +118,23 @@ describe('GameService', () => {
       expect(service.findGames()).toEqual([]);
     });
 
-    it('should return a list of games', () => {
+    it('should return a list of games', async () => {
       const games = [];
-      for (let i = 0; i < 10; i++) {
+      for (let i = index; i < 10; i++) {
         const newGameId = nanoid();
-        gameStorage.createGame(
+        await gameStorage.createGame(
           newGameId,
-          new GameInfo(usersEntities[0], usersEntities[1], 1, true),
+          new GameInfo(
+            usersEntities[i].userId,
+            usersEntities[i + 1].userId,
+            1,
+            true,
+          ),
         );
         games.push({
           id: newGameId,
-          left: usersEntities[0].nickname,
-          right: usersEntities[1].nickname,
+          left: usersEntities[i].nickname,
+          right: usersEntities[i + 1].nickname,
         });
       }
       index += 10;
@@ -137,10 +143,10 @@ describe('GameService', () => {
   });
 
   describe('SPECTATOR', () => {
-    it('should return game information when a user tries to spectate a game', () => {
-      gameStorage.createGame(
+    it('should return game information when a user tries to spectate a game', async () => {
+      await gameStorage.createGame(
         gameId,
-        new GameInfo(playerOne, playerTwo, 1, true),
+        new GameInfo(playerOne.userId, playerTwo.userId, 1, true),
       );
       expect(service.findGameInfo(spectatorOne.userId, gameId)).toEqual({
         leftPlayer: playerOne.nickname,
@@ -149,10 +155,10 @@ describe('GameService', () => {
       });
     });
 
-    it("should put the spectator's socket into the game's WebSocket room", () => {
-      gameStorage.createGame(
+    it("should put the spectator's socket into the game's WebSocket room", async () => {
+      await gameStorage.createGame(
         gameId,
-        new GameInfo(playerOne, playerTwo, 1, true),
+        new GameInfo(playerOne.userId, playerTwo.userId, 1, true),
       );
       service.findGameInfo(spectatorOne.userId, gameId);
       expect(gameGateway.joinRoom).toHaveBeenCalledWith(
@@ -172,9 +178,9 @@ describe('GameService', () => {
         playerOne.userId,
         spectatorOne.userId,
       );
-      gameStorage.createGame(
+      await gameStorage.createGame(
         gameId,
-        new GameInfo(playerOne, playerTwo, 1, false),
+        new GameInfo(playerOne.userId, playerTwo.userId, 1, false),
       );
       expect(() =>
         service.findGameInfo(spectatorOne.userId, gameId),
@@ -186,9 +192,9 @@ describe('GameService', () => {
         playerOne.userId,
         spectatorOne.userId,
       );
-      gameStorage.createGame(
+      await gameStorage.createGame(
         gameId,
-        new GameInfo(playerOne, playerTwo, 1, true),
+        new GameInfo(playerOne.userId, playerTwo.userId, 1, true),
       );
       expect(() =>
         service.findGameInfo(spectatorOne.userId, gameId),
@@ -223,9 +229,9 @@ describe('GameService', () => {
     });
 
     it('should throw CONFLICT when the invited is already in a game', async () => {
-      gameStorage.createGame(
+      await gameStorage.createGame(
         gameId,
-        new GameInfo(playerOne, playerTwo, 1, false),
+        new GameInfo(playerOne.userId, playerTwo.userId, 1, false),
       );
       expect(async () =>
         service.createNormalGame(spectatorOne.userId, playerTwo.userId),
@@ -235,9 +241,9 @@ describe('GameService', () => {
     });
 
     it('should throw BAD REQUEST when the inviter is already in a game', async () => {
-      gameStorage.createGame(
+      await gameStorage.createGame(
         gameId,
-        new GameInfo(playerOne, spectatorOne, 1, false),
+        new GameInfo(playerOne.userId, spectatorOne.userId, 1, false),
       );
       expect(async () =>
         service.createNormalGame(playerOne.userId, playerTwo.userId),
@@ -248,10 +254,10 @@ describe('GameService', () => {
   });
 
   describe('CHANGE MAP', () => {
-    it('should change the map of a game and let the opponent know the updated option', () => {
-      gameStorage.createGame(
+    it('should change the map of a game and let the opponent know the updated option', async () => {
+      await gameStorage.createGame(
         gameId,
-        new GameInfo(playerOne, playerTwo, 1, false),
+        new GameInfo(playerOne.userId, playerTwo.userId, 1, false),
       );
       service.changeMap(playerOne.userId, gameId, 2);
       expect(gameStorage.getGame(gameId).map).toBe(2);
@@ -268,10 +274,10 @@ describe('GameService', () => {
       expect(gameGateway.emitGameOption).not.toHaveBeenCalled();
     });
 
-    it('should throw FORBIDDEN when the player is not in the game', () => {
-      gameStorage.createGame(
+    it('should throw FORBIDDEN when the player is not in the game', async () => {
+      await gameStorage.createGame(
         gameId,
-        new GameInfo(playerOne, playerTwo, 1, false),
+        new GameInfo(playerOne.userId, playerTwo.userId, 1, false),
       );
       expect(() =>
         service.changeMap(spectatorOne.userId, gameId, 2),
@@ -279,10 +285,10 @@ describe('GameService', () => {
       expect(gameGateway.emitGameOption).not.toHaveBeenCalled();
     });
 
-    it('should throw FORBIDDEN when the player did not create the game', () => {
-      gameStorage.createGame(
+    it('should throw FORBIDDEN when the player did not create the game', async () => {
+      await gameStorage.createGame(
         gameId,
-        new GameInfo(playerOne, playerTwo, 1, false),
+        new GameInfo(playerOne.userId, playerTwo.userId, 1, false),
       );
       expect(() => service.changeMap(playerTwo.userId, gameId, 2)).toThrowError(
         ForbiddenException,
@@ -290,10 +296,10 @@ describe('GameService', () => {
       expect(gameGateway.emitGameOption).not.toHaveBeenCalled();
     });
 
-    it('should throw FORBIDDEN when the game is a ladder game', () => {
-      gameStorage.createGame(
+    it('should throw FORBIDDEN when the game is a ladder game', async () => {
+      await gameStorage.createGame(
         gameId,
-        new GameInfo(playerOne, playerTwo, 1, true),
+        new GameInfo(playerOne.userId, playerTwo.userId, 1, true),
       );
       expect(() => service.changeMap(playerOne.userId, gameId, 2)).toThrowError(
         ForbiddenException,
@@ -302,7 +308,35 @@ describe('GameService', () => {
     });
   });
 
-  // describe('START THE GAME', () => {
-  //   it('should return gameInfo ');
-  // });
+  describe('START THE GAME', () => {
+    it("should return pleyer's info and on which side they are", async () => {
+      await gameStorage.createGame(
+        gameId,
+        new GameInfo(playerOne.userId, playerTwo.userId, 1, false),
+      );
+      expect(service.findPlayers(playerOne.userId, gameId)).toEqual({
+        isLeft: true,
+        playerId: playerOne.userId,
+        playerNickname: playerOne.nickname,
+        opponentId: playerTwo.userId,
+        opponentNickname: playerTwo.nickname,
+      });
+    });
+
+    it('should throw NOT FOUND when the game does not exist', () => {
+      expect(() => service.findPlayers(playerOne.userId, gameId)).toThrowError(
+        NotFoundException,
+      );
+    });
+
+    it('should throw FORBIDDEN when the player is not in the game', async () => {
+      await gameStorage.createGame(
+        gameId,
+        new GameInfo(playerOne.userId, playerTwo.userId, 1, false),
+      );
+      expect(() =>
+        service.findPlayers(spectatorOne.userId, gameId),
+      ).toThrowError(ForbiddenException);
+    });
+  });
 });
