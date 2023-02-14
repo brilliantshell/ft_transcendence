@@ -1,3 +1,4 @@
+import { APP_GUARD } from '@nestjs/core';
 import { ConfigModule } from '@nestjs/config';
 import { Module } from '@nestjs/common';
 import { ServeStaticModule } from '@nestjs/serve-static';
@@ -8,6 +9,7 @@ import { ApiConfigModule } from './config/api-config.module';
 import { ApiConfigService } from './config/api-config.service';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { AuthGuard } from './auth/auth.guard';
 import { ChatsModule } from './chats/chats.module';
 import { GameModule } from './game/game.module';
 import { LoginModule } from './login/login.module';
@@ -15,6 +17,7 @@ import { ProfileModule } from './profile/profile.module';
 import { RanksModule } from './ranks/ranks.module';
 import { UserModule } from './user/user.module';
 import { UserStatusModule } from './user-status/user-status.module';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
@@ -34,6 +37,7 @@ import { UserStatusModule } from './user-status/user-status.module';
         apiConfigService.postgresConfig,
       inject: [ApiConfigService],
     }),
+    AuthModule,
     ChatsModule,
     GameModule,
     LoginModule,
@@ -43,6 +47,6 @@ import { UserStatusModule } from './user-status/user-status.module';
     UserStatusModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, { provide: APP_GUARD, useClass: AuthGuard }],
 })
 export class AppModule {}

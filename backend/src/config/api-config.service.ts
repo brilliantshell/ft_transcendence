@@ -27,4 +27,30 @@ export class ApiConfigService {
       callbackURL: this.configService.get('OAUTH_CALLBACK_URL'),
     };
   }
+
+  get jwtAccessSecret() {
+    return {
+      secret: this.configService.get('JWT_ACCESS_SECRET'),
+    };
+  }
+
+  get jwtAccessConfig() {
+    return {
+      ...this.jwtAccessSecret,
+      expiresIn: '1h',
+    };
+  }
+
+  get jwtRefreshSecret() {
+    return {
+      secret: this.configService.get('JWT_REFRESH_SECRET'),
+    };
+  }
+
+  get jwtRefreshConfig() {
+    return {
+      ...this.jwtRefreshSecret,
+      expiresIn: '14d',
+    };
+  }
 }

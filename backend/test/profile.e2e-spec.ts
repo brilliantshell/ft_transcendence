@@ -31,7 +31,7 @@ const ENTITIES = [Achievements, Achievers, MatchHistory, Users];
 
 process.env.DB_HOST = 'localhost';
 
-describe('UserController (e2e)', () => {
+describe('ProfileController (e2e)', () => {
   let app: INestApplication;
   let initDataSource: DataSource;
   let dataSource: DataSource;
