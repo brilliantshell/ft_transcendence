@@ -13,7 +13,7 @@ import { Users } from '../entity/users.entity';
 
 @Injectable()
 export class GameStorage {
-  readonly players = new Set<UserId>();
+  readonly players = new Map<UserId, GameId>();
   private readonly games = new Map<GameId, Required<GameInfo>>();
   private readonly logger = new Logger(GameStorage.name);
 
@@ -72,8 +72,8 @@ export class GameStorage {
     gameInfo.leftNickname = leftNickname;
     gameInfo.rightNickname = rightNickname;
     this.games.set(gameId, gameInfo as Required<GameInfo>);
-    this.players.add(gameInfo.leftId);
-    this.players.add(gameInfo.rightId);
+    this.players.set(gameInfo.leftId, gameId);
+    this.players.set(gameInfo.rightId, gameId);
   }
 
   /**

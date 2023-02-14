@@ -47,6 +47,9 @@ const ENTITIES = [
   Users,
 ];
 
+const PORT = 4241;
+const URL = `http://localhost:${PORT}`;
+
 describe('UserModule - /user (e2e)', () => {
   let app: INestApplication;
   let clientSockets: Socket[];
@@ -80,7 +83,7 @@ describe('UserModule - /user (e2e)', () => {
     }).compile();
     app = moduleFixture.createNestApplication();
     await app.init();
-    await app.listen(4241);
+    await app.listen(PORT);
     activityManager = app.get(ActivityManager);
     gameStorage = app.get(GameStorage);
     userRelationshipStorage = app.get(UserRelationshipStorage);
@@ -89,12 +92,8 @@ describe('UserModule - /user (e2e)', () => {
   beforeEach(async () => {
     userIds = [allUserIds[index], allUserIds[index + 1]];
     clientSockets = [
-      io('http://localhost:4241', {
-        extraHeaders: { 'x-user-id': userIds[0].toString() },
-      }),
-      io('http://localhost:4241', {
-        extraHeaders: { 'x-user-id': userIds[1].toString() },
-      }),
+      io(URL, { extraHeaders: { 'x-user-id': userIds[0].toString() } }),
+      io(URL, { extraHeaders: { 'x-user-id': userIds[1].toString() } }),
     ];
     await Promise.all(
       clientSockets.map(
@@ -819,7 +818,7 @@ describe('UserModule - /user (e2e)', () => {
     beforeEach(async () => {
       userIds.push(allUserIds[index + 2]);
       clientSockets.push(
-        io('http://localhost:4241', {
+        io(URL, {
           extraHeaders: { 'x-user-id': userIds[2].toString() },
         }),
       );
@@ -1091,6 +1090,36 @@ describe('UserModule - /user (e2e)', () => {
         userId: targetId,
       });
     });
+
     // TODO - GAME TEST
+    it('should return online, inGame (WS) (both are logged in)', async () => {
+      const [requesterId, targetId] = userIds;
+      const gameId = nanoid();
+      await gameStorage.createGame(
+        gameId,
+        new GameInfo(requesterId, targetId, 1, true),
+      );
+      clientSockets.forEach((socket, i) =>
+        socket.emit('currentUi', { userId: userIds[i], ui: `game-${gameId}` }),
+      );
+      await waitForExpect(() => {
+        expect(activityManager.getActivity(requesterId)).toEqual(
+          `game-${gameId}`,
+        );
+        expect(activityManager.getActivity(targetId)).toEqual(`game-${gameId}`);
+      });
+      const [wsMessage] = await Promise.all([
+        listenPromise(clientSockets[0], 'userActivity'),
+        request(app.getHttpServer())
+          .get(`/user/${targetId}/info`)
+          .set('x-user-id', requesterId.toString()),
+      ]);
+      expect(wsMessage).toEqual({
+        activity: 'inGame',
+        gameId,
+        userId: targetId,
+      });
+      gameStorage.deleteGame(gameId);
+    });
   });
 });

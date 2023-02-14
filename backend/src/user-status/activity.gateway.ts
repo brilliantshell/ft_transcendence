@@ -23,6 +23,7 @@ import { ChannelStorage } from './channel.storage';
 import { ChatsGateway } from '../chats/chats.gateway';
 import { CurrentUiDto } from './dto/user-status.dto';
 import { GameGateway } from '../game/game.gateway';
+import { GameStorage } from '../game/game.storage';
 import { RanksGateway } from '../ranks/ranks.gateway';
 import { UserActivityDto } from './dto/user-status.dto';
 import { UserRelationshipStorage } from './user-relationship.storage';
@@ -48,6 +49,7 @@ export class ActivityGateway
     private readonly channelStorage: ChannelStorage,
     private readonly chatsGateway: ChatsGateway,
     private readonly gameGateway: GameGateway,
+    private readonly gameStorage: GameStorage,
     private readonly ranksGateway: RanksGateway,
     private readonly userRelationshipStorage: UserRelationshipStorage,
     private readonly userSocketStorage: UserSocketStorage,
@@ -156,7 +158,7 @@ export class ActivityGateway
     }
 
     // TODO : 게임 중이라면 GameStorage 에서 gameId 가져오기
-    const gameId = null;
+    const gameId = this.gameStorage.players.get(targetId) ?? null;
 
     return {
       activity,
