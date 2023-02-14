@@ -134,4 +134,40 @@ export class GameService {
     );
     return gameId;
   }
+
+  /**
+   * @description 게임 맵 변경
+   *
+   * @param requesterId 요청자 id
+   * @param gameId 게임 id
+   * @param map 변경할 맵
+   */
+  changeMap(requesterId: UserId, gameId: GameId, map: 1 | 2 | 3) {
+    const gameInfo = this.gameStorage.getGame(gameId);
+    if (gameInfo === undefined) {
+      throw new NotFoundException(
+        `The game(${gameId}) requested by ${requesterId} does not exist`,
+      );
+    }
+    if (!this.gameStorage.players.has(requesterId)) {
+      throw new ForbiddenException(
+        `The requester(${requesterId}) is not a participant of the game`,
+      );
+    }
+    if (gameInfo.isRank) {
+      throw new ForbiddenException(
+        `The requester(${requesterId}) cannot change map of a ladder game`,
+      );
+    }
+    if (gameInfo.leftId !== requesterId) {
+      throw new ForbiddenException(
+        `The invited player(${requesterId}) cannot change game options`,
+      );
+    }
+    gameInfo.map = map;
+    this.gameGateway.emitGameOption(
+      this.userSocketStorage.clients.get(gameInfo.rightId),
+      map,
+    );
+  }
 }

@@ -73,11 +73,11 @@ export class GameGateway {
   /**
    * @description: 게임 옵션 전송
    *
-   * @param gameId 게임 id
+   * @param invitedSocketId 초대된 유저의 socket id
    * @param map 맵
    */
-  emitGameOption(gameId: GameId, map: 1 | 2 | 3) {
-    this.server.to(`game-${gameId}`).emit('gameOption', { map });
+  emitGameOption(invitedSocketId: SocketId, map: 1 | 2 | 3) {
+    this.server.to(invitedSocketId).emit('gameOption', { map });
   }
 
   // NOTE : ladder 일 때만 호출

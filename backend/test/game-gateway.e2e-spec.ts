@@ -372,13 +372,13 @@ describe('GameGateway (e2e)', () => {
         userSocketStorage.clients.get(userIds[0]),
         `game-${gameId}`,
       );
-      const [wsMessageOne] = await Promise.all([
+      const [wsMessage] = await Promise.all([
         new Promise((resolve) =>
           playerOne.on('gameOption', (data) => resolve(data)),
         ),
-        gateway.emitGameOption(gameId, 3),
+        gateway.emitGameOption(userSocketStorage.clients.get(userIds[0]), 3),
       ]);
-      expect(wsMessageOne).toEqual({ map: 3 });
+      expect(wsMessage).toEqual({ map: 3 });
     });
   });
 

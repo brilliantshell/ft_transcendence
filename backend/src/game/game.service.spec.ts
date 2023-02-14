@@ -13,7 +13,7 @@ import { BlockedUsers } from '../entity/blocked-users.entity';
 import { Channels } from '../entity/channels.entity';
 import { Friends } from '../entity/friends.entity';
 import { GameGateway } from './game.gateway';
-import { GameId, GameInfo } from '../util/type';
+import { GameId, GameInfo, SocketId } from '../util/type';
 import { GameService } from './game.service';
 import { GameStorage } from './game.storage';
 import { RanksGateway } from '../ranks/ranks.gateway';
@@ -45,13 +45,12 @@ describe('GameService', () => {
   let playerOne: Users;
   let playerTwo: Users;
   let spectatorOne: Users;
-  let spectatorTwo: Users;
 
   beforeAll(async () => {
     const dataSources = await createDataSources(TEST_DB, ENTITIES);
     initDataSource = dataSources.initDataSource;
     dataSource = dataSources.dataSource;
-    usersEntities = generateUsers(64);
+    usersEntities = generateUsers(100);
     await dataSource.getRepository(Users).insert(usersEntities);
   });
 
@@ -79,6 +78,7 @@ describe('GameService', () => {
       .useValue({
         joinRoom: jest.fn((socketId: string, roomId: string) => undefined),
         emitNewGame: jest.fn((gameId: GameId) => undefined),
+        emitGameOption: jest.fn((socketId: SocketId, map: number) => undefined),
       })
       .compile();
     service = module.get<GameService>(GameService);
@@ -89,8 +89,8 @@ describe('GameService', () => {
     );
     userSocketStorage = module.get<UserSocketStorage>(UserSocketStorage);
     gameId = nanoid();
-    currentUsers = usersEntities.slice(index, index + 4);
-    [playerOne, playerTwo, spectatorOne, spectatorTwo] = currentUsers;
+    currentUsers = usersEntities.slice(index, index + 3);
+    [playerOne, playerTwo, spectatorOne] = currentUsers;
     await Promise.all(
       currentUsers.map(({ userId }) => {
         const socketId = nanoid();
@@ -99,7 +99,7 @@ describe('GameService', () => {
         return userRelationshipStorage.load(userId);
       }),
     );
-    index += 4;
+    index += 3;
   });
 
   afterEach(async () => {
@@ -246,4 +246,63 @@ describe('GameService', () => {
       expect(gameGateway.emitNewGame).not.toHaveBeenCalled();
     });
   });
+
+  describe('CHANGE MAP', () => {
+    it('should change the map of a game and let the opponent know the updated option', () => {
+      gameStorage.createGame(
+        gameId,
+        new GameInfo(playerOne, playerTwo, 1, false),
+      );
+      service.changeMap(playerOne.userId, gameId, 2);
+      expect(gameStorage.getGame(gameId).map).toBe(2);
+      expect(gameGateway.emitGameOption).toHaveBeenCalledWith(
+        userSocketStorage.clients.get(playerTwo.userId),
+        2,
+      );
+    });
+
+    it('should throw NOT FOUND when the game does not exist', () => {
+      expect(() => service.changeMap(playerOne.userId, gameId, 2)).toThrowError(
+        NotFoundException,
+      );
+      expect(gameGateway.emitGameOption).not.toHaveBeenCalled();
+    });
+
+    it('should throw FORBIDDEN when the player is not in the game', () => {
+      gameStorage.createGame(
+        gameId,
+        new GameInfo(playerOne, playerTwo, 1, false),
+      );
+      expect(() =>
+        service.changeMap(spectatorOne.userId, gameId, 2),
+      ).toThrowError(ForbiddenException);
+      expect(gameGateway.emitGameOption).not.toHaveBeenCalled();
+    });
+
+    it('should throw FORBIDDEN when the player did not create the game', () => {
+      gameStorage.createGame(
+        gameId,
+        new GameInfo(playerOne, playerTwo, 1, false),
+      );
+      expect(() => service.changeMap(playerTwo.userId, gameId, 2)).toThrowError(
+        ForbiddenException,
+      );
+      expect(gameGateway.emitGameOption).not.toHaveBeenCalled();
+    });
+
+    it('should throw FORBIDDEN when the game is a ladder game', () => {
+      gameStorage.createGame(
+        gameId,
+        new GameInfo(playerOne, playerTwo, 1, true),
+      );
+      expect(() => service.changeMap(playerOne.userId, gameId, 2)).toThrowError(
+        ForbiddenException,
+      );
+      expect(gameGateway.emitGameOption).not.toHaveBeenCalled();
+    });
+  });
+
+  // describe('START THE GAME', () => {
+  //   it('should return gameInfo ');
+  // });
 });
