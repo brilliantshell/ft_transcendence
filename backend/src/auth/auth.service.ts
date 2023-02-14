@@ -11,8 +11,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
 import { ApiConfigService } from '../config/api-config.service';
-import { RefreshTokenWrapper, JwtPayload } from './auth.interface';
-import { UserId } from '../util/type';
+import { JwtPayload, RefreshTokenWrapper, UserId } from '../util/type';
 import { Users } from '../entity/users.entity';
 
 @Injectable()
