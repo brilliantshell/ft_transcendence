@@ -8,8 +8,12 @@ import { ActivityManager } from '../src/user-status/activity.manager';
 import { AppModule } from '../src/app.module';
 import { UserSocketStorage } from '../src/user-status/user-socket.storage';
 import { UserStatusModule } from '../src/user-status/user-status.module';
+import { listenPromise } from './util/util';
 
 process.env.DB_HOST = 'localhost';
+
+const PORT = 4243;
+const URL = `http://localhost:${PORT}`;
 
 describe('UserStatusModule (e2e)', () => {
   let app: INestApplication;
@@ -24,13 +28,9 @@ describe('UserStatusModule (e2e)', () => {
 
     app = moduleFixture.createNestApplication();
     await app.init();
-    await app.listen(4243);
-    clientSocket = io('http://localhost:4243', {
-      extraHeaders: { 'x-user-id': '20000' },
-    });
-    await new Promise((resolve) =>
-      clientSocket.on('connect', () => resolve('done')),
-    );
+    await app.listen(PORT);
+    clientSocket = io(URL, { extraHeaders: { 'x-user-id': '20000' } });
+    await listenPromise(clientSocket, 'connect');
   });
 
   beforeEach(() => {
@@ -43,44 +43,35 @@ describe('UserStatusModule (e2e)', () => {
   });
 
   it('should pass information about in which UI a user is', async () => {
+    clientSocket.emit('currentUi', { ui: 'profile' });
+    await waitForExpect(() => {
+      expect(manager.getActivity(20000)).toEqual('profile');
+    });
+    clientSocket.emit('currentUi', { ui: 'ranks' });
+    await waitForExpect(() => {
+      expect(manager.getActivity(20000)).toEqual('ranks');
+    });
+    clientSocket.emit('currentUi', { ui: 'chatRooms-4242' });
+    await waitForExpect(() => {
+      expect(manager.getActivity(20000)).toEqual('chatRooms-4242');
+    });
+    clientSocket.emit('currentUi', { ui: 'waitingRoom' });
+    await waitForExpect(() => {
+      expect(manager.getActivity(20000)).toEqual('waitingRoom');
+    });
     const gameId = nanoid();
-    clientSocket.emit('currentUi', { userId: '20000', ui: 'profile' });
-    clientSocket.emit('currentUi', { userId: '121212', ui: 'ranks' });
-    clientSocket.emit('currentUi', { userId: '10000', ui: 'chatRooms-4242' });
-    clientSocket.emit('currentUi', { userId: '199999', ui: 'waitingRoom' });
-    clientSocket.emit('currentUi', { userId: '42424', ui: `game-${gameId}` });
-    await new Promise((resolve) => setTimeout(() => resolve('done'), 1000));
-    expect(manager.getActivity(20000)).toEqual('profile');
-    manager.deleteActivity(20000);
-    expect(manager.getActivity(121212)).toEqual('ranks');
-    manager.deleteActivity(121212);
-    expect(manager.getActivity(10000)).toEqual('chatRooms-4242');
-    manager.deleteActivity(10000);
-    expect(manager.getActivity(199999)).toEqual('waitingRoom');
-    manager.deleteActivity(199999);
-    expect(manager.getActivity(42424)).toEqual(`game-${gameId}`);
-    manager.deleteActivity(42424);
+    clientSocket.emit('currentUi', { ui: `game-${gameId}` });
+    await waitForExpect(() => {
+      expect(manager.getActivity(20000)).toEqual(`game-${gameId}`);
+    });
   });
 
   it('should throw BAD REQUEST when the given current UI is unknown', async () => {
-    clientSocket.emit('currentUi', { userId: 12311, ui: 'abc' });
-    clientSocket.emit('currentUi', { userId: 54321, ui: 'chatRooms-345abc' });
-
-    await new Promise((resolve) => setTimeout(() => resolve('done'), 1000));
+    clientSocket.emit('currentUi', { ui: 'abc' });
+    clientSocket.emit('currentUi', { ui: 'chatRooms-345abc' });
+    await new Promise((resolve) => setTimeout(() => resolve('done'), 500));
     expect(manager.getActivity(12311)).toBeNull();
     expect(manager.getActivity(54321)).toBeNull();
-  });
-
-  it('should throw BAD REQUEST when an invalid userId has been passed to Activity Gateway', async () => {
-    clientSocket.emit('currentUi', { userId: -4242, ui: 'waitingRoom' });
-    clientSocket.emit('currentUi', { userId: '100000a', ui: 'profile' });
-    clientSocket.emit('currentUi', { userId: 0, ui: 'chats' });
-    clientSocket.emit('currentUi', { userId: '9999', ui: 'waitingRoom' });
-    await new Promise((resolve) => setTimeout(() => resolve('done'), 1000));
-    expect(manager.getActivity(-4242)).toBeNull();
-    expect(manager.getActivity(0)).toBeNull();
-    expect(manager.getActivity(100000)).toBeNull();
-    expect(manager.getActivity(9999)).toBeNull();
   });
 
   it('should contain <UserId, SocketId> & <SocketId, UserID> in UserSocketStorage', () => {
@@ -99,19 +90,15 @@ describe('UserStatusModule (e2e)', () => {
     let clientSockets: Socket[];
     beforeEach(async () => {
       clientSockets = [
-        io('http://localhost:4243', {
-          extraHeaders: { 'x-user-id': `${10000}` },
-        }),
-        io('http://localhost:4243', {
-          extraHeaders: { 'x-user-id': `${10001}` },
-        }),
+        io(URL, { extraHeaders: { 'x-user-id': '10000' } }),
+        io(URL, { extraHeaders: { 'x-user-id': '10001' } }),
       ];
       await Promise.all(
-        clientSockets.map((socket, i) =>
+        clientSockets.map((socket) =>
           new Promise((resolve) =>
             socket.on('connect', () => resolve(socket)),
           ).then((client: Socket) =>
-            client.emit('currentUi', { userId: 10000 + i, ui: 'profile' }),
+            client.emit('currentUi', { ui: 'profile' }),
           ),
         ),
       );
@@ -127,20 +114,14 @@ describe('UserStatusModule (e2e)', () => {
 
     it('should emit userActivity when a user is connected', async () => {
       const [userActivityOne, userActivityTwo] = await Promise.all([
-        new Promise((resolve) =>
-          clientSockets[0].on('userActivity', (data) => resolve(data)),
-        ),
-        new Promise((resolve) =>
-          clientSockets[1].on('userActivity', (data) => resolve(data)),
-        ),
+        listenPromise(clientSockets[0], 'userActivity'),
+        listenPromise(clientSockets[1], 'userActivity'),
         new Promise((resolve) => {
-          const socket = io('http://localhost:4243', {
-            extraHeaders: { 'x-user-id': `${10002}` },
-          });
+          const socket = io(URL, { extraHeaders: { 'x-user-id': '10002' } });
           clientSockets.push(socket);
           clientSockets[2].on('connect', () => resolve(socket));
         }).then((socket: Socket) =>
-          socket.emit('currentUi', { userId: 10002, ui: 'profile' }),
+          socket.emit('currentUi', { ui: 'profile' }),
         ),
       ]);
       await waitForExpect(() =>
@@ -159,19 +140,15 @@ describe('UserStatusModule (e2e)', () => {
     });
 
     it('should emit userActivity when a user is disconnected', async () => {
-      const socket = io('http://localhost:4243', {
+      const socket = io(URL, {
         extraHeaders: { 'x-user-id': `${10002}` },
       });
       await new Promise((resolve) =>
         socket.on('connect', () => resolve(socket)),
       );
       const [userActivityOne, userActivityTwo] = await Promise.all([
-        new Promise((resolve) =>
-          clientSockets[0].on('userActivity', (data) => resolve(data)),
-        ),
-        new Promise((resolve) =>
-          clientSockets[1].on('userActivity', (data) => resolve(data)),
-        ),
+        listenPromise(clientSockets[0], 'userActivity'),
+        listenPromise(clientSockets[1], 'userActivity'),
         socket.close(),
       ]);
       expect(userActivityOne).toEqual({

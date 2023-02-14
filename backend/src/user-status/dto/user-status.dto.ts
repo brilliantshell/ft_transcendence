@@ -1,15 +1,8 @@
-import { IsInt, IsString, Matches, Max, Min } from 'class-validator';
-import { Type } from 'class-transformer';
+import { IsString, Matches } from 'class-validator';
 
 import { Activity, CurrentUi, GameId, UserId } from '../../util/type';
 
 export class CurrentUiDto {
-  @Type(() => Number)
-  @IsInt()
-  @Min(10000)
-  @Max(199999)
-  userId: UserId;
-
   @IsString()
   @Matches(
     new RegExp(

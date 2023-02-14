@@ -137,9 +137,9 @@ describe('GameGateway (e2e)', () => {
 
     it('should join and leave rooms', async () => {
       const [playerOne, playerTwo, user] = clientSockets;
-      playerOne.emit('currentUi', { userId: userIds[0], ui: 'waitingRoom' });
-      playerTwo.emit('currentUi', { userId: userIds[1], ui: `game-${gameId}` });
-      user.emit('currentUi', { userId: userIds[2], ui: `game-${gameId}` });
+      playerOne.emit('currentUi', { ui: 'waitingRoom' });
+      playerTwo.emit('currentUi', { ui: `game-${gameId}` });
+      user.emit('currentUi', { ui: `game-${gameId}` });
       await waitForExpect(() => {
         expect(activityManager.getActivity(userIds[0])).toEqual('waitingRoom');
         expect(activityManager.getActivity(userIds[1])).toEqual(
@@ -151,9 +151,9 @@ describe('GameGateway (e2e)', () => {
         expect(gateway.doesRoomExist('waitingRoom')).toBeTruthy();
         expect(gateway.doesRoomExist(`game-${gameId}`)).toBeTruthy();
       });
-      playerOne.emit('currentUi', { userId: userIds[0], ui: 'profile' });
-      playerTwo.emit('currentUi', { userId: userIds[1], ui: 'ranks' });
-      user.emit('currentUi', { userId: userIds[2], ui: `chats` });
+      playerOne.emit('currentUi', { ui: 'profile' });
+      playerTwo.emit('currentUi', { ui: 'ranks' });
+      user.emit('currentUi', { ui: `chats` });
       await waitForExpect(() => {
         expect(activityManager.getActivity(userIds[0])).toEqual('profile');
         expect(activityManager.getActivity(userIds[1])).toEqual('ranks');
@@ -241,8 +241,8 @@ describe('GameGateway (e2e)', () => {
 
     it('should notify all players that are in /waiting-room UI when a new game has been started', async () => {
       const [playerOne, playerTwo, userOne, userTwo] = clientSockets;
-      userOne.emit('currentUi', { userId: userIds[2], ui: 'waitingRoom' });
-      userTwo.emit('currentUi', { userId: userIds[3], ui: 'waitingRoom' });
+      userOne.emit('currentUi', { ui: 'waitingRoom' });
+      userTwo.emit('currentUi', { ui: 'waitingRoom' });
       await waitForExpect(() => {
         expect(activityManager.getActivity(userIds[2])).toEqual('waitingRoom');
         expect(activityManager.getActivity(userIds[3])).toEqual('waitingRoom');
@@ -302,8 +302,8 @@ describe('GameGateway (e2e)', () => {
 
     it('should notify only to the players that are in /waiting-room UI when a new game has been started', async () => {
       const [playerOne, playerTwo, userOne, userTwo] = clientSockets;
-      userOne.emit('currentUi', { userId: userIds[2], ui: 'profile' });
-      userTwo.emit('currentUi', { userId: userIds[3], ui: 'waitingRoom' });
+      userOne.emit('currentUi', { ui: 'profile' });
+      userTwo.emit('currentUi', { ui: 'waitingRoom' });
       await waitForExpect(() => {
         expect(activityManager.getActivity(userIds[2])).toEqual('profile');
         expect(activityManager.getActivity(userIds[3])).toEqual('waitingRoom');
@@ -633,11 +633,9 @@ describe('GameGateway (e2e)', () => {
       clientSockets.push(
         io(URL, { extraHeaders: { 'x-user-id': userIds[2].toString() } }),
       );
-      await new Promise((resolve) =>
-        clientSockets[2].on('connect', () => resolve('done')),
-      );
-      clientSockets.forEach((socket, i) =>
-        socket.emit('currentUi', { userId: userIds[i], ui: `game-${gameId}` }),
+      await listenPromise(clientSockets[2], 'connect');
+      clientSockets.forEach((socket) =>
+        socket.emit('currentUi', { ui: `game-${gameId}` }),
       );
       await waitForExpect(() => {
         expect(activityManager.getActivity(userIds[0])).toEqual(
@@ -739,7 +737,7 @@ describe('GameGateway (e2e)', () => {
       const [wsOne, wsTwo] = await Promise.all([
         listenPromise(playerTwo, 'gameAborted'),
         listenPromise(spectator, 'gameAborted'),
-        playerOne.emit('currentUi', { userId: userIds[0], ui: 'waitingRoom' }),
+        playerOne.emit('currentUi', { ui: 'waitingRoom' }),
       ]);
       expect(wsOne).toEqual({ abortedSide: 'left' });
       expect(wsTwo).toEqual({ abortedSide: 'left' });
@@ -787,7 +785,7 @@ describe('GameGateway (e2e)', () => {
       const [wsErrorOne, wsErrorTwo] = await Promise.allSettled([
         timeout(1000, listenPromise(playerOne, 'gameAborted')),
         timeout(1000, listenPromise(playerTwo, 'gameAborted')),
-        spectator.emit('currentUi', { userId: userIds[2], ui: 'waitingRoom' }),
+        spectator.emit('currentUi', { ui: 'waitingRoom' }),
       ]);
       expect(wsErrorOne.status).toBe('rejected');
       expect(wsErrorTwo.status).toBe('rejected');
@@ -839,10 +837,10 @@ describe('GameGateway (e2e)', () => {
         gameId,
         new GameInfo(userIds[0], userIds[1], 1, true),
       );
-      playerOne.emit('currentUi', { userId: userIds[0], ui: `game-${gameId}` });
-      playerTwo.emit('currentUi', { userId: userIds[1], ui: `game-${gameId}` });
-      waitingOne.emit('currentUi', { userId: userIds[2], ui: 'waitingRoom' });
-      waitingTwo.emit('currentUi', { userId: userIds[3], ui: 'waitingRoom' });
+      playerOne.emit('currentUi', { ui: `game-${gameId}` });
+      playerTwo.emit('currentUi', { ui: `game-${gameId}` });
+      waitingOne.emit('currentUi', { ui: 'waitingRoom' });
+      waitingTwo.emit('currentUi', { ui: 'waitingRoom' });
       await waitForExpect(() => {
         expect(gateway.doesRoomExist(`game-${gameId}`)).toBeTruthy();
         expect(gateway.doesRoomExist('waitingRoom')).toBeTruthy();
@@ -880,10 +878,10 @@ describe('GameGateway (e2e)', () => {
         gameId,
         new GameInfo(userIds[0], userIds[1], 1, true),
       );
-      playerOne.emit('currentUi', { userId: userIds[0], ui: `game-${gameId}` });
-      playerTwo.emit('currentUi', { userId: userIds[1], ui: `game-${gameId}` });
-      waitingOne.emit('currentUi', { userId: userIds[2], ui: 'waitingRoom' });
-      waitingTwo.emit('currentUi', { userId: userIds[3], ui: 'waitingRoom' });
+      playerOne.emit('currentUi', { ui: `game-${gameId}` });
+      playerTwo.emit('currentUi', { ui: `game-${gameId}` });
+      waitingOne.emit('currentUi', { ui: 'waitingRoom' });
+      waitingTwo.emit('currentUi', { ui: 'waitingRoom' });
       await waitForExpect(() => {
         expect(gateway.doesRoomExist(`game-${gameId}`)).toBeTruthy();
         expect(gateway.doesRoomExist('waitingRoom')).toBeTruthy();
@@ -902,7 +900,7 @@ describe('GameGateway (e2e)', () => {
         timeout(1000, listenPromise(playerTwo, 'gameEnded')),
         listenPromise(waitingOne, 'gameEnded'),
         listenPromise(waitingTwo, 'gameEnded'),
-        playerOne.emit('currentUi', { userId: userIds[0], ui: 'profile' }),
+        playerOne.emit('currentUi', { ui: 'profile' }),
       ]);
       expect(gameStorage.getGame(gameId)).toBeUndefined();
       expect(gateway.doesRoomExist(`game-${gameId}`)).toBeFalsy();
@@ -921,10 +919,10 @@ describe('GameGateway (e2e)', () => {
         gameId,
         new GameInfo(userIds[0], userIds[1], 1, false),
       );
-      playerOne.emit('currentUi', { userId: userIds[0], ui: `game-${gameId}` });
-      playerTwo.emit('currentUi', { userId: userIds[1], ui: `game-${gameId}` });
-      waitingOne.emit('currentUi', { userId: userIds[2], ui: 'waitingRoom' });
-      waitingTwo.emit('currentUi', { userId: userIds[3], ui: 'waitingRoom' });
+      playerOne.emit('currentUi', { ui: `game-${gameId}` });
+      playerTwo.emit('currentUi', { ui: `game-${gameId}` });
+      waitingOne.emit('currentUi', { ui: 'waitingRoom' });
+      waitingTwo.emit('currentUi', { ui: 'waitingRoom' });
       await waitForExpect(() => {
         expect(gateway.doesRoomExist(`game-${gameId}`)).toBeTruthy();
         expect(gateway.doesRoomExist('waitingRoom')).toBeTruthy();
@@ -957,10 +955,10 @@ describe('GameGateway (e2e)', () => {
         gameId,
         new GameInfo(userIds[0], userIds[1], 1, false),
       );
-      playerOne.emit('currentUi', { userId: userIds[0], ui: `game-${gameId}` });
-      playerTwo.emit('currentUi', { userId: userIds[1], ui: `game-${gameId}` });
-      waitingOne.emit('currentUi', { userId: userIds[2], ui: 'waitingRoom' });
-      waitingTwo.emit('currentUi', { userId: userIds[3], ui: 'waitingRoom' });
+      playerOne.emit('currentUi', { ui: `game-${gameId}` });
+      playerTwo.emit('currentUi', { ui: `game-${gameId}` });
+      waitingOne.emit('currentUi', { ui: 'waitingRoom' });
+      waitingTwo.emit('currentUi', { ui: 'waitingRoom' });
       await waitForExpect(() => {
         expect(gateway.doesRoomExist(`game-${gameId}`)).toBeTruthy();
         expect(gateway.doesRoomExist('waitingRoom')).toBeTruthy();

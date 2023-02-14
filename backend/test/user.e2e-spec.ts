@@ -101,8 +101,8 @@ describe('UserModule - /user (e2e)', () => {
           new Promise((resolve) => socket.on('connect', () => resolve('done'))),
       ),
     );
-    clientSockets.forEach((clientSocket, i) =>
-      clientSocket.emit('currentUi', { userId: userIds[i], ui: 'profile' }),
+    clientSockets.forEach((clientSocket) =>
+      clientSocket.emit('currentUi', { ui: 'profile' }),
     );
     await waitForExpect(() => {
       expect(activityManager.getActivity(userIds[0])).not.toBeNull();
@@ -823,7 +823,7 @@ describe('UserModule - /user (e2e)', () => {
         }),
       );
       await listenPromise(clientSockets[2], 'connect');
-      clientSockets[2].emit('currentUi', { userId: userIds[2], ui: 'profile' }),
+      clientSockets[2].emit('currentUi', { ui: 'profile' }),
         await waitForExpect(() => {
           expect(activityManager.getActivity(userIds[2])).not.toBeNull();
         });
@@ -1099,8 +1099,8 @@ describe('UserModule - /user (e2e)', () => {
         gameId,
         new GameInfo(requesterId, targetId, 1, true),
       );
-      clientSockets.forEach((socket, i) =>
-        socket.emit('currentUi', { userId: userIds[i], ui: `game-${gameId}` }),
+      clientSockets.forEach((socket) =>
+        socket.emit('currentUi', { ui: `game-${gameId}` }),
       );
       await waitForExpect(() => {
         expect(activityManager.getActivity(requesterId)).toEqual(

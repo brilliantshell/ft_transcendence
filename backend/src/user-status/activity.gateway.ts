@@ -116,10 +116,11 @@ export class ActivityGateway
   @SubscribeMessage('currentUi')
   handleCurrentUi(
     @ConnectedSocket() clientSocket: Socket,
-    @MessageBody() { userId, ui }: CurrentUiDto,
+    @MessageBody() { ui }: CurrentUiDto,
   ) {
-    // FIXME : userId 를 메시지로 받아서 처리하는게 아니라 client socket 에서 받아서 처리해야 함
-    // const userId = Number(clientSocket.handshake.headers['x-user-id']);
+    const userId = Math.floor(
+      Number(clientSocket.handshake.headers['x-user-id']),
+    );
     const prevUi = this.activityManager.getActivity(userId);
     this.activityManager.setActivity(userId, ui);
     prevUi
