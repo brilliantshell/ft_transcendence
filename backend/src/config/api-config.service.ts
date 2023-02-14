@@ -37,7 +37,7 @@ export class ApiConfigService {
   get jwtAccessConfig() {
     return {
       ...this.jwtAccessSecret,
-      expiresIn: this.configService.get('JWT_ACCESS_EXPIRE') || '1h',
+      expiresIn: '1h',
     };
   }
 
@@ -50,7 +50,7 @@ export class ApiConfigService {
   get jwtRefreshConfig() {
     return {
       ...this.jwtRefreshSecret,
-      expiresIn: this.configService.get('JWT_REFRESH_EXPIRE') || '7d',
+      expiresIn: '14d',
     };
   }
 }

@@ -9,7 +9,7 @@ import { Users } from '../entity/users.entity';
 @Global()
 @Module({
   imports: [
-    CacheModule.register({ ttl: 1209600000, store: 'memory', max: 10000 }),
+    CacheModule.register({ ttl: 1209600000 /* 14 days */, max: 40000 }),
     TypeOrmModule.forFeature([Users]),
     forwardRef(() => ApiConfigModule),
     JwtModule.register({}),

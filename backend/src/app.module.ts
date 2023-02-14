@@ -17,6 +17,7 @@ import { ProfileModule } from './profile/profile.module';
 import { RanksModule } from './ranks/ranks.module';
 import { UserModule } from './user/user.module';
 import { UserStatusModule } from './user-status/user-status.module';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
@@ -36,6 +37,7 @@ import { UserStatusModule } from './user-status/user-status.module';
         apiConfigService.postgresConfig,
       inject: [ApiConfigService],
     }),
+    AuthModule,
     ChatsModule,
     GameModule,
     LoginModule,

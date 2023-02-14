@@ -11,8 +11,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
 import { ApiConfigService } from '../config/api-config.service';
-import { Users } from '../entity/users.entity';
 import { UserId } from '../util/type';
+import { Users } from '../entity/users.entity';
 
 interface RefreshTokenWrapper {
   token: string;
@@ -43,9 +43,10 @@ export class AuthService {
 
   /*****************************************************************************
    *                                                                           *
-   * SECTION : FIXME : Sign-Up                                                 *
+   * SECTION : FIXME : Sign-Up (미구현)                                        *
    *                                                                           *
    ****************************************************************************/
+
   async findUserById(userId: UserId) {
     try {
       return await this.usersRepository.exist({ where: { userId } });
@@ -66,6 +67,7 @@ export class AuthService {
   //     refreshToken: this.issueRefreshToken(userId),
   //   };
   // }
+
   async login(userId: string) {
     return {
       accessToken: this.issueAccessToken(userId),
@@ -179,6 +181,7 @@ export class AuthService {
    * SECTION : Private Methods                                                 *
    *                                                                           *
    ****************************************************************************/
+
   /**
    * @description 유저가 소유한 Refresh Token 모두 무효화
    *
