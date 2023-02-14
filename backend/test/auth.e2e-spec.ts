@@ -58,7 +58,7 @@ describe('AuthGuard (e2e)', () => {
     );
     app.use(cookieParser());
     await app.init();
-    await app.listen(4251);
+    await app.listen(4252);
     authService = app.get(AuthService);
   });
 

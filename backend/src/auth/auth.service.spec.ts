@@ -5,6 +5,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { ApiConfigModule } from '../config/api-config.module';
+import { ApiConfigService } from '../config/api-config.service';
 import { AuthService } from './auth.service';
 import {
   TYPEORM_SHARED_CONFIG,
@@ -23,6 +24,13 @@ describe('AuthService', () => {
   let initDataSource: DataSource;
   let dataSource: DataSource;
   let usersRepository: Repository<Users>;
+
+  const mockApiConfigService = {
+    jwtAccessSecret: { secret: 'jwtAccessSecret' },
+    jwtAccessConfig: { secret: 'jwtAccessSecret', expiresIn: '30m' },
+    jwtRefreshSecret: { secret: 'jwtRefreshSecret' },
+    jwtRefreshConfig: { secret: 'jwtRefreshSecret', expiresIn: '1h' },
+  };
 
   beforeAll(async () => {
     const dataSources = await createDataSources(TEST_DB, ENTITIES);
@@ -49,7 +57,10 @@ describe('AuthService', () => {
         CacheModule.register({ ttl: 1209600000, store: 'memory' }),
       ],
       providers: [AuthService],
-    }).compile();
+    })
+      .overrideProvider(ApiConfigService)
+      .useValue(mockApiConfigService)
+      .compile();
 
     service = module.get<AuthService>(AuthService);
   });
@@ -129,10 +140,5 @@ describe('AuthService', () => {
     expect(await service.verifyRefreshToken(token)).toMatchObject({
       userId: userIdStr,
     });
-  });
-
-  it('hi', async () => {
-    console.log(service.issueAccessToken('25136'));
-    console.log(await service.issueRefreshToken('25136'));
   });
 });
