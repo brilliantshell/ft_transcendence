@@ -25,6 +25,8 @@ import { NicknameDto } from '../profile/dto/profile.dto';
 import { SkipAuthGuard } from '../decorator/skip-auth.decorator';
 import { multerOptions } from '../profile/option/profile.upload-options';
 
+const URL = 'http://localhost:5173/';
+
 @Controller('login')
 export class LoginController {
   constructor(
@@ -40,9 +42,7 @@ export class LoginController {
     res
       .status(303)
       .redirect(
-        `http://localhost:5173/${
-          !isRegistered ? 'sign-up' : authEmail ? '2fa' : 'profile'
-        }`,
+        `${URL}${!isRegistered ? 'sign-up' : authEmail ? '2fa' : 'profile'}`,
       );
   }
 
