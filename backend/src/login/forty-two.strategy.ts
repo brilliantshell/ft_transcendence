@@ -63,9 +63,10 @@ export class FortyTwoStrategy extends PassportStrategy(Strategy, '42') {
         })
       )?.authEmail;
     } catch (e) {
-      if (e instanceof InternalServerErrorException) {
-        throw e;
-      }
+      this.logger.error(e);
+      throw new InternalServerErrorException(
+        `Failed to find auth email of user(${profile.userId})`,
+      );
     }
     return profile;
   }
