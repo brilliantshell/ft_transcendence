@@ -1,6 +1,4 @@
 import {
-  BadRequestException,
-  ConflictException,
   ForbiddenException,
   Injectable,
   NotFoundException,
@@ -22,21 +20,26 @@ export class GameService {
     private readonly userSocketStorage: UserSocketStorage,
   ) {}
 
+  /*****************************************************************************
+   *                                                                           *
+   * SECTION : Public methods                                                  *
+   *                                                                           *
+   ****************************************************************************/
+
   /**
    * @description 현재 진행중인 ladder 게임 목록 반환
    *
    * @returns 현재 진행중인 게임 목록
    */
-  findGames() {
+  findLadderGames() {
     const games = [];
-    this.gameStorage.getGames().forEach((gameInfo, gameId) => {
-      games.push({
-        id: gameId,
-        left: gameInfo.leftNickname,
-        right: gameInfo.rightNickname,
+    this.gameStorage
+      .getGames()
+      .forEach(({ leftNickname, rightNickname, isRank }, gameId) => {
+        isRank &&
+          games.push({ id: gameId, left: leftNickname, right: rightNickname });
       });
-    });
-    return games.reverse();
+    return { games: games.reverse() };
   }
 
   /**
@@ -47,12 +50,7 @@ export class GameService {
    * @returns 게임의 기본 정보
    */
   findGameInfo(spectatorId: UserId, gameId: GameId) {
-    const gameInfo = this.gameStorage.getGame(gameId);
-    if (gameInfo === undefined) {
-      throw new NotFoundException(
-        `The game requested by ${spectatorId} does not exist`,
-      );
-    }
+    const gameInfo = this.getExistingGame(spectatorId, gameId);
     const { leftId, leftNickname, rightId, rightNickname, map, isRank } =
       gameInfo;
     const [leftRelationship, rightRelationship] = [
@@ -85,19 +83,14 @@ export class GameService {
    * @returns 게임의 기본 정보
    */
   findPlayers(playerId: UserId, gameId: GameId) {
-    const gameInfo = this.gameStorage.getGame(gameId);
-    if (gameInfo === undefined) {
-      throw new NotFoundException(
-        `The game requested by ${playerId} does not exist`,
-      );
-    }
-    if (gameInfo.leftId !== playerId && gameInfo.rightId !== playerId) {
+    const gameInfo = this.getExistingGame(playerId, gameId);
+    const { leftId, leftNickname, rightId, rightNickname } = gameInfo;
+    if (leftId !== playerId && rightId !== playerId) {
       throw new ForbiddenException(
         `The requester(${playerId}) is not a participant of the game`,
       );
     }
-    const { leftId, leftNickname, rightId, rightNickname } = gameInfo;
-    const isLeft = gameInfo.leftId === playerId;
+    const isLeft = leftId === playerId;
     const [playerNickname, opponentId, opponentNickname] = isLeft
       ? [leftNickname, rightId, rightNickname]
       : [rightNickname, leftId, leftNickname];
@@ -138,12 +131,7 @@ export class GameService {
    * @param map 변경할 맵
    */
   changeMap(requesterId: UserId, gameId: GameId, map: 1 | 2 | 3) {
-    const gameInfo = this.gameStorage.getGame(gameId);
-    if (gameInfo === undefined) {
-      throw new NotFoundException(
-        `The game(${gameId}) requested by ${requesterId} does not exist`,
-      );
-    }
+    const gameInfo = this.getExistingGame(requesterId, gameId);
     if (gameInfo.leftId !== requesterId && gameInfo.rightId !== requesterId) {
       throw new ForbiddenException(
         `The requester(${requesterId}) is not a participant of the game`,
@@ -164,5 +152,28 @@ export class GameService {
       this.userSocketStorage.clients.get(gameInfo.rightId),
       map,
     );
+  }
+
+  /*****************************************************************************
+   *                                                                           *
+   * SECTION : Private methods                                                 *
+   *                                                                           *
+   ****************************************************************************/
+
+  /**
+   * @description 게임 존재 여부 확인 및 gameId 로 특정되는 게임 정보 반환
+   *
+   * @param requesterId 요청자 id
+   * @param gameId 게임 id
+   * @returns 게임 정보
+   */
+  getExistingGame(requesterId: UserId, gameId: GameId) {
+    const gameInfo = this.gameStorage.getGame(gameId);
+    if (gameInfo === undefined) {
+      throw new NotFoundException(
+        `The game(${gameId}) requested by ${requesterId} does not exist`,
+      );
+    }
+    return gameInfo;
   }
 }

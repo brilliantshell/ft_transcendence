@@ -1,12 +1,8 @@
 import { DataSource } from 'typeorm';
-import {
-  BadRequestException,
-  ConflictException,
-  ForbiddenException,
-  NotFoundException,
-} from '@nestjs/common';
+import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { faker } from '@faker-js/faker';
 import { nanoid } from 'nanoid';
 
 import { BlockedUsers } from '../entity/blocked-users.entity';
@@ -50,7 +46,7 @@ describe('GameService', () => {
     const dataSources = await createDataSources(TEST_DB, ENTITIES);
     initDataSource = dataSources.initDataSource;
     dataSource = dataSources.dataSource;
-    usersEntities = generateUsers(100);
+    usersEntities = generateUsers(200);
     await dataSource.getRepository(Users).insert(usersEntities);
   });
 
@@ -115,30 +111,32 @@ describe('GameService', () => {
 
   describe('GAME LIST', () => {
     it('should return an empty list of games', () => {
-      expect(service.findGames()).toEqual([]);
+      expect(service.findLadderGames()).toEqual({ games: [] });
     });
 
-    it('should return a list of games', async () => {
+    it('should return a list of ladder games', async () => {
       const games = [];
-      for (let i = index; i < 10; i++) {
+      for (let i = index; i < 50; i++) {
         const newGameId = nanoid();
+        const isRank = faker.datatype.boolean();
         await gameStorage.createGame(
           newGameId,
           new GameInfo(
             usersEntities[i].userId,
             usersEntities[i + 1].userId,
             1,
-            true,
+            isRank,
           ),
         );
-        games.push({
-          id: newGameId,
-          left: usersEntities[i].nickname,
-          right: usersEntities[i + 1].nickname,
-        });
+        isRank &&
+          games.push({
+            id: newGameId,
+            left: usersEntities[i].nickname,
+            right: usersEntities[i + 1].nickname,
+          });
       }
-      index += 10;
-      expect(service.findGames()).toEqual(games.reverse());
+      index += 100;
+      expect(service.findLadderGames()).toEqual({ games: games.reverse() });
     });
   });
 

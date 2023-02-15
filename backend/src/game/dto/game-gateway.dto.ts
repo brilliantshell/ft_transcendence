@@ -2,7 +2,7 @@ import {
   ArrayUnique,
   IsInt,
   IsString,
-  Length,
+  Matches,
   Max,
   Min,
 } from 'class-validator';
@@ -20,7 +20,7 @@ export interface GameAbortedDto {
 
 export class GameCompleteDto {
   @IsString()
-  @Length(21)
+  @Matches(/^[0-9A-Za-z_-]{21}$/)
   id: GameId;
 
   @ArrayUnique()
