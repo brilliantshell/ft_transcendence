@@ -30,6 +30,8 @@ describe('AuthService', () => {
     jwtAccessConfig: { secret: 'jwtAccessSecret', expiresIn: '30m' },
     jwtRefreshSecret: { secret: 'jwtRefreshSecret' },
     jwtRefreshConfig: { secret: 'jwtRefreshSecret', expiresIn: '1h' },
+    jwtLoginSecret: { secret: 'jwtLoginSecret' },
+    jwtLoginConfig: { secret: 'jwtLoginSecret', expiresIn: '15m' },
   };
 
   beforeAll(async () => {
@@ -74,22 +76,18 @@ describe('AuthService', () => {
   });
 
   it('should find user by id', async () => {
-    const user = usersEntities[0];
-    const { userId } = user;
+    const { userId } = usersEntities[0];
     expect(await service.findUserById(userId)).toBeTruthy();
   });
 
   it('should not find user by id when user does not exist', async () => {
-    const [user] = generateUsers(1);
-    const { userId } = user;
+    const userId = generateUsers(1)[0].userId;
     expect(await service.findUserById(userId)).toBeFalsy();
   });
 
   it('should issue access token which can verified', async () => {
-    const user = usersEntities[0];
-    const { userId } = user;
-    const userIdStr = userId.toString();
-    const token = service.issueAccessToken(userIdStr);
+    const { userId } = usersEntities[0];
+    const token = service.issueAccessToken(userId);
     expect(service.verifyAccessToken(token)).toBeTruthy();
   });
 
@@ -100,45 +98,42 @@ describe('AuthService', () => {
   });
 
   it('should issue refresh token which can verified', async () => {
-    const user = usersEntities[0];
-    const { userId } = user;
-    const userIdStr = userId.toString();
-    const token = await service.issueRefreshToken(userIdStr);
+    const { userId } = usersEntities[0];
+    const token = await service.issueRefreshToken(userId);
     expect(await service.verifyRefreshToken(token)).toBeTruthy();
   });
 
   it('should not verify previous refresh token and invalidate all tokens', async () => {
-    const user = usersEntities[0];
-    const { userId } = user;
-    const userIdStr = userId.toString();
-    const prevToken = await service.issueRefreshToken(userIdStr);
-    const token = await service.issueRefreshToken(userIdStr);
+    const { userId } = usersEntities[0];
+    const prevToken = await service.issueRefreshToken(userId);
+    const token = await service.issueRefreshToken(userId);
     expect(await service.verifyRefreshToken(prevToken)).toBeFalsy();
     expect(await service.verifyRefreshToken(token)).toBeFalsy();
   });
 
   it('should not verify malformed token and remain token is still valid', async () => {
-    const user = usersEntities[0];
-    const { userId } = user;
-    const userIdStr = userId.toString();
-    const token = await service.issueRefreshToken(userIdStr);
-    // expect(await service.verifyRefreshToken(accessToken)).toBeFalsy();
+    const { userId } = usersEntities[0];
+    const token = await service.issueRefreshToken(userId);
     expect(await service.verifyRefreshToken(token)).toMatchObject({
-      userId: userIdStr,
+      userId: userId,
     });
   });
 
   it("should not verify valid refresh token but not the users's token and remain token is still valid", async () => {
-    const user = usersEntities[0];
-    const { userId } = user;
-    const userIdStr = userId.toString();
-    const otherToken = await service.issueRefreshToken(userIdStr + 1);
-    const token = await service.issueRefreshToken(userIdStr);
+    const { userId } = usersEntities[0];
+    const otherToken = await service.issueRefreshToken(userId + 1);
+    const token = await service.issueRefreshToken(userId);
     expect(await service.verifyRefreshToken(otherToken)).not.toMatchObject({
-      userId: userIdStr,
+      userId,
     });
     expect(await service.verifyRefreshToken(token)).toMatchObject({
-      userId: userIdStr,
+      userId,
     });
+  });
+
+  it('should issue login token and can verify', async () => {
+    const { userId } = usersEntities[0];
+    const token = service.issueLoginToken(userId);
+    expect(service.verifyLoginToken(token).userId).toBe(userId);
   });
 });

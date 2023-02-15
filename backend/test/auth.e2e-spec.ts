@@ -5,10 +5,10 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import * as cookieParser from 'cookie-parser';
 import * as request from 'supertest';
 
-import { generateUsers } from './util/generate-mock-data';
 import { Achievements } from '../src/entity/achievements.entity';
 import { Achievers } from '../src/entity/achievers.entity';
 import { AppModule } from '../src/app.module';
+import { AuthService } from '../src/auth/auth.service';
 import { MatchHistory } from '../src/entity/match-history.entity';
 import {
   TYPEORM_SHARED_CONFIG,
@@ -16,7 +16,7 @@ import {
   destroyDataSources,
 } from './util/db-resource-manager';
 import { Users } from '../src/entity/users.entity';
-import { AuthService } from '../src/auth/auth.service';
+import { generateUsers } from './util/generate-mock-data';
 
 const TEST_DB = 'test_db_auth_e2e';
 const ENTITIES = [Achievements, Achievers, MatchHistory, Users];
@@ -77,12 +77,11 @@ describe('AuthGuard (e2e)', () => {
    */
   it('Synopsis No.1, Normal Case', async () => {
     const userId = usersEntities[0].userId;
-    const userIdStr = userId.toString();
     // 1번
-    const { accessToken, refreshToken } = await authService.login(userIdStr);
+    const { accessToken, refreshToken } = await authService.issueTokens(userId);
     // 2번
     await request(app.getHttpServer())
-      .get(`/profile/${userIdStr}`)
+      .get(`/profile/${userId}`)
       .set('Cookie', [
         `accessToken=${accessToken}`,
         `refreshToken=${refreshToken}`,
@@ -92,7 +91,7 @@ describe('AuthGuard (e2e)', () => {
     // 3번
     let newTokens;
     await request(app.getHttpServer())
-      .get(`/profile/${userIdStr}`)
+      .get(`/profile/${userId}`)
       .set('Cookie', [`accessToken=${null}`, `refreshToken=${refreshToken}`])
       .expect(200)
       .expect(async (res) => {
@@ -100,7 +99,7 @@ describe('AuthGuard (e2e)', () => {
         expect(newTokens.accessToken).not.toBe(accessToken);
         expect(newTokens.refreshToken).not.toBe(refreshToken);
         const refreshTokens = await (authService as any).findRefreshTokens(
-          userIdStr,
+          userId,
         );
         // 4번
         expect(refreshTokens[0]).toEqual({
@@ -114,7 +113,7 @@ describe('AuthGuard (e2e)', () => {
       });
     // 5번
     await request(app.getHttpServer())
-      .get(`/profile/${userIdStr}`)
+      .get(`/profile/${userId}`)
       .set('Cookie', [
         `accessToken=${newTokens.accessToken}`,
         `refreshToken=${newTokens.refreshToken}`,
@@ -130,11 +129,10 @@ describe('AuthGuard (e2e)', () => {
    */
   it('Synopsis No.2 Expired Refresh Token', async () => {
     const userId = usersEntities[0].userId;
-    const userIdStr = userId.toString();
     // 1번
-    const { accessToken, refreshToken } = await authService.login(userIdStr);
+    const { accessToken, refreshToken } = await authService.issueTokens(userId);
     await request(app.getHttpServer())
-      .get(`/profile/${userIdStr}`)
+      .get(`/profile/${userId}`)
       .set('Cookie', [
         `accessToken=${accessToken}`,
         `refreshToken=${refreshToken}`,
@@ -143,14 +141,14 @@ describe('AuthGuard (e2e)', () => {
 
     // 2번
     await request(app.getHttpServer())
-      .get(`/profile/${userIdStr}`)
+      .get(`/profile/${userId}`)
       .set('Cookie', [`accessToken=${null}`, `refreshToken=${null}`])
       .expect(401);
 
     // 3번
-    const newTokens = await authService.login(userIdStr);
+    const newTokens = await authService.issueTokens(userId);
     await request(app.getHttpServer())
-      .get(`/profile/${userIdStr}`)
+      .get(`/profile/${userId}`)
       .set('Cookie', [
         `accessToken=${newTokens.accessToken}`,
         `refreshToken=${newTokens.refreshToken}`,
@@ -171,12 +169,11 @@ describe('AuthGuard (e2e)', () => {
    */
   it('Synopsis No.3-1, RefreshToken stolen, but Legitimate user use first', async () => {
     const userId = usersEntities[2].userId;
-    const userIdStr = userId.toString();
-    const tokenOne = await authService.login(userIdStr);
+    const tokenOne = await authService.issueTokens(userId);
     // 2번
     let tokenTwo;
     await request(app.getHttpServer())
-      .get(`/profile/${userIdStr}`)
+      .get(`/profile/${userId}`)
       .set('Cookie', [
         `accessToken=${null}`,
         `refreshToken=${tokenOne.refreshToken}`,
@@ -189,7 +186,7 @@ describe('AuthGuard (e2e)', () => {
     await new Promise((resolve) => setTimeout(resolve, 1000));
     // 4번
     await request(app.getHttpServer())
-      .get(`/profile/${userIdStr}`)
+      .get(`/profile/${userId}`)
       .set('Cookie', [
         `accessToken=${null}`,
         `refreshToken=${tokenOne.refreshToken}`,
@@ -199,13 +196,13 @@ describe('AuthGuard (e2e)', () => {
       .then(async () => {
         // 5-1 번
         const savedRefreshTokens = await (authService as any).findRefreshTokens(
-          userIdStr,
+          userId,
         );
         expect(savedRefreshTokens[0].isRevoked).toBeTruthy();
         expect(savedRefreshTokens[1].isRevoked).toBeTruthy();
         // 6번
         await request(app.getHttpServer())
-          .get(`/profile/${userIdStr}`)
+          .get(`/profile/${userId}`)
           .set('Cookie', [
             `accessToken=${null}`,
             `refreshToken=${tokenTwo.refreshToken}`,
@@ -227,12 +224,11 @@ describe('AuthGuard (e2e)', () => {
    */
   it('Synopsis No.3-2, RefreshToken stolen, Malicious User use first', async () => {
     const userId = usersEntities[2].userId;
-    const userIdStr = userId.toString();
-    const tokenOne = await authService.login(userIdStr);
+    const tokenOne = await authService.issueTokens(userId);
     // 2번
     let tokenTwo;
     await request(app.getHttpServer())
-      .get(`/profile/${userIdStr}`)
+      .get(`/profile/${userId}`)
       .set('Cookie', [
         `accessToken=${null}`,
         `refreshToken=${tokenOne.refreshToken}`,
@@ -245,7 +241,7 @@ describe('AuthGuard (e2e)', () => {
     await new Promise((resolve) => setTimeout(resolve, 1000));
     // 4번
     await request(app.getHttpServer())
-      .get(`/profile/${userIdStr}`)
+      .get(`/profile/${userId}`)
       .set('Cookie', [
         `accessToken=${null}`,
         `refreshToken=${tokenOne.refreshToken}`,
@@ -255,13 +251,13 @@ describe('AuthGuard (e2e)', () => {
       .then(async () => {
         // 5-1 번
         const savedRefreshTokens = await (authService as any).findRefreshTokens(
-          userIdStr,
+          userId,
         );
         expect(savedRefreshTokens[0].isRevoked).toBeTruthy();
         expect(savedRefreshTokens[1].isRevoked).toBeTruthy();
         // 6번
         await request(app.getHttpServer())
-          .get(`/profile/${userIdStr}`)
+          .get(`/profile/${userId}`)
           .set('Cookie', [
             `accessToken=${null}`,
             `refreshToken=${tokenTwo.refreshToken}`,

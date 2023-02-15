@@ -19,11 +19,11 @@ export class AuthService {
   private readonly logger = new Logger(AuthService.name);
 
   constructor(
+    private readonly apiConfigService: ApiConfigService,
+    @Inject(CACHE_MANAGER) readonly cacheManager: Cache,
+    private readonly jwtService: JwtService,
     @InjectRepository(Users)
     private readonly usersRepository: Repository<Users>,
-    private readonly jwtService: JwtService,
-    @Inject(CACHE_MANAGER) readonly cacheManager: Cache,
-    private readonly apiConfigService: ApiConfigService,
   ) {}
 
   /*****************************************************************************
@@ -34,7 +34,7 @@ export class AuthService {
 
   /*****************************************************************************
    *                                                                           *
-   * SECTION : FIXME : Sign-Up (미구현)                                        *
+   * SECTION : Sign-up                                                         *
    *                                                                           *
    ****************************************************************************/
 
@@ -47,55 +47,30 @@ export class AuthService {
     }
   }
 
-  // TODO
-  // signUp(userId: UserId) {
-  //   // 프사 / 닉 저장
-  //   // try{
-  //   // await this.
-  //   // }
-  //   return {
-  //     accessToken: this.issueAccessToken(userId),
-  //     refreshToken: this.issueRefreshToken(userId),
-  //   };
-  // }
-
-  async login(userId: string) {
-    return {
-      accessToken: this.issueAccessToken(userId),
-      refreshToken: await this.issueRefreshToken(userId),
-    };
-  }
-
-  /*****************************************************************************
-   *                                                                           *
-   * SECTION : Manage Access Token                                             *
-   *                                                                           *
-   ****************************************************************************/
-
   /**
-   * @description 유저 Id 를 통하여 Access Token 발급
+   * @description 유저 Id 를 통하여 Login Token 발급
    *
    * @param userId 유저 Id
-   * @returns Access Token
+   * @returns Login Token
    */
-  issueAccessToken(userId: string) {
+  issueLoginToken(userId: UserId) {
     return this.jwtService.sign(
       { userId },
-      this.apiConfigService.jwtAccessConfig,
+      this.apiConfigService.jwtLoginConfig,
     );
   }
 
   /**
-   * @description Access Token 유효성 검사
+   * @description Login Token 유효성 검사
    *
-   * @param token Access Token
-   * @returns Access Token Payload (userId) || null
+   * @param token Login Token
+   * @returns Login Token Payload (userId) || null
    */
-  verifyAccessToken(token: string) {
+  verifyLoginToken(token: string) {
     try {
       return this.jwtService.verify<JwtPayload>(
         token,
-        this.apiConfigService.jwtAccessSecret,
+        this.apiConfigService.jwtLoginSecret,
       );
     } catch {
       return null;
@@ -104,9 +79,35 @@ export class AuthService {
 
   /*****************************************************************************
    *                                                                           *
-   * SECTION : Manage Refresh Token                                            *
+   * SECTION : Issue and Delete Access/Refresh Token                           *
    *                                                                           *
    ****************************************************************************/
+
+  /**
+   * @description 유저 Id 를 통하여 Access Token, Refresh Token 발급
+   *
+   * @param userId 유저 Id
+   * @returns Access Token, Refresh Token
+   */
+  async issueTokens(userId: UserId) {
+    return {
+      accessToken: this.issueAccessToken(userId),
+      refreshToken: await this.issueRefreshToken(userId),
+    };
+  }
+
+  /**
+   * @description 유저 Id 를 통하여 Access Token 발급
+   *
+   * @param userId 유저 Id
+   * @returns Access Token
+   */
+  issueAccessToken(userId: UserId) {
+    return this.jwtService.sign(
+      { userId },
+      this.apiConfigService.jwtAccessConfig,
+    );
+  }
 
   /**
    * @description 유저 Id 를 통하여 Refresh Token 발급 및 node-cache-manager 에 저장,
@@ -115,7 +116,7 @@ export class AuthService {
    * @param userId 유저 Id
    * @returns Refresh Token
    */
-  async issueRefreshToken(userId: string) {
+  async issueRefreshToken(userId: UserId) {
     const token = this.jwtService.sign(
       { userId },
       this.apiConfigService.jwtRefreshConfig,
@@ -135,6 +136,38 @@ export class AuthService {
       }),
     ]);
     return token;
+  }
+
+  /**
+   * @description 유저의 Refresh Token Family 삭제
+   *
+   * @param userId
+   */
+  async clearRefreshTokens(userId: UserId) {
+    await this.cacheManager.del(userId.toString());
+  }
+
+  /*****************************************************************************
+   *                                                                           *
+   * SECTION : Verify token                                                    *
+   *                                                                           *
+   ****************************************************************************/
+
+  /**
+   * @description Access Token 유효성 검사
+   *
+   * @param token Access Token
+   * @returns Access Token Payload (userId) || null
+   */
+  verifyAccessToken(token: string) {
+    try {
+      return this.jwtService.verify<JwtPayload>(
+        token,
+        this.apiConfigService.jwtAccessSecret,
+      );
+    } catch {
+      return null;
+    }
   }
 
   /**
@@ -160,9 +193,7 @@ export class AuthService {
     if (invalidated === false) {
       return payload;
     }
-    if (invalidated === true) {
-      await this.invalidateRefreshTokens(payload.userId, refreshTokens);
-    }
+    await this.invalidateRefreshTokens(payload.userId, refreshTokens);
     this.logger.error(`Refresh Token for user ${payload.userId} is invalid`);
     return null;
   }
@@ -180,7 +211,7 @@ export class AuthService {
    * @param refreshTokens 유저의 Refresh Token Family
    */
   private async invalidateRefreshTokens(
-    userId: string,
+    userId: UserId,
     refreshTokens: [RefreshTokenWrapper, RefreshTokenWrapper],
   ) {
     await Promise.all(
@@ -200,7 +231,7 @@ export class AuthService {
    * @param userId
    * @returns
    */
-  private async findRefreshTokens(userId: string) {
+  private async findRefreshTokens(userId: UserId) {
     return await Promise.all([
       this.cacheManager.get<RefreshTokenWrapper>(userId.toString() + '-prev'),
       this.cacheManager.get<RefreshTokenWrapper>(userId.toString()),

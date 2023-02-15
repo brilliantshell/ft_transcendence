@@ -65,6 +65,10 @@ export class GameInfo {
   map: 1 | 2 | 3;
 }
 
+export interface LoginRequest extends Request {
+  user: { userId: UserId; isRegistered: boolean; authEmail: string };
+}
+
 export interface VerifiedRequest extends Request {
   user: { userId: UserId };
 }
@@ -80,5 +84,5 @@ export interface RefreshTokenWrapper {
 }
 
 export interface JwtPayload {
-  userId: string;
+  userId: UserId;
 }
