@@ -1,6 +1,7 @@
 import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
+// import { GameController } from './game.controller';
 import { GameGateway } from './game.gateway';
 import { GameService } from './game.service';
 import { GameStorage } from './game.storage';
@@ -15,7 +16,8 @@ import { Users } from '../entity/users.entity';
     RanksModule,
     forwardRef(() => UserStatusModule),
   ],
+  // controllers: [GameController],
   providers: [GameGateway, GameService, GameStorage],
-  exports: [GameGateway, GameStorage],
+  exports: [GameGateway, GameService, GameStorage],
 })
 export class GameModule {}

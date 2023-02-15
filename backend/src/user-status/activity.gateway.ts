@@ -23,6 +23,7 @@ import { ChannelStorage } from './channel.storage';
 import { ChatsGateway } from '../chats/chats.gateway';
 import { CurrentUiDto } from './dto/user-status.dto';
 import { GameGateway } from '../game/game.gateway';
+import { GameStorage } from '../game/game.storage';
 import { RanksGateway } from '../ranks/ranks.gateway';
 import { UserActivityDto } from './dto/user-status.dto';
 import { UserRelationshipStorage } from './user-relationship.storage';
@@ -48,6 +49,7 @@ export class ActivityGateway
     private readonly channelStorage: ChannelStorage,
     private readonly chatsGateway: ChatsGateway,
     private readonly gameGateway: GameGateway,
+    private readonly gameStorage: GameStorage,
     private readonly ranksGateway: RanksGateway,
     private readonly userRelationshipStorage: UserRelationshipStorage,
     private readonly userSocketStorage: UserSocketStorage,
@@ -114,10 +116,11 @@ export class ActivityGateway
   @SubscribeMessage('currentUi')
   handleCurrentUi(
     @ConnectedSocket() clientSocket: Socket,
-    @MessageBody() { userId, ui }: CurrentUiDto,
+    @MessageBody() { ui }: CurrentUiDto,
   ) {
-    // FIXME : userId 를 메시지로 받아서 처리하는게 아니라 client socket 에서 받아서 처리해야 함
-    // const userId = Number(clientSocket.handshake.headers['x-user-id']);
+    const userId = Math.floor(
+      Number(clientSocket.handshake.headers['x-user-id']),
+    );
     const prevUi = this.activityManager.getActivity(userId);
     this.activityManager.setActivity(userId, ui);
     prevUi
@@ -156,7 +159,7 @@ export class ActivityGateway
     }
 
     // TODO : 게임 중이라면 GameStorage 에서 gameId 가져오기
-    const gameId = null;
+    const gameId = this.gameStorage.players.get(targetId) ?? null;
 
     return {
       activity,

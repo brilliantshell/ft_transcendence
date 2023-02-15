@@ -24,6 +24,9 @@ import { timeout } from './util/util';
 
 process.env.DB_HOST = 'localhost';
 
+const PORT = 4245;
+const URL = `http://localhost:${PORT}`;
+
 describe('ChatsGateway (e2e)', () => {
   let app: INestApplication;
   let chatsGateway: ChatsGateway;
@@ -38,7 +41,7 @@ describe('ChatsGateway (e2e)', () => {
     }).compile();
     app = moduleFixture.createNestApplication();
     await app.init();
-    await app.listen(4245);
+    await app.listen(PORT);
 
     chatsGateway = moduleFixture.get(ChatsGateway);
   });
@@ -55,11 +58,7 @@ describe('ChatsGateway (e2e)', () => {
       createChannelMember(users[0].userId, channel.channelId, true),
     ];
     clientSockets = users.map((user) => {
-      return io('http://localhost:4245', {
-        extraHeaders: {
-          'x-user-id': user.userId.toString(),
-        },
-      });
+      return io(URL, { extraHeaders: { 'x-user-id': user.userId.toString() } });
     });
     await Promise.all(
       clientSockets.map(
@@ -94,7 +93,6 @@ describe('ChatsGateway (e2e)', () => {
     chatsGateway.joinChannelRoom(1, users[0].userId);
 
     clientSockets[0].emit('currentUi', {
-      userId: users[0].userId,
       ui: `chatRooms-${channel.channelId}`,
     });
 
@@ -125,16 +123,10 @@ describe('ChatsGateway (e2e)', () => {
     clientSockets.forEach((_, index) =>
       chatsGateway.joinChannelRoom(1, users[index].userId),
     );
-    clientSockets.forEach((clientSocket, index) => {
-      clientSocket.emit('currentUi', {
-        userId: users[index].userId,
-        ui: `chatRooms-${channel.channelId}`,
-      });
+    clientSockets.forEach((clientSocket) => {
+      clientSocket.emit('currentUi', { ui: `chatRooms-${channel.channelId}` });
     });
-    clientSockets[1].emit('currentUi', {
-      userId: users[1].userId,
-      ui: 'profile',
-    });
+    clientSockets[1].emit('currentUi', { ui: 'profile' });
     await new Promise((resolve) => setTimeout(() => resolve('done'), 1000));
     expect(
       chatsGateway.getRoomMembers(`chatRooms-${channel.channelId}`).size,
@@ -163,16 +155,10 @@ describe('ChatsGateway (e2e)', () => {
     // case: users are viewing the chats UI
     // when: user[0] visits the profile UI
     // then: user[0] should not join the chats room but remains are
-    clientSockets.forEach((clientSocket, index) => {
-      clientSocket.emit('currentUi', {
-        userId: users[index].userId,
-        ui: 'chats',
-      });
+    clientSockets.forEach((clientSocket) => {
+      clientSocket.emit('currentUi', { ui: 'chats' });
     });
-    clientSockets[0].emit('currentUi', {
-      userId: users[0].userId,
-      ui: 'profile',
-    });
+    clientSockets[0].emit('currentUi', { ui: 'profile' });
     await new Promise((resolve) => setTimeout(() => resolve('done'), 1000));
     expect(chatsGateway.getRoomMembers(`chats`).size).toBe(2);
     clientSockets.forEach((clientSocket, index) => {
@@ -197,17 +183,10 @@ describe('ChatsGateway (e2e)', () => {
 
     chatsGateway.joinChannelRoom(1, users[0].userId);
     clientSockets[0].emit('currentUi', {
-      userId: users[0].userId,
       ui: `chatRooms-${channel.channelId}`,
     });
-    clientSockets[1].emit('currentUi', {
-      userId: users[1].userId,
-      ui: `profile`,
-    });
-    clientSockets[2].emit('currentUi', {
-      userId: users[2].userId,
-      ui: `chats`,
-    });
+    clientSockets[1].emit('currentUi', { ui: `profile` });
+    clientSockets[2].emit('currentUi', { ui: `chats` });
 
     await new Promise((resolve) => setTimeout(() => resolve('done'), 1000));
     chatsGateway.emitMemberJoin(channel.channelId, users[1].userId);
@@ -239,14 +218,10 @@ describe('ChatsGateway (e2e)', () => {
     clientSockets.forEach((_, index) =>
       chatsGateway.joinChannelRoom(1, users[index].userId),
     );
-    clientSockets.forEach((clientSocket, index) => {
-      clientSocket.emit('currentUi', {
-        userId: users[index].userId,
-        ui: `chatRooms-${channel.channelId}`,
-      });
+    clientSockets.forEach((clientSocket) => {
+      clientSocket.emit('currentUi', { ui: `chatRooms-${channel.channelId}` });
     });
     clientSockets[2].emit('currentUi', {
-      userId: users[2].userId,
       ui: `chatRooms-${channel.channelId + 1}`,
     });
     const sentMsg: NewMessage = {
@@ -288,11 +263,8 @@ describe('ChatsGateway (e2e)', () => {
       createChannelMember(users[2].userId, channel.channelId),
     );
 
-    clientSockets.forEach((clientSocket, index) => {
-      clientSocket.emit('currentUi', {
-        userId: users[index].userId,
-        ui: `chatRooms-${channel.channelId}`,
-      });
+    clientSockets.forEach((clientSocket) => {
+      clientSocket.emit('currentUi', { ui: `chatRooms-${channel.channelId}` });
     });
     const { memberId, channelId, isAdmin } = channelMembers[2];
 
@@ -323,11 +295,8 @@ describe('ChatsGateway (e2e)', () => {
       createChannelMember(users[2].userId, channel.channelId),
     );
 
-    clientSockets.forEach((clientSocket, index) => {
-      clientSocket.emit('currentUi', {
-        userId: users[index].userId,
-        ui: `chatRooms-${channel.channelId}`,
-      });
+    clientSockets.forEach((clientSocket) => {
+      clientSocket.emit('currentUi', { ui: `chatRooms-${channel.channelId}` });
     });
     const { memberId, channelId } = channelMembers[2];
 
@@ -359,11 +328,8 @@ describe('ChatsGateway (e2e)', () => {
       createChannelMember(users[2].userId, channel.channelId),
     );
 
-    clientSockets.forEach((clientSocket, index) => {
-      clientSocket.emit('currentUi', {
-        userId: users[index].userId,
-        ui: `chatRooms-${channel.channelId}`,
-      });
+    clientSockets.forEach((clientSocket) => {
+      clientSocket.emit('currentUi', { ui: `chatRooms-${channel.channelId}` });
     });
     const { memberId, channelId } = channelMembers[2];
     const muteEndAt = DateTime.now().plus({ minutes: 10 });

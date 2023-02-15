@@ -81,10 +81,7 @@ describe('RanksGateway (e2e)', () => {
       io(URL, { extraHeaders: { 'x-user-id': userId.toString() } }),
     );
     await Promise.all(
-      clientSockets.map(
-        (socket) =>
-          new Promise((resolve) => socket.on('connect', () => resolve('done'))),
-      ),
+      clientSockets.map((socket) => listenPromise(socket, 'connect')),
     );
   });
 
@@ -98,7 +95,7 @@ describe('RanksGateway (e2e)', () => {
   describe('joinRanksRoom & leaveRanksRoom', () => {
     it('should join the ranks room when the user navigates to the ranks UI', async () => {
       const [userOne] = clientSockets;
-      userOne.emit('currentUi', { userId: userIds[0], ui: 'ranks' });
+      userOne.emit('currentUi', { ui: 'ranks' });
       await waitForExpect(() => {
         expect(activityManager.getActivity(userIds[0])).toBe('ranks');
         expect(gateway.doesRanksRoomExist()).toBeTruthy();
@@ -107,12 +104,12 @@ describe('RanksGateway (e2e)', () => {
 
     it('should leave the ranks room when the user leaves the ranks UI', async () => {
       const [userOne] = clientSockets;
-      userOne.emit('currentUi', { userId: userIds[0], ui: 'ranks' });
+      userOne.emit('currentUi', { ui: 'ranks' });
       await waitForExpect(() => {
         expect(activityManager.getActivity(userIds[0])).toBe('ranks');
         expect(gateway.doesRanksRoomExist()).toBeTruthy();
       });
-      userOne.emit('currentUi', { userId: userIds[0], ui: 'profile' });
+      userOne.emit('currentUi', { ui: 'profile' });
       await waitForExpect(() => {
         expect(activityManager.getActivity(userIds[0])).toBe('profile');
         expect(gateway.doesRanksRoomExist()).toBeFalsy();
@@ -129,12 +126,12 @@ describe('RanksGateway (e2e)', () => {
       );
       const [playerOne, playerTwo, ranksOne, ranksTwo, profile, waitingRoom] =
         clientSockets;
-      playerOne.emit('currentUi', { userId: userIds[0], ui: `game-${gameId}` });
-      playerTwo.emit('currentUi', { userId: userIds[1], ui: `game-${gameId}` });
-      ranksOne.emit('currentUi', { userId: userIds[2], ui: 'ranks' });
-      ranksTwo.emit('currentUi', { userId: userIds[3], ui: 'ranks' });
-      profile.emit('currentUi', { userId: userIds[4], ui: 'profile' });
-      waitingRoom.emit('currentUi', { userId: userIds[5], ui: 'waitingRoom' });
+      playerOne.emit('currentUi', { ui: `game-${gameId}` });
+      playerTwo.emit('currentUi', { ui: `game-${gameId}` });
+      ranksOne.emit('currentUi', { ui: 'ranks' });
+      ranksTwo.emit('currentUi', { ui: 'ranks' });
+      profile.emit('currentUi', { ui: 'profile' });
+      waitingRoom.emit('currentUi', { ui: 'waitingRoom' });
       await waitForExpect(() => {
         expect(activityManager.getActivity(userIds[0])).toBe(`game-${gameId}`);
         expect(activityManager.getActivity(userIds[1])).toBe(`game-${gameId}`);
@@ -175,12 +172,12 @@ describe('RanksGateway (e2e)', () => {
       );
       const [playerOne, playerTwo, ranksOne, ranksTwo, profile, waitingRoom] =
         clientSockets;
-      playerOne.emit('currentUi', { userId: userIds[0], ui: `game-${gameId}` });
-      playerTwo.emit('currentUi', { userId: userIds[1], ui: `game-${gameId}` });
-      ranksOne.emit('currentUi', { userId: userIds[2], ui: 'ranks' });
-      ranksTwo.emit('currentUi', { userId: userIds[3], ui: 'ranks' });
-      profile.emit('currentUi', { userId: userIds[4], ui: 'profile' });
-      waitingRoom.emit('currentUi', { userId: userIds[5], ui: 'waitingRoom' });
+      playerOne.emit('currentUi', { ui: `game-${gameId}` });
+      playerTwo.emit('currentUi', { ui: `game-${gameId}` });
+      ranksOne.emit('currentUi', { ui: 'ranks' });
+      ranksTwo.emit('currentUi', { ui: 'ranks' });
+      profile.emit('currentUi', { ui: 'profile' });
+      waitingRoom.emit('currentUi', { ui: 'waitingRoom' });
       await waitForExpect(() => {
         expect(activityManager.getActivity(userIds[0])).toBe(`game-${gameId}`);
         expect(activityManager.getActivity(userIds[1])).toBe(`game-${gameId}`);
@@ -226,12 +223,12 @@ describe('RanksGateway (e2e)', () => {
       );
       const [playerOne, playerTwo, ranksOne, ranksTwo, profile, waitingRoom] =
         clientSockets;
-      playerOne.emit('currentUi', { userId: userIds[0], ui: `game-${gameId}` });
-      playerTwo.emit('currentUi', { userId: userIds[1], ui: `game-${gameId}` });
-      ranksOne.emit('currentUi', { userId: userIds[2], ui: 'ranks' });
-      ranksTwo.emit('currentUi', { userId: userIds[3], ui: 'ranks' });
-      profile.emit('currentUi', { userId: userIds[4], ui: 'profile' });
-      waitingRoom.emit('currentUi', { userId: userIds[5], ui: 'waitingRoom' });
+      playerOne.emit('currentUi', { ui: `game-${gameId}` });
+      playerTwo.emit('currentUi', { ui: `game-${gameId}` });
+      ranksOne.emit('currentUi', { ui: 'ranks' });
+      ranksTwo.emit('currentUi', { ui: 'ranks' });
+      profile.emit('currentUi', { ui: 'profile' });
+      waitingRoom.emit('currentUi', { ui: 'waitingRoom' });
       await waitForExpect(() => {
         expect(activityManager.getActivity(userIds[0])).toBe(`game-${gameId}`);
         expect(activityManager.getActivity(userIds[1])).toBe(`game-${gameId}`);
@@ -297,12 +294,12 @@ describe('RanksGateway (e2e)', () => {
       );
       const [playerOne, playerTwo, ranksOne, ranksTwo, profile, waitingRoom] =
         clientSockets;
-      playerOne.emit('currentUi', { userId: userIds[0], ui: `game-${gameId}` });
-      playerTwo.emit('currentUi', { userId: userIds[1], ui: `game-${gameId}` });
-      ranksOne.emit('currentUi', { userId: userIds[2], ui: 'ranks' });
-      ranksTwo.emit('currentUi', { userId: userIds[3], ui: 'ranks' });
-      profile.emit('currentUi', { userId: userIds[4], ui: 'profile' });
-      waitingRoom.emit('currentUi', { userId: userIds[5], ui: 'waitingRoom' });
+      playerOne.emit('currentUi', { ui: `game-${gameId}` });
+      playerTwo.emit('currentUi', { ui: `game-${gameId}` });
+      ranksOne.emit('currentUi', { ui: 'ranks' });
+      ranksTwo.emit('currentUi', { ui: 'ranks' });
+      profile.emit('currentUi', { ui: 'profile' });
+      waitingRoom.emit('currentUi', { ui: 'waitingRoom' });
       await waitForExpect(() => {
         expect(activityManager.getActivity(userIds[0])).toBe(`game-${gameId}`);
         expect(activityManager.getActivity(userIds[1])).toBe(`game-${gameId}`);

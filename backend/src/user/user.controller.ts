@@ -15,8 +15,10 @@ import { Response } from 'express';
 import { AcceptFriendGuard } from './guard/accept-friend.guard';
 import { BlockedUserGuard } from './guard/blocked-user.guard';
 import { CreateFriendRequestGuard } from './guard/create-friend-request.guard';
+import { CreateGameGuard } from './guard/create-game.guard';
 import { DeleteFriendGuard } from './guard/delete-friend.guard';
 import { DeleteBlockGuard } from './guard/delete-block.guard';
+import { GameService } from '../game/game.service';
 import { RelationshipRequest, VerifiedRequest } from '../util/type';
 import { SelfCheckGuard } from './guard/self-check.guard';
 import { UserExistGuard } from './guard/user-exist.guard';
@@ -24,7 +26,10 @@ import { UserService } from './user.service';
 
 @Controller('user')
 export class UserController {
-  constructor(private readonly userService: UserService) {}
+  constructor(
+    private readonly gameService: GameService,
+    private readonly userService: UserService,
+  ) {}
 
   /*****************************************************************************
    *                                                                           *
@@ -131,17 +136,27 @@ export class UserController {
 
   /*****************************************************************************
    *                                                                           *
-   * TODO : Game                                                               *
+   * SECTION : Game                                                            *
    *                                                                           *
    ****************************************************************************/
 
   @Post(':userId/game')
-  @UseGuards(SelfCheckGuard, UserExistGuard, BlockedUserGuard)
-  createGame(@Req() req: RelationshipRequest) {}
-
-  @Get(':userId/game/:gameId')
-  @UseGuards(SelfCheckGuard, UserExistGuard, BlockedUserGuard)
-  findGame(@Req() req: RelationshipRequest) {}
+  @UseGuards(SelfCheckGuard, UserExistGuard, BlockedUserGuard, CreateGameGuard)
+  async createNormalGame(
+    @Req() req: RelationshipRequest,
+    @Res() res: Response,
+  ) {
+    res
+      .set(
+        'location',
+        '/game/' +
+          (await this.gameService.createNormalGame(
+            req.user.userId,
+            req.targetId,
+          )),
+      )
+      .end();
+  }
 
   /*****************************************************************************
    *                                                                           *
