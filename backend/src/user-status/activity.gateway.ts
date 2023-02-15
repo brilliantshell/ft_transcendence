@@ -157,13 +157,10 @@ export class ActivityGateway
     if (currentUi) {
       activity = currentUi.startsWith('game-') ? 'inGame' : 'online';
     }
-
-    // TODO : 게임 중이라면 GameStorage 에서 gameId 가져오기
     const gameId = this.gameStorage.players.get(targetId) ?? null;
-
     return {
       activity,
-      gameId,
+      gameId: activity === 'inGame' ? gameId : null,
       userId: targetId,
     };
   }

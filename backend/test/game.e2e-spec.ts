@@ -13,8 +13,8 @@ import { AppModule } from '../src/app.module';
 import { BlockedUsers } from '../src/entity/blocked-users.entity';
 import { GameGateway } from '../src/game/game.gateway';
 import { GameInfo, UserId } from '../src/util/type';
+import { GameOptionDto, NewGameDto } from '../src/game/dto/game-gateway.dto';
 import { GameStorage } from '../src/game/game.storage';
-import { NewGameDto } from '../src/game/dto/game-gateway.dto';
 import {
   TYPEORM_SHARED_CONFIG,
   createDataSources,
@@ -23,7 +23,7 @@ import {
 import { UserRelationshipStorage } from '../src/user-status/user-relationship.storage';
 import { Users } from '../src/entity/users.entity';
 import { generateUsers } from './util/generate-mock-data';
-import { listenPromise } from './util/util';
+import { listenPromise, timeout } from './util/util';
 
 const TEST_DB = 'test_db_game_e2e';
 const ENTITIES = [BlockedUsers, Users];
@@ -329,4 +329,134 @@ describe('GameController (e2e)', () => {
    * SECTION : Game UI                                                         *
    *                                                                           *
    ****************************************************************************/
+
+  describe('PATCH /game/:gameId/options', () => {
+    it('should change the map of a normal game (200)', async () => {
+      const [playerOne, playerTwo, spectator] = userIds;
+      const gameId = nanoid();
+      await gameStorage.createGame(
+        gameId,
+        new GameInfo(playerOne, playerTwo, 1, false),
+      );
+      clientSockets[0].emit('currentUi', { ui: `game-${gameId}` });
+      clientSockets[1].emit('currentUi', { ui: `game-${gameId}` });
+      clientSockets[2].emit('currentUi', { ui: `game-${gameId}` });
+      await waitForExpect(() => {
+        expect(activityManager.getActivity(playerOne)).toBe(`game-${gameId}`);
+        expect(activityManager.getActivity(playerTwo)).toBe(`game-${gameId}`);
+        expect(activityManager.getActivity(spectator)).toBe(`game-${gameId}`);
+      });
+      const [wsError, wsMessageOne, wsMessageTwo] = await Promise.allSettled([
+        timeout(500, listenPromise(clientSockets[0], 'gameOption')),
+        listenPromise<GameOptionDto>(clientSockets[1], 'gameOption'),
+        listenPromise<GameOptionDto>(clientSockets[2], 'gameOption'),
+        request(app.getHttpServer())
+          .patch(`/game/${gameId}/options`)
+          .set('x-user-id', playerOne.toString())
+          .send({ map: 2 })
+          .expect(200),
+      ]);
+      expect(wsError.status).toBe('rejected');
+      if (
+        wsMessageOne.status === 'rejected' ||
+        wsMessageTwo.status === 'rejected'
+      ) {
+        fail();
+      }
+      expect(gameStorage.getGame(gameId).map).toBe(2);
+      expect(wsMessageOne.value.map).toBe(2);
+      expect(wsMessageTwo.value.map).toBe(2);
+    });
+
+    it('should throw BAD REQUEST if the user is not in the game UI (400)', async () => {
+      const [playerOne, playerTwo] = userIds;
+      const gameId = nanoid();
+      await gameStorage.createGame(
+        gameId,
+        new GameInfo(playerOne, playerTwo, 1, false),
+      );
+      await request(app.getHttpServer())
+        .patch(`/game/${gameId}/options`)
+        .set('x-user-id', playerOne.toString())
+        .send({ map: 2 })
+        .expect(400);
+    });
+
+    it('should throw BAD REQUEST if the game is a ladder game (400)', async () => {
+      const [playerOne, playerTwo] = userIds;
+      const gameId = nanoid();
+      await gameStorage.createGame(
+        gameId,
+        new GameInfo(playerOne, playerTwo, 1, true),
+      );
+      clientSockets[0].emit('currentUi', { ui: `game-${gameId}` });
+      clientSockets[1].emit('currentUi', { ui: `game-${gameId}` });
+      await waitForExpect(() => {
+        expect(activityManager.getActivity(playerOne)).toBe(`game-${gameId}`);
+        expect(activityManager.getActivity(playerTwo)).toBe(`game-${gameId}`);
+      });
+      await request(app.getHttpServer())
+        .patch(`/game/${gameId}/options`)
+        .set('x-user-id', playerOne.toString())
+        .send({ map: 2 })
+        .expect(400);
+    });
+
+    it('should throw FORBIDDEN if the user is not a player of the game (403)', async () => {
+      const [playerOne, playerTwo, spectator] = userIds;
+      const gameId = nanoid();
+      await gameStorage.createGame(
+        gameId,
+        new GameInfo(playerOne, playerTwo, 1, false),
+      );
+      clientSockets[0].emit('currentUi', { ui: `game-${gameId}` });
+      clientSockets[1].emit('currentUi', { ui: `game-${gameId}` });
+      clientSockets[2].emit('currentUi', { ui: `game-${gameId}` });
+      await waitForExpect(() => {
+        expect(activityManager.getActivity(playerOne)).toBe(`game-${gameId}`);
+        expect(activityManager.getActivity(playerTwo)).toBe(`game-${gameId}`);
+        expect(activityManager.getActivity(spectator)).toBe(`game-${gameId}`);
+      });
+      await request(app.getHttpServer())
+        .patch(`/game/${gameId}/options`)
+        .set('x-user-id', spectator.toString())
+        .send({ map: 2 })
+        .expect(403);
+    });
+
+    it('should throw FORBIDDEN if the requester is not the inviter (403)', async () => {
+      const [playerOne, playerTwo] = userIds;
+      const gameId = nanoid();
+      await gameStorage.createGame(
+        gameId,
+        new GameInfo(playerOne, playerTwo, 1, false),
+      );
+      clientSockets[0].emit('currentUi', { ui: `game-${gameId}` });
+      clientSockets[1].emit('currentUi', { ui: `game-${gameId}` });
+      await waitForExpect(() => {
+        expect(activityManager.getActivity(playerOne)).toBe(`game-${gameId}`);
+        expect(activityManager.getActivity(playerTwo)).toBe(`game-${gameId}`);
+      });
+      await request(app.getHttpServer())
+        .patch(`/game/${gameId}/options`)
+        .set('x-user-id', playerTwo.toString())
+        .send({ map: 2 })
+        .expect(403);
+    });
+
+    it('should throw NOT FOUND if the game does not exist (404)', async () => {
+      const [playerOne] = userIds;
+      clientSockets[0].emit('currentUi', { ui: 'game-unknownGameunknownGam' });
+      await waitForExpect(() => {
+        expect(activityManager.getActivity(playerOne)).toBe(
+          'game-unknownGameunknownGam',
+        );
+      });
+      await request(app.getHttpServer())
+        .patch('/game/unknownGameunknownGam/options')
+        .set('x-user-id', playerOne.toString())
+        .send({ map: 2 })
+        .expect(404);
+    });
+  });
 });

@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ForbiddenException,
   Injectable,
   NotFoundException,
@@ -138,7 +139,7 @@ export class GameService {
       );
     }
     if (gameInfo.isRank) {
-      throw new ForbiddenException(
+      throw new BadRequestException(
         `The requester(${requesterId}) cannot change map of a ladder game`,
       );
     }
@@ -149,7 +150,8 @@ export class GameService {
     }
     gameInfo.map = map;
     this.gameGateway.emitGameOption(
-      this.userSocketStorage.clients.get(gameInfo.rightId),
+      gameId,
+      this.userSocketStorage.clients.get(gameInfo.leftId),
       map,
     );
   }

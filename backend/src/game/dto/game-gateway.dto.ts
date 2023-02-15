@@ -12,6 +12,10 @@ export interface NewGameDto {
   gameId: GameId;
 }
 
+export interface GameOptionDto {
+  map: 1 | 2 | 3;
+}
+
 export interface GameStartedDto {
   id: GameId;
   left: string;

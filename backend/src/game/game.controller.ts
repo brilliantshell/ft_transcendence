@@ -1,15 +1,18 @@
 import {
+  Body,
   Controller,
   Get,
   Param,
+  Patch,
   Post,
   Req,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
 
-import { GameIdParamDto } from './dto/game.dto';
+import { GameIdParamDto, GameMapDto } from './dto/game.dto';
 import { GameService } from './game.service';
+import { InGameUiGuard } from './guard/in-game-ui.guard';
 import { InPlayGuard } from './guard/in-play.guard';
 import { LadderQueueInterceptor } from './interceptor/ladder-queue.interceptor';
 import { MockAuthGuard } from '../guard/mock-auth.guard';
@@ -52,4 +55,14 @@ export class GameController {
    * SECTION : Game UI                                                         *
    *                                                                           *
    ****************************************************************************/
+
+  @UseGuards(InGameUiGuard)
+  @Patch(':gameId/options')
+  updateMap(
+    @Req() req: VerifiedRequest,
+    @Param() { gameId }: GameIdParamDto,
+    @Body() { map }: GameMapDto,
+  ) {
+    this.gameService.changeMap(req.user.userId, gameId, map);
+  }
 }

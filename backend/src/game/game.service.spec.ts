@@ -1,5 +1,9 @@
+import {
+  BadRequestException,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
 import { DataSource } from 'typeorm';
-import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { faker } from '@faker-js/faker';
@@ -74,7 +78,9 @@ describe('GameService', () => {
       .useValue({
         joinRoom: jest.fn((socketId: string, roomId: string) => undefined),
         emitNewGame: jest.fn((gameId: GameId) => undefined),
-        emitGameOption: jest.fn((socketId: SocketId, map: number) => undefined),
+        emitGameOption: jest.fn(
+          (gameId: GameId, socketId: SocketId, map: number) => undefined,
+        ),
       })
       .compile();
     service = module.get<GameService>(GameService);
@@ -236,7 +242,8 @@ describe('GameService', () => {
       service.changeMap(playerOne.userId, gameId, 2);
       expect(gameStorage.getGame(gameId).map).toBe(2);
       expect(gameGateway.emitGameOption).toHaveBeenCalledWith(
-        userSocketStorage.clients.get(playerTwo.userId),
+        gameId,
+        userSocketStorage.clients.get(playerOne.userId),
         2,
       );
     });
@@ -270,13 +277,13 @@ describe('GameService', () => {
       expect(gameGateway.emitGameOption).not.toHaveBeenCalled();
     });
 
-    it('should throw FORBIDDEN when the game is a ladder game', async () => {
+    it('should throw BAD REQUEST when the game is a ladder game', async () => {
       await gameStorage.createGame(
         gameId,
         new GameInfo(playerOne.userId, playerTwo.userId, 1, true),
       );
       expect(() => service.changeMap(playerOne.userId, gameId, 2)).toThrowError(
-        ForbiddenException,
+        BadRequestException,
       );
       expect(gameGateway.emitGameOption).not.toHaveBeenCalled();
     });
