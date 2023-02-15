@@ -30,6 +30,8 @@ describe('AuthService', () => {
     jwtAccessConfig: { secret: 'jwtAccessSecret', expiresIn: '30m' },
     jwtRefreshSecret: { secret: 'jwtRefreshSecret' },
     jwtRefreshConfig: { secret: 'jwtRefreshSecret', expiresIn: '1h' },
+    jwtLoginSecret: { secret: 'jwtLoginSecret' },
+    jwtLoginConfig: { secret: 'jwtLoginSecret', expiresIn: '15m' },
   };
 
   beforeAll(async () => {
