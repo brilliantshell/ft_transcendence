@@ -47,6 +47,36 @@ export class AuthService {
     }
   }
 
+  /**
+   * @description 유저 Id 를 통하여 Login Token 발급
+   *
+   * @param userId 유저 Id
+   * @returns Access Token
+   */
+  issueLoginToken(userId: UserId) {
+    return this.jwtService.sign(
+      { userId },
+      this.apiConfigService.jwtAccessConfig,
+    );
+  }
+
+  /**
+   * @description Login Token 유효성 검사
+   *
+   * @param token Login Token
+   * @returns Login Token Payload (userId) || null
+   */
+  verifyLoginToken(token: string) {
+    try {
+      return this.jwtService.verify<JwtPayload>(
+        token,
+        this.apiConfigService.jwtAccessSecret,
+      );
+    } catch {
+      return null;
+    }
+  }
+
   // TODO
   // signUp(userId: UserId) {
   //   // 프사 / 닉 저장
@@ -59,7 +89,7 @@ export class AuthService {
   //   };
   // }
 
-  async login(userId: string) {
+  async issueTokens(userId: UserId) {
     return {
       accessToken: this.issueAccessToken(userId),
       refreshToken: await this.issueRefreshToken(userId),
@@ -78,7 +108,7 @@ export class AuthService {
    * @param userId 유저 Id
    * @returns Access Token
    */
-  issueAccessToken(userId: string) {
+  issueAccessToken(userId: UserId) {
     return this.jwtService.sign(
       { userId },
       this.apiConfigService.jwtAccessConfig,
@@ -115,7 +145,7 @@ export class AuthService {
    * @param userId 유저 Id
    * @returns Refresh Token
    */
-  async issueRefreshToken(userId: string) {
+  async issueRefreshToken(userId: UserId) {
     const token = this.jwtService.sign(
       { userId },
       this.apiConfigService.jwtRefreshConfig,
@@ -160,11 +190,13 @@ export class AuthService {
     if (invalidated === false) {
       return payload;
     }
-    if (invalidated === true) {
-      await this.invalidateRefreshTokens(payload.userId, refreshTokens);
-    }
+    await this.invalidateRefreshTokens(payload.userId, refreshTokens);
     this.logger.error(`Refresh Token for user ${payload.userId} is invalid`);
     return null;
+  }
+
+  async clearRefreshTokens(userId: UserId) {
+    await this.cacheManager.del(userId.toString());
   }
 
   /*****************************************************************************
@@ -180,7 +212,7 @@ export class AuthService {
    * @param refreshTokens 유저의 Refresh Token Family
    */
   private async invalidateRefreshTokens(
-    userId: string,
+    userId: UserId,
     refreshTokens: [RefreshTokenWrapper, RefreshTokenWrapper],
   ) {
     await Promise.all(
@@ -200,7 +232,7 @@ export class AuthService {
    * @param userId
    * @returns
    */
-  private async findRefreshTokens(userId: string) {
+  private async findRefreshTokens(userId: UserId) {
     return await Promise.all([
       this.cacheManager.get<RefreshTokenWrapper>(userId.toString() + '-prev'),
       this.cacheManager.get<RefreshTokenWrapper>(userId.toString()),

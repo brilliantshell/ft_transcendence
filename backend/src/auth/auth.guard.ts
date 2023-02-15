@@ -5,24 +5,13 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { CookieOptions, Request, Response } from 'express';
+import { Request, Response } from 'express';
 
+import {
+  ACCESS_TOKEN_COOKIE_OPTIONS,
+  REFRESH_TOKEN_COOKIE_OPTIONS,
+} from '../util/constant/cookie-constant';
 import { AuthService } from './auth.service';
-
-const COOKIE_OPTIONS: CookieOptions = {
-  httpOnly: true,
-  sameSite: 'none',
-  secure: true,
-};
-
-const ACCESS_TOKEN_COOKIE_OPTIONS: CookieOptions = {
-  ...COOKIE_OPTIONS,
-  maxAge: 3600000, // 1 hour
-};
-const REFRESH_TOKEN_COOKIE_OPTIONS: CookieOptions = {
-  ...COOKIE_OPTIONS,
-  maxAge: 1209600000, // 14 days
-};
 
 @Injectable()
 export class AuthGuard implements CanActivate {
@@ -73,17 +62,12 @@ export class AuthGuard implements CanActivate {
     const userId = (await this.authService.verifyRefreshToken(refreshToken))
       ?.userId;
     if (userId) {
-      req.user = { userId: Math.floor(Number(userId)) };
-      res.cookie(
-        'accessToken',
-        this.authService.issueAccessToken(userId),
-        ACCESS_TOKEN_COOKIE_OPTIONS,
+      req.user = { userId };
+      const { accessToken, refreshToken } = await this.authService.issueTokens(
+        userId,
       );
-      res.cookie(
-        'refreshToken',
-        await this.authService.issueRefreshToken(userId),
-        REFRESH_TOKEN_COOKIE_OPTIONS,
-      );
+      res.cookie('accessToken', accessToken, ACCESS_TOKEN_COOKIE_OPTIONS);
+      res.cookie('refreshToken', refreshToken, REFRESH_TOKEN_COOKIE_OPTIONS);
       return true;
     }
     return false;
