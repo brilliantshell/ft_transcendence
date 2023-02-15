@@ -53,4 +53,17 @@ export class ApiConfigService {
       expiresIn: '14d',
     };
   }
+
+  get jwtLoginSecret() {
+    return {
+      secret: this.configService.get('JWT_LOGIN_SECRET'),
+    };
+  }
+
+  get jwtLoginConfig() {
+    return {
+      ...this.jwtLoginSecret,
+      expiresIn: '1h',
+    };
+  }
 }
