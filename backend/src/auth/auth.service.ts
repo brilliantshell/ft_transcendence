@@ -8,6 +8,7 @@ import {
 import { Cache } from 'cache-manager';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
+import { MailerService } from '@nestjs-modules/mailer';
 import { Repository } from 'typeorm';
 
 import { ApiConfigService } from '../config/api-config.service';
@@ -22,6 +23,7 @@ export class AuthService {
     private readonly apiConfigService: ApiConfigService,
     @Inject(CACHE_MANAGER) readonly cacheManager: Cache,
     private readonly jwtService: JwtService,
+    private readonly mailerService: MailerService,
     @InjectRepository(Users)
     private readonly usersRepository: Repository<Users>,
   ) {}
@@ -197,6 +199,34 @@ export class AuthService {
     this.logger.error(`Refresh Token for user ${payload.userId} is invalid`);
     return null;
   }
+
+  /*****************************************************************************
+   *                                                                           *
+   * SECTION : Two-Factor Authentication                                       *
+   *                                                                           *
+   ****************************************************************************/
+
+  async sendTwoFactorCode(email: string) {
+    const code = this.generateTwoFactorSecret();
+    this.cacheManager.set(email, code, 900000); // 15 minutes
+
+    const image =
+      "<img src='https://emoji.slack-edge.com/T039P7U66/daebakjule/af8546a21f0db8d4.gif' width='24' height='24'>";
+    await this.mailerService.sendMail({
+      to: email,
+      subject: 'Two-Factor Authentication',
+      html: `<h1>${image}Your two-factor authentication code is ${code}${image}</h1>`,
+    });
+  }
+
+  async getTwoFactorCode(email: string) {
+    return await this.cacheManager.get(email);
+  }
+
+  generateTwoFactorSecret() {
+    return 'hi there';
+  }
+  // verifyTwoFactorCode() {}
 
   /*****************************************************************************
    *                                                                           *

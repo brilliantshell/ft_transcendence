@@ -131,6 +131,11 @@ describe('Login (e2e)', () => {
         );
       });
   });
+
+  it('test', async () => {
+    // await authService.sendTwoFactorCode('nb6963@naver.com');
+    // console.log(await authService.getCache('nb6963@naver.com'));
+  });
 });
 
 const getToken = (res) => {
