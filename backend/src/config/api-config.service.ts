@@ -63,7 +63,7 @@ export class ApiConfigService {
   get jwtLoginConfig() {
     return {
       ...this.jwtLoginSecret,
-      expiresIn: '1h',
+      expiresIn: '30m',
     };
   }
 }
