@@ -1,24 +1,28 @@
 import { HttpService } from '@nestjs/axios';
+import { InjectRepository } from '@nestjs/typeorm';
 import {
   Injectable,
   InternalServerErrorException,
   Logger,
 } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
+import { Repository } from 'typeorm';
 import { Strategy } from 'passport-oauth2';
 import { catchError } from 'rxjs';
-import { AuthService } from 'src/auth/auth.service';
 
+import { AuthService } from '../auth/auth.service';
 import { ApiConfigService } from '../config/api-config.service';
-import { UserId } from '../util/type';
+import { Users } from '../entity/users.entity';
 
 @Injectable()
 export class FortyTwoStrategy extends PassportStrategy(Strategy, '42') {
   private readonly logger = new Logger(FortyTwoStrategy.name);
   constructor(
     private readonly apiConfigService: ApiConfigService,
-    private readonly httpService: HttpService,
     private readonly authService: AuthService,
+    private readonly httpService: HttpService,
+    @InjectRepository(Users)
+    private readonly usersRepository: Repository<Users>,
   ) {
     super(apiConfigService.oauthConfig);
   }
@@ -42,14 +46,27 @@ export class FortyTwoStrategy extends PassportStrategy(Strategy, '42') {
         }),
       )
       .subscribe((response) => {
-        console.log(response.data);
         done(null, { userId: response.data['resource_owner_id'] });
       });
   }
 
   async validate(accessToken: string, refreshToken: string, profile: any) {
-    profile.isNew = await this.authService.findUserById(profile.userId);
-    console.log(profile);
+    profile.isRegistered = await this.authService.findUserById(profile.userId);
+    if (!profile.isRegistered) {
+      return profile;
+    }
+    try {
+      profile.authEmail = (
+        await this.usersRepository.findOne({
+          where: { userId: profile.userId },
+          select: ['authEmail'],
+        })
+      )?.authEmail;
+    } catch (e) {
+      if (e instanceof InternalServerErrorException) {
+        throw e;
+      }
+    }
     return profile;
   }
 }
