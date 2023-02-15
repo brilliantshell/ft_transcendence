@@ -19,11 +19,11 @@ export class AuthService {
   private readonly logger = new Logger(AuthService.name);
 
   constructor(
+    private readonly apiConfigService: ApiConfigService,
+    @Inject(CACHE_MANAGER) readonly cacheManager: Cache,
+    private readonly jwtService: JwtService,
     @InjectRepository(Users)
     private readonly usersRepository: Repository<Users>,
-    private readonly jwtService: JwtService,
-    @Inject(CACHE_MANAGER) readonly cacheManager: Cache,
-    private readonly apiConfigService: ApiConfigService,
   ) {}
 
   /*****************************************************************************
