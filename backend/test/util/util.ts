@@ -18,8 +18,8 @@ export async function timeout<T>(ms: number, promise: Promise<T>): Promise<T> {
   });
 }
 
-export const listenPromise = (socket: Socket, event: string) =>
-  new Promise((resolve) => socket.on(event, resolve));
+export const listenPromise = <T>(socket: Socket, event: string) =>
+  new Promise<T>((resolve) => socket.on(event, resolve));
 
 export const calculateLadderRise = (
   winnerLadder: number,

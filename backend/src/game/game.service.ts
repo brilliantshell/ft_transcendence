@@ -167,7 +167,7 @@ export class GameService {
    * @param gameId 게임 id
    * @returns 게임 정보
    */
-  getExistingGame(requesterId: UserId, gameId: GameId) {
+  private getExistingGame(requesterId: UserId, gameId: GameId) {
     const gameInfo = this.gameStorage.getGame(gameId);
     if (gameInfo === undefined) {
       throw new NotFoundException(

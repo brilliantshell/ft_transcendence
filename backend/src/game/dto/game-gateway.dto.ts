@@ -8,6 +8,10 @@ import {
 } from 'class-validator';
 import { GameId } from '../../util/type';
 
+export interface NewGameDto {
+  gameId: GameId;
+}
+
 export interface GameStartedDto {
   id: GameId;
   left: string;

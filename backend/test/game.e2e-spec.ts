@@ -14,6 +14,7 @@ import { BlockedUsers } from '../src/entity/blocked-users.entity';
 import { GameGateway } from '../src/game/game.gateway';
 import { GameInfo, UserId } from '../src/util/type';
 import { GameStorage } from '../src/game/game.storage';
+import { NewGameDto } from '../src/game/dto/game-gateway.dto';
 import {
   TYPEORM_SHARED_CONFIG,
   createDataSources,
@@ -82,6 +83,7 @@ describe('GameController (e2e)', () => {
 
   beforeEach(async () => {
     users = usersEntities.slice(index, index + 4);
+    index += 4;
     userIds = users.map(({ userId }) => userId);
     clientSockets = await Promise.all(
       userIds.map(async (id) => {
@@ -104,6 +106,7 @@ describe('GameController (e2e)', () => {
   afterEach(() => clientSockets.forEach((socket) => socket.disconnect()));
 
   afterAll(async () => {
+    await new Promise((resolve) => setTimeout(resolve, 300));
     await app.close();
     await destroyDataSources(TEST_DB, dataSource, initDataSource);
   });
@@ -267,6 +270,57 @@ describe('GameController (e2e)', () => {
         .get(`/game/list/${nanoid()}`)
         .set('x-user-id', userIds[0].toString())
         .expect(404);
+    });
+  });
+
+  /*****************************************************************************
+   *                                                                           *
+   * ANCHOR : POST /game/queue                                                 *
+   *                                                                           *
+   ****************************************************************************/
+
+  describe('POST /game/queue', () => {
+    it('should queue the user for a ladder game (201)', async () => {
+      const [playerOne, playerTwo] = userIds;
+      const [wsMessageOne, wsMessageTwo] = await Promise.all([
+        listenPromise<NewGameDto>(clientSockets[0], 'newGame'),
+        listenPromise<NewGameDto>(clientSockets[1], 'newGame'),
+        request(app.getHttpServer())
+          .post('/game/queue')
+          .set('x-user-id', playerOne.toString())
+          .expect(201),
+        request(app.getHttpServer())
+          .post('/game/queue')
+          .set('x-user-id', playerTwo.toString())
+          .expect(201),
+      ]);
+      const gameId = wsMessageOne?.gameId;
+      expect(gameId).toMatch(/^[a-zA-Z0-9_-]{21}$/);
+      expect(gameId).toEqual(wsMessageTwo?.gameId);
+    });
+
+    it('should throw BAD REQUEST if the user is already playing a game (400', async () => {
+      const [playerOne, playerTwo] = userIds;
+      await gameStorage.createGame(
+        nanoid(),
+        new GameInfo(playerOne, playerTwo, 1, false),
+      );
+      await request(app.getHttpServer())
+        .post('/game/queue')
+        .set('x-user-id', playerOne.toString())
+        .expect(400);
+    });
+
+    it('should throw CONFLICT if the user is already in the queue (409)', async () => {
+      const [playerOne] = userIds;
+      await request(app.getHttpServer())
+        .post('/game/queue')
+        .set('x-user-id', playerOne.toString())
+        .expect(201);
+      await request(app.getHttpServer())
+        .post('/game/queue')
+        .set('x-user-id', playerOne.toString())
+        .expect(409);
     });
   });
 

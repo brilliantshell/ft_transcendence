@@ -1,9 +1,19 @@
-import { Controller, Get, Param, Req, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Param,
+  Post,
+  Req,
+  UseGuards,
+  UseInterceptors,
+} from '@nestjs/common';
 
 import { GameIdParamDto } from './dto/game.dto';
 import { GameService } from './game.service';
+import { InPlayGuard } from './guard/in-play.guard';
+import { LadderQueueInterceptor } from './interceptor/ladder-queue.interceptor';
 import { MockAuthGuard } from '../guard/mock-auth.guard';
-import { VerifiedRequest } from '../../dist/util/type.d';
+import { VerifiedRequest } from '../util/type';
 
 // FIXME: AuthGuard 구현 후 변경
 @UseGuards(MockAuthGuard)
@@ -28,6 +38,13 @@ export class GameController {
     @Param() { gameId }: GameIdParamDto,
   ) {
     return this.gameService.findGameInfo(req.user.userId, gameId);
+  }
+
+  @UseGuards(InPlayGuard)
+  @UseInterceptors(LadderQueueInterceptor)
+  @Post('queue')
+  enterLadderQueue() {
+    return;
   }
 
   /*****************************************************************************
