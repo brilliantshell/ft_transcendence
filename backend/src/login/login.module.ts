@@ -5,6 +5,9 @@ import { PassportModule } from '@nestjs/passport';
 import { ApiConfigModule } from '../config/api-config.module';
 import { FortyTwoStrategy } from './forty-two.strategy';
 import { LoginController } from './login.controller';
+import { LoginService } from './login.service';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { Users } from '../entity/users.entity';
 
 @Module({
   imports: [
@@ -12,10 +15,11 @@ import { LoginController } from './login.controller';
       timeout: 5000,
       timeoutErrorMessage: 'Timeout has occurred In 42 API',
     }),
+    TypeOrmModule.forFeature([Users]),
     forwardRef(() => ApiConfigModule),
     PassportModule,
   ],
   controllers: [LoginController],
-  providers: [FortyTwoStrategy /* LoginService */],
+  providers: [FortyTwoStrategy, LoginService],
 })
 export class LoginModule {}
