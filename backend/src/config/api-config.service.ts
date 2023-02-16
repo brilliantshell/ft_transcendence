@@ -1,6 +1,7 @@
 import { ConfigService } from '@nestjs/config';
 import { Injectable } from '@nestjs/common';
 import { TypeOrmModuleOptions } from '@nestjs/typeorm';
+import { MailerOptions } from '@nestjs-modules/mailer';
 
 @Injectable()
 export class ApiConfigService {
@@ -64,6 +65,23 @@ export class ApiConfigService {
     return {
       ...this.jwtLoginSecret,
       expiresIn: '30m',
+    };
+  }
+
+  get mailerConfig(): MailerOptions {
+    return {
+      transport: {
+        host: 'smtp.gmail.com',
+        port: 465,
+        secure: true,
+        auth: {
+          user: this.configService.get('MAILER_USER'),
+          pass: this.configService.get('MAILER_SECRET'),
+        },
+      },
+      defaults: {
+        from: '"no-reply" <no-reply@no-reply.com>',
+      },
     };
   }
 }
