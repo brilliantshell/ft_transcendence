@@ -8,7 +8,7 @@ import {
   NestInterceptor,
   NotFoundException,
 } from '@nestjs/common';
-import { Observable, Subject, bufferCount, tap } from 'rxjs';
+import { Observable, ReplaySubject, bufferCount, tap } from 'rxjs';
 
 import { GameId, GameInfo, UserId, VerifiedRequest } from '../../util/type';
 import { GameService } from '../game.service';
@@ -16,7 +16,8 @@ import { GameStorage } from '../game.storage';
 
 @Injectable()
 export class LadderStartInterceptor implements NestInterceptor {
-  private readonly gameSubjectMap: Map<GameId, Subject<UserId>> = new Map();
+  private readonly gameSubjectMap: Map<GameId, ReplaySubject<UserId>> =
+    new Map();
   private readonly waitingPlayers: Set<UserId> = new Set();
 
   constructor(
@@ -73,7 +74,7 @@ export class LadderStartInterceptor implements NestInterceptor {
     gameId: GameId,
     gameInfo: GameInfo,
   ) {
-    const queue = new Subject<UserId>();
+    const queue = new ReplaySubject<UserId>();
     queue.pipe(bufferCount(2)).subscribe((players: [UserId, UserId]) => {
       players.forEach((userId) => this.waitingPlayers.delete(userId));
       this.gameService.startGame(gameId, gameInfo);

@@ -5,7 +5,7 @@ import {
   Injectable,
   NestInterceptor,
 } from '@nestjs/common';
-import { Observable, Subject, bufferCount, tap } from 'rxjs';
+import { Observable, ReplaySubject, bufferCount, tap } from 'rxjs';
 
 import { GameService } from '../game.service';
 import { UserId, VerifiedRequest } from '../../util/type';
@@ -13,7 +13,7 @@ import { UserId, VerifiedRequest } from '../../util/type';
 @Injectable()
 export class LadderQueueInterceptor implements NestInterceptor {
   private readonly usersInQueue: Set<UserId> = new Set();
-  private readonly waitingQueue: Subject<UserId> = new Subject();
+  private readonly waitingQueue: ReplaySubject<UserId> = new ReplaySubject();
 
   constructor(private readonly gameService: GameService) {
     this.waitingQueue
