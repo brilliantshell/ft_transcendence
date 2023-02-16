@@ -330,6 +330,74 @@ describe('GameController (e2e)', () => {
    *                                                                           *
    ****************************************************************************/
 
+  /*****************************************************************************
+   *                                                                           *
+   * ANCHOR : GET /game/:gameId                                                *
+   *                                                                           *
+   ****************************************************************************/
+
+  describe('GET /game/:gameId', () => {
+    it("should return players' info (200)", async () => {
+      const [playerOne, playerTwo] = userIds;
+      const gameId = nanoid();
+      await gameStorage.createGame(
+        gameId,
+        new GameInfo(playerOne, playerTwo, 1, false),
+      );
+      const results = await Promise.all([
+        request(app.getHttpServer())
+          .get(`/game/${gameId}`)
+          .set('x-user-id', playerOne.toString())
+          .expect(200),
+        request(app.getHttpServer())
+          .get(`/game/${gameId}`)
+          .set('x-user-id', playerTwo.toString())
+          .expect(200),
+      ]);
+      expect(results[0].body).toEqual({
+        isLeft: true,
+        playerId: playerOne,
+        playerNickname: users[0].nickname,
+        opponentId: playerTwo,
+        opponentNickname: users[1].nickname,
+      });
+      expect(results[1].body).toEqual({
+        isLeft: false,
+        playerId: playerTwo,
+        playerNickname: users[1].nickname,
+        opponentId: playerOne,
+        opponentNickname: users[0].nickname,
+      });
+    });
+
+    it('should throw FORBIDDEN if the user is not a player of the game (403)', async () => {
+      const [playerOne, playerTwo, spectator] = userIds;
+      const gameId = nanoid();
+      await gameStorage.createGame(
+        gameId,
+        new GameInfo(playerOne, playerTwo, 1, false),
+      );
+      await request(app.getHttpServer())
+        .get(`/game/${gameId}`)
+        .set('x-user-id', spectator.toString())
+        .expect(403);
+    });
+
+    it('should throw NOT FOUND if the game does not exist (404)', async () => {
+      const [playerOne] = userIds;
+      await request(app.getHttpServer())
+        .get('/game/unknownGameunknownGam')
+        .set('x-user-id', playerOne.toString())
+        .expect(404);
+    });
+  });
+
+  /*****************************************************************************
+   *                                                                           *
+   * ANCHOR : PATCH /game/:gameId/options                                      *
+   *                                                                           *
+   ****************************************************************************/
+
   describe('PATCH /game/:gameId/options', () => {
     it('should change the map of a normal game (200)', async () => {
       const [playerOne, playerTwo, spectator] = userIds;

@@ -56,6 +56,14 @@ export class GameController {
    *                                                                           *
    ****************************************************************************/
 
+  @Get(':gameId')
+  findPlayers(
+    @Req() req: VerifiedRequest,
+    @Param() { gameId }: GameIdParamDto,
+  ) {
+    return this.gameService.findPlayers(req.user.userId, gameId);
+  }
+
   @UseGuards(InGameUiGuard)
   @Patch(':gameId/options')
   updateMap(
