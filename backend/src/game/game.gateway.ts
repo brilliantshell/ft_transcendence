@@ -95,7 +95,12 @@ export class GameGateway {
     this.server.to('waitingRoom').emit('gameStarted', gameStartedDto);
   }
 
+  // TODO : gameStatus listener
   // TODO : gameStatus emitter
+  // FIXME : 메시지 추가
+  emitGameStatus(gameId: GameId) {
+    this.server.to(`game-${gameId}`).emit('gameStatus');
+  }
 
   /**
    * @description 게임 비정상 종료 처리

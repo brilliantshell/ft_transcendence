@@ -15,6 +15,7 @@ import { GameService } from './game.service';
 import { InGameUiGuard } from './guard/in-game-ui.guard';
 import { InPlayGuard } from './guard/in-play.guard';
 import { LadderQueueInterceptor } from './interceptor/ladder-queue.interceptor';
+import { LadderStartInterceptor } from './interceptor/ladder-start.interceptor';
 import { MockAuthGuard } from '../guard/mock-auth.guard';
 import { VerifiedRequest } from '../util/type';
 
@@ -72,5 +73,12 @@ export class GameController {
     @Body() { map }: GameMapDto,
   ) {
     this.gameService.changeMap(req.user.userId, gameId, map);
+  }
+
+  @UseGuards(InGameUiGuard)
+  @UseInterceptors(LadderStartInterceptor)
+  @Patch(':gameId/start')
+  startGame() {
+    return;
   }
 }

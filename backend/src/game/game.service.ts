@@ -142,7 +142,26 @@ export class GameService {
     return gameId;
   }
 
-  // TODO : `game-${gameId}` ui 밖에서 요청하면 400 Guard 로 처리
+  /**
+   * @description 래더 게임 생성
+   *
+   * @param players 래더 게임에 참여할 플레이어들의 id
+   */
+  async createLadderGame(players: [UserId, UserId]) {
+    const gameId = nanoid();
+    await this.gameStorage.createGame(
+      gameId,
+      new GameInfo(players[0], players[1], 1, true),
+    );
+    players.forEach((userId) =>
+      this.gameGateway.joinRoom(
+        this.userSocketStorage.clients.get(userId),
+        `game-${gameId}`,
+      ),
+    );
+    this.gameGateway.emitNewGame(gameId);
+  }
+
   /**
    * @description 게임 맵 변경
    *
@@ -173,6 +192,22 @@ export class GameService {
       this.userSocketStorage.clients.get(gameInfo.leftId),
       map,
     );
+  }
+
+  /**
+   * @description 게임 시작
+   *
+   * @param gameId 게임 id
+   * @param gameInfo 게임 정보
+   */
+  startGame(gameId: GameId, gameInfo: GameInfo) {
+    gameInfo.scores = [0, 0];
+    this.gameGateway.emitGameStatus(gameId); // FIXME : 진짜 데이터 넣어주기
+    this.gameGateway.emitGameStarted({
+      id: gameId,
+      left: gameInfo.leftNickname,
+      right: gameInfo.rightNickname,
+    });
   }
 
   /*****************************************************************************

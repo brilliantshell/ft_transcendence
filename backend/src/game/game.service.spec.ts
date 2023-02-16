@@ -8,6 +8,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { faker } from '@faker-js/faker';
 import { nanoid } from 'nanoid';
+import waitForExpect from 'wait-for-expect';
 
 import { BlockedUsers } from '../entity/blocked-users.entity';
 import { Channels } from '../entity/channels.entity';
@@ -15,6 +16,7 @@ import { Friends } from '../entity/friends.entity';
 import { GameGateway } from './game.gateway';
 import { GameId, GameInfo, SocketId } from '../util/type';
 import { GameService } from './game.service';
+import { GameStartedDto } from './dto/game-gateway.dto';
 import { GameStorage } from './game.storage';
 import { RanksGateway } from '../ranks/ranks.gateway';
 import { UserRelationshipStorage } from '../user-status/user-relationship.storage';
@@ -81,6 +83,8 @@ describe('GameService', () => {
         emitGameOption: jest.fn(
           (gameId: GameId, socketId: SocketId, map: number) => undefined,
         ),
+        emitGameStarted: jest.fn((gameStarted: GameStartedDto) => undefined),
+        emitGameStatus: jest.fn((gameId: GameId) => undefined),
       })
       .compile();
     service = module.get<GameService>(GameService);
@@ -166,7 +170,7 @@ describe('GameService', () => {
         gameId,
         new GameInfo(playerOne.userId, playerTwo.userId, 1, true),
       );
-      (gameStorage as any).games.get(gameId).scores = [1, 2];
+      gameStorage.getGame(gameId).scores = [1, 2];
       expect(service.findGameInfo(spectatorOne.userId, gameId)).toEqual({
         isRank: true,
         leftPlayer: playerOne.nickname,
@@ -250,6 +254,16 @@ describe('GameService', () => {
     });
   });
 
+  describe('CREATE LADDER GAME', () => {
+    it('should create a new ladder game and notify the invited player', async () => {
+      service.createLadderGame([playerOne.userId, playerTwo.userId]);
+      await waitForExpect(() => {
+        expect(gameGateway.emitNewGame).toHaveBeenCalled();
+        expect(gameGateway.joinRoom).toHaveBeenCalledTimes(2);
+      });
+    });
+  });
+
   describe('CHANGE MAP', () => {
     it('should change the map of a game and let the opponent know the updated option', async () => {
       await gameStorage.createGame(
@@ -306,7 +320,7 @@ describe('GameService', () => {
     });
   });
 
-  describe('START THE GAME', () => {
+  describe("GET PLAYERS' INFO", () => {
     it("should return normal game pleyer's info and on which side they are", async () => {
       await gameStorage.createGame(
         gameId,
@@ -351,6 +365,24 @@ describe('GameService', () => {
       expect(() =>
         service.findPlayers(spectatorOne.userId, gameId),
       ).toThrowError(ForbiddenException);
+    });
+  });
+
+  describe('START GAME', () => {
+    it('should set the scores to [0, 0], send gameStatus to players & spectators and gameStarted to waitingRoom', async () => {
+      await gameStorage.createGame(
+        gameId,
+        new GameInfo(playerOne.userId, playerTwo.userId, 1, false),
+      );
+      const gameInfo = gameStorage.getGame(gameId);
+      service.startGame(gameId, gameInfo);
+      expect(gameStorage.getGame(gameId).scores).toEqual([0, 0]);
+      expect(gameGateway.emitGameStatus).toHaveBeenCalled();
+      expect(gameGateway.emitGameStarted).toHaveBeenCalledWith({
+        id: gameId,
+        left: gameInfo.leftNickname,
+        right: gameInfo.rightNickname,
+      });
     });
   });
 });

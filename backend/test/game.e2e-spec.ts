@@ -568,4 +568,137 @@ describe('GameController (e2e)', () => {
         .expect(404);
     });
   });
+
+  /*****************************************************************************
+   *                                                                           *
+   * ANCHOR : PATCH /game/:gameId/start                                        *
+   *                                                                           *
+   ****************************************************************************/
+
+  describe('PATCH /game/:gameId/start', () => {
+    it('should start the game when the both players sends the request (200)', async () => {
+      const [playerOne, playerTwo, spectator, waitingRoom] = userIds;
+      const gameId = nanoid();
+      await gameStorage.createGame(
+        gameId,
+        new GameInfo(playerOne, playerTwo, 1, false),
+      );
+      await request(app.getHttpServer())
+        .get(`/game/list/${gameId}/`)
+        .set('x-user-id', spectator.toString())
+        .expect(200);
+      clientSockets[0].emit('currentUi', { ui: `game-${gameId}` });
+      clientSockets[1].emit('currentUi', { ui: `game-${gameId}` });
+      clientSockets[2].emit('currentUi', { ui: `game-${gameId}` });
+      clientSockets[3].emit('currentUi', { ui: 'waitingRoom' });
+      await waitForExpect(() => {
+        expect(activityManager.getActivity(playerOne)).toBe(`game-${gameId}`);
+        expect(activityManager.getActivity(playerTwo)).toBe(`game-${gameId}`);
+        expect(activityManager.getActivity(spectator)).toBe(`game-${gameId}`);
+        expect(activityManager.getActivity(waitingRoom)).toBe('waitingRoom');
+      });
+      const [wsMessage] = await Promise.all([
+        listenPromise(clientSockets[3], 'gameStarted'),
+        listenPromise(clientSockets[0], 'gameStatus'),
+        listenPromise(clientSockets[1], 'gameStatus'),
+        listenPromise(clientSockets[2], 'gameStatus'),
+        request(app.getHttpServer())
+          .patch(`/game/${gameId}/start`)
+          .set('x-user-id', playerOne.toString())
+          .expect(200),
+        request(app.getHttpServer())
+          .patch(`/game/${gameId}/start`)
+          .set('x-user-id', playerTwo.toString())
+          .expect(200),
+      ]);
+      expect(wsMessage).toEqual({
+        id: gameId,
+        left: users[0].nickname,
+        right: users[1].nickname,
+      });
+      expect(gameStorage.getGame(gameId).scores).toEqual([0, 0]);
+    });
+
+    it('should throw BAD REQUEST when the gameId is invalid (400)', () => {
+      const [playerOne] = userIds;
+      return request(app.getHttpServer())
+        .patch('/game/invalidGameId/start')
+        .set('x-user-id', playerOne.toString())
+        .expect(400);
+    });
+
+    it('should throw BAD REQUEST when a user tries to restart the game that is already in progress', async () => {
+      const [playerOne, playerTwo] = userIds;
+      const gameId = nanoid();
+      await gameStorage.createGame(
+        gameId,
+        new GameInfo(playerOne, playerTwo, 1, false),
+      );
+      clientSockets[0].emit('currentUi', { ui: `game-${gameId}` });
+      clientSockets[1].emit('currentUi', { ui: `game-${gameId}` });
+      gameStorage.getGame(gameId).scores = [0, 0];
+      return request(app.getHttpServer())
+        .patch(`/game/${gameId}/start`)
+        .set('x-user-id', playerOne.toString())
+        .expect(400);
+    });
+
+    it('should throw FORBIDDEN when the requester is not a player (403)', async () => {
+      const [playerOne, playerTwo, spectator] = userIds;
+      const gameId = nanoid();
+      await gameStorage.createGame(
+        gameId,
+        new GameInfo(playerOne, playerTwo, 1, false),
+      );
+      clientSockets[0].emit('currentUi', { ui: `game-${gameId}` });
+      clientSockets[1].emit('currentUi', { ui: `game-${gameId}` });
+      clientSockets[2].emit('currentUi', { ui: `game-${gameId}` });
+      await waitForExpect(() => {
+        expect(activityManager.getActivity(playerOne)).toBe(`game-${gameId}`);
+        expect(activityManager.getActivity(playerTwo)).toBe(`game-${gameId}`);
+        expect(activityManager.getActivity(spectator)).toBe(`game-${gameId}`);
+      });
+      return request(app.getHttpServer())
+        .patch(`/game/${gameId}/start`)
+        .set('x-user-id', spectator.toString())
+        .expect(403);
+    });
+
+    it('should throw NOT FOUND if the game does not exist (404)', async () => {
+      const [playerOne] = userIds;
+      clientSockets[0].emit('currentUi', { ui: 'game-unknownGameunknownGam' });
+      await waitForExpect(() => {
+        expect(activityManager.getActivity(playerOne)).toBe(
+          'game-unknownGameunknownGam',
+        );
+      });
+      return request(app.getHttpServer())
+        .patch('/game/unknownGameunknownGam/start')
+        .set('x-user-id', playerOne.toString())
+        .expect(404);
+    });
+
+    it('should throw CONFLICT if the user has already entered the game start queue', async () => {
+      const [playerOne, playerTwo] = userIds;
+      const gameId = nanoid();
+      await gameStorage.createGame(
+        gameId,
+        new GameInfo(playerOne, playerTwo, 1, false),
+      );
+      clientSockets[0].emit('currentUi', { ui: `game-${gameId}` });
+      clientSockets[1].emit('currentUi', { ui: `game-${gameId}` });
+      await waitForExpect(() => {
+        expect(activityManager.getActivity(playerOne)).toBe(`game-${gameId}`);
+        expect(activityManager.getActivity(playerTwo)).toBe(`game-${gameId}`);
+      });
+      await request(app.getHttpServer())
+        .patch(`/game/${gameId}/start`)
+        .set('x-user-id', playerOne.toString())
+        .expect(200);
+      return request(app.getHttpServer())
+        .patch(`/game/${gameId}/start`)
+        .set('x-user-id', playerOne.toString())
+        .expect(409);
+    });
+  });
 });
