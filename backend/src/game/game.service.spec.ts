@@ -147,15 +147,32 @@ describe('GameService', () => {
   });
 
   describe('SPECTATOR', () => {
-    it('should return game information when a user tries to spectate a game', async () => {
+    it('should return game information when a user tries to spectate a normal game before it starts', async () => {
+      await gameStorage.createGame(
+        gameId,
+        new GameInfo(playerOne.userId, playerTwo.userId, 1, false),
+      );
+      expect(service.findGameInfo(spectatorOne.userId, gameId)).toEqual({
+        isRank: false,
+        leftPlayer: playerOne.nickname,
+        rightPlayer: playerTwo.nickname,
+        map: 1,
+        scores: null,
+      });
+    });
+
+    it('should return game information when a user tries to spectate a game (in progress)', async () => {
       await gameStorage.createGame(
         gameId,
         new GameInfo(playerOne.userId, playerTwo.userId, 1, true),
       );
+      (gameStorage as any).games.get(gameId).scores = [1, 2];
       expect(service.findGameInfo(spectatorOne.userId, gameId)).toEqual({
+        isRank: true,
         leftPlayer: playerOne.nickname,
         rightPlayer: playerTwo.nickname,
         map: 1,
+        scores: [1, 2],
       });
     });
 
@@ -290,17 +307,33 @@ describe('GameService', () => {
   });
 
   describe('START THE GAME', () => {
-    it("should return pleyer's info and on which side they are", async () => {
+    it("should return normal game pleyer's info and on which side they are", async () => {
       await gameStorage.createGame(
         gameId,
         new GameInfo(playerOne.userId, playerTwo.userId, 1, false),
       );
       expect(service.findPlayers(playerOne.userId, gameId)).toEqual({
+        isRank: false,
         isLeft: true,
         playerId: playerOne.userId,
         playerNickname: playerOne.nickname,
         opponentId: playerTwo.userId,
         opponentNickname: playerTwo.nickname,
+      });
+    });
+
+    it("should return ladder game pleyer's info and on which side they are", async () => {
+      await gameStorage.createGame(
+        gameId,
+        new GameInfo(playerOne.userId, playerTwo.userId, 1, true),
+      );
+      expect(service.findPlayers(playerTwo.userId, gameId)).toEqual({
+        isRank: true,
+        isLeft: false,
+        playerId: playerTwo.userId,
+        playerNickname: playerTwo.nickname,
+        opponentId: playerOne.userId,
+        opponentNickname: playerOne.nickname,
       });
     });
 

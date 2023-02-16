@@ -181,9 +181,11 @@ describe('GameController (e2e)', () => {
         .set('x-user-id', spectator.toString());
       expect(status).toBe(200);
       expect(body).toEqual({
+        isRank: true,
         leftPlayer: users[0].nickname,
         rightPlayer: users[1].nickname,
         map: 1,
+        scores: null,
       });
       await waitForExpect(() => {
         expect(
@@ -207,9 +209,11 @@ describe('GameController (e2e)', () => {
         .set('x-user-id', spectator.toString());
       expect(status).toBe(200);
       expect(body).toEqual({
+        isRank: false,
         leftPlayer: users[0].nickname,
         rightPlayer: users[1].nickname,
         map: 1,
+        scores: null,
       });
       await waitForExpect(() => {
         expect(
@@ -337,7 +341,7 @@ describe('GameController (e2e)', () => {
    ****************************************************************************/
 
   describe('GET /game/:gameId', () => {
-    it("should return players' info (200)", async () => {
+    it("should return normal game players' info (200)", async () => {
       const [playerOne, playerTwo] = userIds;
       const gameId = nanoid();
       await gameStorage.createGame(
@@ -355,6 +359,7 @@ describe('GameController (e2e)', () => {
           .expect(200),
       ]);
       expect(results[0].body).toEqual({
+        isRank: false,
         isLeft: true,
         playerId: playerOne,
         playerNickname: users[0].nickname,
@@ -362,6 +367,42 @@ describe('GameController (e2e)', () => {
         opponentNickname: users[1].nickname,
       });
       expect(results[1].body).toEqual({
+        isRank: false,
+        isLeft: false,
+        playerId: playerTwo,
+        playerNickname: users[1].nickname,
+        opponentId: playerOne,
+        opponentNickname: users[0].nickname,
+      });
+    });
+
+    it("should return ladder game players' info (200)", async () => {
+      const [playerOne, playerTwo] = userIds;
+      const gameId = nanoid();
+      await gameStorage.createGame(
+        gameId,
+        new GameInfo(playerOne, playerTwo, 1, true),
+      );
+      const results = await Promise.all([
+        request(app.getHttpServer())
+          .get(`/game/${gameId}`)
+          .set('x-user-id', playerOne.toString())
+          .expect(200),
+        request(app.getHttpServer())
+          .get(`/game/${gameId}`)
+          .set('x-user-id', playerTwo.toString())
+          .expect(200),
+      ]);
+      expect(results[0].body).toEqual({
+        isRank: true,
+        isLeft: true,
+        playerId: playerOne,
+        playerNickname: users[0].nickname,
+        opponentId: playerTwo,
+        opponentNickname: users[1].nickname,
+      });
+      expect(results[1].body).toEqual({
+        isRank: true,
         isLeft: false,
         playerId: playerTwo,
         playerNickname: users[1].nickname,

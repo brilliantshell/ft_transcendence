@@ -52,8 +52,15 @@ export class GameService {
    */
   findGameInfo(spectatorId: UserId, gameId: GameId) {
     const gameInfo = this.getExistingGame(spectatorId, gameId);
-    const { leftId, leftNickname, rightId, rightNickname, map, isRank } =
-      gameInfo;
+    const {
+      leftId,
+      leftNickname,
+      rightId,
+      rightNickname,
+      map,
+      isRank,
+      scores,
+    } = gameInfo;
     const [leftRelationship, rightRelationship] = [
       this.userRelationshipStorage.getRelationship(spectatorId, leftId),
       this.userRelationshipStorage.getRelationship(spectatorId, rightId),
@@ -71,10 +78,15 @@ export class GameService {
       this.userSocketStorage.clients.get(spectatorId),
       `game-${gameId}`,
     );
-    return { leftPlayer: leftNickname, rightPlayer: rightNickname, map };
+    return {
+      isRank,
+      leftPlayer: leftNickname,
+      rightPlayer: rightNickname,
+      map,
+      scores,
+    };
   }
 
-  // TODO : `game-${gameId}` ui 밖에서 요청하면 400 Guard 로 처리
   // TODO : interceptor 로 두 플레이어 모두 해당 요청에 응답 보냈을 때 게임 시작 event emit
   /**
    * @description 게임에 참여하는 유저에게 게임의 기본 정보 제공
@@ -85,7 +97,7 @@ export class GameService {
    */
   findPlayers(playerId: UserId, gameId: GameId) {
     const gameInfo = this.getExistingGame(playerId, gameId);
-    const { leftId, leftNickname, rightId, rightNickname } = gameInfo;
+    const { isRank, leftId, leftNickname, rightId, rightNickname } = gameInfo;
     if (leftId !== playerId && rightId !== playerId) {
       throw new ForbiddenException(
         `The requester(${playerId}) is not a participant of the game`,
@@ -95,7 +107,14 @@ export class GameService {
     const [playerNickname, opponentId, opponentNickname] = isLeft
       ? [leftNickname, rightId, rightNickname]
       : [rightNickname, leftId, leftNickname];
-    return { isLeft, playerId, playerNickname, opponentId, opponentNickname };
+    return {
+      isRank,
+      isLeft,
+      playerId,
+      playerNickname,
+      opponentId,
+      opponentNickname,
+    };
   }
 
   /**
