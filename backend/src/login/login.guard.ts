@@ -14,8 +14,8 @@ export class LoginGuard implements CanActivate {
 
   canActivate(context: ExecutionContext) {
     const req = context.switchToHttp().getRequest<Request>();
-    const userId = this.authService.verifyLoginToken(
-      req.cookies.loginToken,
+    const userId = this.authService.verifyRestrictedAccessToken(
+      req.cookies.restrictedAccessToken,
     )?.userId;
     if (!userId) {
       throw new UnauthorizedException('Unauthorized, Please login again.');

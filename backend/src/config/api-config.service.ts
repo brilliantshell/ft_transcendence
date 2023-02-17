@@ -55,16 +55,16 @@ export class ApiConfigService {
     };
   }
 
-  get jwtLoginSecret() {
+  get jwtRestrictedAccessSecret() {
     return {
-      secret: this.configService.get('JWT_LOGIN_SECRET'),
+      secret: this.configService.get('JWT_RESTRICTED_ACCESS_SECRET'),
     };
   }
 
-  get jwtLoginConfig() {
+  get jwtRestrictedAccessConfig() {
     return {
-      ...this.jwtLoginSecret,
-      expiresIn: '30m',
+      ...this.jwtRestrictedAccessSecret,
+      expiresIn: '15m',
     };
   }
 

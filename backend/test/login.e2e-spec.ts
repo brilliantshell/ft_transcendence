@@ -6,13 +6,13 @@ import { join } from 'path';
 import * as cookieParser from 'cookie-parser';
 import * as request from 'supertest';
 
+import { AppModule } from '../src/app.module';
+import { AuthService } from '../src/auth/auth.service';
 import {
   TYPEORM_SHARED_CONFIG,
   createDataSources,
   destroyDataSources,
 } from './util/db-resource-manager';
-import { AppModule } from '../src/app.module';
-import { AuthService } from '../src/auth/auth.service';
 import { Users } from '../src/entity/users.entity';
 import { existsSync, unlinkSync } from 'fs';
 import { generateUsers } from './util/generate-mock-data';
@@ -69,11 +69,11 @@ describe('Login (e2e)', () => {
   it('should not create user info when invalid token', async () => {
     const userId = usersEntities[0].userId;
     // with no token
-    await request(app.getHttpServer()).put('/login/user-info').expect(401);
+    await request(app.getHttpServer()).post('/login/user-info').expect(401);
     const { accessToken, refreshToken } = await authService.issueTokens(userId);
     // with access / refresh token
     await request(app.getHttpServer())
-      .put('/login/user-info')
+      .post('/login/user-info')
       .set('Cookie', [
         `accessToken=${accessToken}`,
         `refreshToken=${refreshToken}`,
@@ -84,20 +84,21 @@ describe('Login (e2e)', () => {
   it('should set user info when valid login token and issue access/refresh token', async () => {
     const [user] = generateUsers(1);
     const { userId } = user;
-    const loginToken = authService.issueLoginToken(userId);
+    const restrictedAccessToken =
+      authService.issueRestrictedAccessToken(userId);
     const ASSET_DIR = join(__dirname, 'test-asset');
     const PROFILE_DIR = join(__dirname, '..', '/asset/profile-image/');
     // with access / refresh token
     await request(app.getHttpServer())
-      .put('/login/user-info')
-      .set('Cookie', `loginToken=${loginToken}`)
+      .post('/login/user-info')
+      .set('Cookie', `restrictedAccessToken=${restrictedAccessToken}`)
       .field('nickname', user.nickname)
       .attach('profileImage', `${ASSET_DIR}/tiny.png`)
-      .expect(200)
+      .expect(201)
       .expect(async (res) => {
         const { accessToken, refreshToken } = getToken(res);
         expect(res.headers['set-cookie'][2]).toContain(
-          'loginToken=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT',
+          'restrictedAccessToken=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT',
         );
         expect(accessToken).toBeDefined();
         expect(refreshToken).toBeDefined();
@@ -130,11 +131,6 @@ describe('Login (e2e)', () => {
           'refreshToken=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT',
         );
       });
-  });
-
-  it('test', async () => {
-    // await authService.sendTwoFactorCode('nb6963@naver.com');
-    // console.log(await authService.getCache('nb6963@naver.com'));
   });
 });
 
