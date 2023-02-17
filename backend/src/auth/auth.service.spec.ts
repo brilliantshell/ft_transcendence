@@ -1,11 +1,8 @@
-import { CacheModule, forwardRef } from '@nestjs/common';
 import { DataSource, Repository } from 'typeorm';
-import { JwtModule } from '@nestjs/jwt';
 import { Test, TestingModule } from '@nestjs/testing';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
-import { ApiConfigModule } from '../config/api-config.module';
-import { ApiConfigService } from '../config/api-config.service';
+import { AppModule } from '../app.module';
 import { AuthService } from './auth.service';
 import {
   TYPEORM_SHARED_CONFIG,
@@ -25,15 +22,6 @@ describe('AuthService', () => {
   let dataSource: DataSource;
   let usersRepository: Repository<Users>;
 
-  const mockApiConfigService = {
-    jwtAccessSecret: { secret: 'jwtAccessSecret' },
-    jwtAccessConfig: { secret: 'jwtAccessSecret', expiresIn: '30m' },
-    jwtRefreshSecret: { secret: 'jwtRefreshSecret' },
-    jwtRefreshConfig: { secret: 'jwtRefreshSecret', expiresIn: '1h' },
-    jwtLoginSecret: { secret: 'jwtLoginSecret' },
-    jwtLoginConfig: { secret: 'jwtLoginSecret', expiresIn: '15m' },
-  };
-
   beforeAll(async () => {
     const dataSources = await createDataSources(TEST_DB, ENTITIES);
     initDataSource = dataSources.initDataSource;
@@ -52,17 +40,9 @@ describe('AuthService', () => {
           autoLoadEntities: true,
           database: TEST_DB,
         }),
-        TypeOrmModule.forFeature(ENTITIES),
-        TypeOrmModule.forFeature([Users]),
-        forwardRef(() => ApiConfigModule),
-        JwtModule.register({}),
-        CacheModule.register({ ttl: 1209600000, store: 'memory' }),
+        AppModule,
       ],
-      providers: [AuthService],
-    })
-      .overrideProvider(ApiConfigService)
-      .useValue(mockApiConfigService)
-      .compile();
+    }).compile();
 
     service = module.get<AuthService>(AuthService);
   });
@@ -91,29 +71,29 @@ describe('AuthService', () => {
     expect(service.verifyAccessToken(token)).toBeTruthy();
   });
 
-  it('should not verify invalid token', () => {
+  it('should not verify invalid token', async () => {
     expect(service.verifyAccessToken('invalid token')).toBeFalsy();
     expect(service.verifyAccessToken('')).toBeFalsy();
-    expect(service.verifyRefreshToken('')).resolves.toBeFalsy();
+    expect(await service.verifyRefreshToken('')).toBeFalsy();
   });
 
   it('should issue refresh token which can verified', async () => {
     const { userId } = usersEntities[0];
-    const token = await service.issueRefreshToken(userId);
+    const token = await (service as any).issueRefreshToken(userId);
     expect(await service.verifyRefreshToken(token)).toBeTruthy();
   });
 
   it('should not verify previous refresh token and invalidate all tokens', async () => {
     const { userId } = usersEntities[0];
-    const prevToken = await service.issueRefreshToken(userId);
-    const token = await service.issueRefreshToken(userId);
+    const prevToken = await (service as any).issueRefreshToken(userId);
+    const token = await (service as any).issueRefreshToken(userId);
     expect(await service.verifyRefreshToken(prevToken)).toBeFalsy();
     expect(await service.verifyRefreshToken(token)).toBeFalsy();
   });
 
   it('should not verify malformed token and remain token is still valid', async () => {
     const { userId } = usersEntities[0];
-    const token = await service.issueRefreshToken(userId);
+    const token = await (service as any).issueRefreshToken(userId);
     expect(await service.verifyRefreshToken(token)).toMatchObject({
       userId: userId,
     });
@@ -121,8 +101,8 @@ describe('AuthService', () => {
 
   it("should not verify valid refresh token but not the users's token and remain token is still valid", async () => {
     const { userId } = usersEntities[0];
-    const otherToken = await service.issueRefreshToken(userId + 1);
-    const token = await service.issueRefreshToken(userId);
+    const otherToken = await (service as any).issueRefreshToken(userId + 1);
+    const token = await (service as any).issueRefreshToken(userId);
     expect(await service.verifyRefreshToken(otherToken)).not.toMatchObject({
       userId,
     });
@@ -133,7 +113,7 @@ describe('AuthService', () => {
 
   it('should issue login token and can verify', async () => {
     const { userId } = usersEntities[0];
-    const token = service.issueLoginToken(userId);
-    expect(service.verifyLoginToken(token).userId).toBe(userId);
+    const token = service.issueRestrictedAccessToken(userId);
+    expect(service.verifyRestrictedAccessToken(token).userId).toBe(userId);
   });
 });

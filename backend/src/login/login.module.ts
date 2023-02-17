@@ -1,12 +1,12 @@
 import { HttpModule } from '@nestjs/axios';
 import { Module, forwardRef } from '@nestjs/common';
 import { PassportModule } from '@nestjs/passport';
+import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { ApiConfigModule } from '../config/api-config.module';
 import { FortyTwoStrategy } from './forty-two.strategy';
 import { LoginController } from './login.controller';
 import { LoginService } from './login.service';
-import { TypeOrmModule } from '@nestjs/typeorm';
 import { Users } from '../entity/users.entity';
 
 @Module({

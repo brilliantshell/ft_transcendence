@@ -2,7 +2,7 @@ import {
   Body,
   Controller,
   Get,
-  Put,
+  Post,
   Req,
   Res,
   UploadedFile,
@@ -19,10 +19,10 @@ import {
 import { AuthService } from '../auth/auth.service';
 import { FortyTwoGuard } from './forty-two.guard';
 import { LoginGuard } from './login.guard';
-import { LoginRequest } from '../util/type';
+import { LoginRequest, VerifiedRequest } from '../util/type';
 import { LoginService } from './login.service';
 import { NicknameDto } from '../profile/dto/profile.dto';
-import { SkipAuthGuard } from '../decorator/skip-auth.decorator';
+import { SkipJwtAuthGuard } from '../decorator/skip-auth.decorator';
 import { multerOptions } from '../profile/option/profile.upload-options';
 
 const URL = 'http://localhost:5173/';
@@ -34,24 +34,26 @@ export class LoginController {
     private readonly loginService: LoginService,
   ) {}
 
-  @SkipAuthGuard()
+  @SkipJwtAuthGuard()
   @UseGuards(FortyTwoGuard)
   @Get('/return')
   async return(@Req() req: LoginRequest, @Res() res: Response) {
-    const { isRegistered, authEmail } = req.user;
+    const { isRegistered, authEmail, userId } = req.user;
     res
       .status(303)
       .redirect(
-        `${URL}${!isRegistered ? 'sign-up' : authEmail ? '2fa' : 'profile'}`,
+        `${URL}${
+          !isRegistered ? 'sign-up' : authEmail ? '2fa' : 'profile/' + userId
+        }`,
       );
   }
 
-  @SkipAuthGuard()
+  @SkipJwtAuthGuard()
   @UseGuards(LoginGuard)
   @UseInterceptors(FileInterceptor('profileImage', multerOptions))
-  @Put('/user-info')
+  @Post('/user-info')
   async createUserInfo(
-    @Req() req: LoginRequest,
+    @Req() req: VerifiedRequest,
     @Res() res: Response,
     @Body() nicknameDto: NicknameDto,
     @UploadedFile() file: Express.Multer.File,
@@ -66,10 +68,31 @@ export class LoginController {
       userId,
     );
     res
-      .status(200)
+      .status(201)
       .cookie('accessToken', accessToken, ACCESS_TOKEN_COOKIE_OPTIONS)
       .cookie('refreshToken', refreshToken, REFRESH_TOKEN_COOKIE_OPTIONS)
-      .cookie('loginToken', '', { expires: new Date(0) })
+      .cookie('restrictedAccessToken', '', { expires: new Date(0) })
       .end();
+  }
+
+  @SkipJwtAuthGuard()
+  @UseGuards(LoginGuard)
+  @Post('/2fa')
+  async verifyTwoFactorAuth(
+    @Req() req: VerifiedRequest,
+    @Res() res: Response,
+    @Body('authCode') authCode: string,
+  ) {
+    const { userId } = req.user;
+    await this.authService.verifyTwoFactorCode(userId, authCode);
+    const { accessToken, refreshToken } = await this.authService.issueTokens(
+      userId,
+    );
+    res
+      .status(303)
+      .cookie('accessToken', accessToken, ACCESS_TOKEN_COOKIE_OPTIONS)
+      .cookie('refreshToken', refreshToken, REFRESH_TOKEN_COOKIE_OPTIONS)
+      .cookie('restrictedAccessToken', '', { expires: new Date(0) })
+      .redirect(URL + 'profile/' + userId);
   }
 }

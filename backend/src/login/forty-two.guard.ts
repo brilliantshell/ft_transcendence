@@ -29,10 +29,12 @@ export class FortyTwoGuard extends AuthGuard('42') {
       .getRequest<LoginRequest>().user;
     const res = context.switchToHttp().getResponse<Response>();
     if (!isRegistered || authEmail) {
-      const loginToken = this.authService.issueLoginToken(userId);
-      res.cookie('loginToken', loginToken, {
+      authEmail && this.authService.sendTwoFactorCode(userId, authEmail);
+      const restrictedAccessToken =
+        this.authService.issueRestrictedAccessToken(userId);
+      res.cookie('restrictedAccessToken', restrictedAccessToken, {
         ...COOKIE_OPTIONS,
-        maxAge: 1800000, // 30 minutes
+        maxAge: 900000, // 15 minutes
       });
       return true;
     }

@@ -4,11 +4,14 @@ import {
   Injectable,
   InternalServerErrorException,
   Logger,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { Cache } from 'cache-manager';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
+import { MailerService } from '@nestjs-modules/mailer';
 import { Repository } from 'typeorm';
+import { customAlphabet } from 'nanoid';
 
 import { ApiConfigService } from '../config/api-config.service';
 import { JwtPayload, RefreshTokenWrapper, UserId } from '../util/type';
@@ -22,6 +25,7 @@ export class AuthService {
     private readonly apiConfigService: ApiConfigService,
     @Inject(CACHE_MANAGER) readonly cacheManager: Cache,
     private readonly jwtService: JwtService,
+    private readonly mailerService: MailerService,
     @InjectRepository(Users)
     private readonly usersRepository: Repository<Users>,
   ) {}
@@ -53,10 +57,10 @@ export class AuthService {
    * @param userId 유저 Id
    * @returns Login Token
    */
-  issueLoginToken(userId: UserId) {
+  issueRestrictedAccessToken(userId: UserId) {
     return this.jwtService.sign(
       { userId },
-      this.apiConfigService.jwtLoginConfig,
+      this.apiConfigService.jwtRestrictedAccessConfig,
     );
   }
 
@@ -66,11 +70,11 @@ export class AuthService {
    * @param token Login Token
    * @returns Login Token Payload (userId) || null
    */
-  verifyLoginToken(token: string) {
+  verifyRestrictedAccessToken(token: string) {
     try {
       return this.jwtService.verify<JwtPayload>(
         token,
-        this.apiConfigService.jwtLoginSecret,
+        this.apiConfigService.jwtRestrictedAccessSecret,
       );
     } catch {
       return null;
@@ -107,35 +111,6 @@ export class AuthService {
       { userId },
       this.apiConfigService.jwtAccessConfig,
     );
-  }
-
-  /**
-   * @description 유저 Id 를 통하여 Refresh Token 발급 및 node-cache-manager 에 저장,
-   *               이전 토큰 무효화
-   *
-   * @param userId 유저 Id
-   * @returns Refresh Token
-   */
-  async issueRefreshToken(userId: UserId) {
-    const token = this.jwtService.sign(
-      { userId },
-      this.apiConfigService.jwtRefreshConfig,
-    );
-    const prevToken = await this.cacheManager.get<RefreshTokenWrapper>(
-      userId.toString(),
-    );
-    await Promise.all([
-      prevToken &&
-        this.cacheManager.set(userId.toString() + '-prev', {
-          token: prevToken.token,
-          isRevoked: true,
-        }),
-      this.cacheManager.set(userId.toString(), {
-        token,
-        isRevoked: false,
-      }),
-    ]);
-    return token;
   }
 
   /**
@@ -200,6 +175,67 @@ export class AuthService {
 
   /*****************************************************************************
    *                                                                           *
+   * SECTION : Two-Factor Authentication                                       *
+   *                                                                           *
+   ****************************************************************************/
+
+  /**
+   * @description Two-Factor Authentication Code 발급 및 이메일 전송
+   *
+   * @param userId 유저 Id
+   * @param email 유저 이메일
+   */
+  async sendTwoFactorCode(userId: UserId, email: string) {
+    const charset = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    const code = customAlphabet(charset, 6)(); // from nanoid
+    this.cacheManager.set(userId.toString(), code, 900000); // 15 minutes
+
+    // FIXME: enable when mailer is ready
+    await this.mailerService.sendMail({
+      to: email,
+      subject: 'Two-Factor Authentication',
+      html: this.generateEmailTemplate(code),
+    });
+  }
+
+  /**
+   * @description Two-Factor Authentication Code 검증
+   *
+   * @param userId 유저 Id
+   * @param code Two-Factor Authentication Code
+   * @returns 검증 성공 혹은 throw
+   */
+  async verifyTwoFactorCode(userId: UserId, code: string) {
+    const storedCode = await this.cacheManager.get(userId.toString());
+    if (storedCode === code) {
+      this.cacheManager.del(userId.toString());
+      return true;
+    }
+    throw new UnauthorizedException(
+      'Invalid two-factor code. Please try again',
+    );
+  }
+
+  /**
+   * @description 이메일 내용 생성
+   *
+   * @param code Two-Factor Authentication Code
+   * @returns 이메일 내용
+   */
+  generateEmailTemplate(code: string) {
+    const image =
+      "<img src='https://emoji.slack-edge.com/T039P7U66/daebakjule/af8546a21f0db8d4.gif' width='24' height='24'>";
+    return `<h1>${image}Your two-factor authentication code is ${code}${image}</h1>`;
+  }
+
+  // TODO
+  // generateTwoFactorEmailSecret() {
+  //   return 'http://localhost:3000/2fa-email/verify?code=' + nanoid();
+  // }
+  // verifyTwoFactorCode() {}
+
+  /*****************************************************************************
+   *                                                                           *
    * SECTION : Private Methods                                                 *
    *                                                                           *
    ****************************************************************************/
@@ -223,6 +259,35 @@ export class AuthService {
           });
       }),
     );
+  }
+
+  /**
+   * @description 유저 Id 를 통하여 Refresh Token 발급 및 node-cache-manager 에 저장,
+   *               이전 토큰 무효화
+   *
+   * @param userId 유저 Id
+   * @returns Refresh Token
+   */
+  private async issueRefreshToken(userId: UserId) {
+    const token = this.jwtService.sign(
+      { userId },
+      this.apiConfigService.jwtRefreshConfig,
+    );
+    const prevToken = await this.cacheManager.get<RefreshTokenWrapper>(
+      userId.toString(),
+    );
+    await Promise.all([
+      prevToken &&
+        this.cacheManager.set(userId.toString() + '-prev', {
+          token: prevToken.token,
+          isRevoked: true,
+        }),
+      this.cacheManager.set(userId.toString(), {
+        token,
+        isRevoked: false,
+      }),
+    ]);
+    return token;
   }
 
   /**
