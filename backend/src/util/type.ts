@@ -44,6 +44,8 @@ export type CurrentUi =
 
 export type Activity = 'online' | 'offline' | 'inGame';
 
+export type Score = 0 | 1 | 2 | 3 | 4 | 5;
+
 export class GameInfo {
   constructor(
     leftId: UserId,
@@ -55,6 +57,7 @@ export class GameInfo {
     this.rightId = rightId;
     this.map = map;
     this.isRank = isRank;
+    this.scores = null;
   }
 
   isRank: boolean;
@@ -63,6 +66,7 @@ export class GameInfo {
   rightId: UserId;
   rightNickname?: string;
   map: 1 | 2 | 3;
+  scores: [Score, Score] | null;
 }
 
 export interface LoginRequest extends Request {

@@ -2,11 +2,19 @@ import {
   ArrayUnique,
   IsInt,
   IsString,
-  Length,
+  Matches,
   Max,
   Min,
 } from 'class-validator';
 import { GameId } from '../../util/type';
+
+export interface NewGameDto {
+  gameId: GameId;
+}
+
+export interface GameOptionDto {
+  map: 1 | 2 | 3;
+}
 
 export interface GameStartedDto {
   id: GameId;
@@ -20,7 +28,7 @@ export interface GameAbortedDto {
 
 export class GameCompleteDto {
   @IsString()
-  @Length(21)
+  @Matches(/^[0-9A-Za-z_-]{21}$/)
   id: GameId;
 
   @ArrayUnique()

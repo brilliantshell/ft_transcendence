@@ -94,10 +94,7 @@ describe('GameGateway (e2e)', () => {
       io(URL, { extraHeaders: { 'x-user-id': userId.toString() } }),
     );
     await Promise.all(
-      clientSockets.map(
-        (socket) =>
-          new Promise((resolve) => socket.on('connect', () => resolve('done'))),
-      ),
+      clientSockets.map((socket) => listenPromise(socket, 'connect')),
     );
     gameId = nanoid();
   });
@@ -126,9 +123,7 @@ describe('GameGateway (e2e)', () => {
       clientSockets.push(
         io(URL, { extraHeaders: { 'x-user-id': userIds[2].toString() } }),
       );
-      await new Promise((resolve) =>
-        clientSockets[2].on('connect', () => resolve('done')),
-      );
+      await listenPromise(clientSockets[2], 'connect');
       gameStorage.createGame(
         gameId,
         new GameInfo(userIds[0], userIds[1], 1, true),
@@ -230,12 +225,8 @@ describe('GameGateway (e2e)', () => {
         io(URL, { extraHeaders: { 'x-user-id': userIds[3].toString() } }),
       );
       await Promise.all([
-        new Promise((resolve) =>
-          clientSockets[2].on('connect', () => resolve('done')),
-        ),
-        new Promise((resolve) =>
-          clientSockets[3].on('connect', () => resolve('done')),
-        ),
+        listenPromise(clientSockets[2], 'connect'),
+        listenPromise(clientSockets[3], 'connect'),
       ]);
     });
 
@@ -369,19 +360,48 @@ describe('GameGateway (e2e)', () => {
    */
 
   describe('gameOption', () => {
+    beforeEach(async () => {
+      users.push(usersEntities[index++]);
+      userIds.push(users[2].userId);
+      clientSockets.push(
+        io(URL, { extraHeaders: { 'x-user-id': userIds[2].toString() } }),
+      );
+      await listenPromise(clientSockets[2], 'connect');
+    });
+
     it('should notify the invited that the game option has been changed', async () => {
-      const [playerOne] = clientSockets;
+      const [playerOne, playerTwo, spectator] = clientSockets;
       gateway.joinRoom(
         userSocketStorage.clients.get(userIds[0]),
         `game-${gameId}`,
       );
-      const [wsMessage] = await Promise.all([
-        new Promise((resolve) =>
-          playerOne.on('gameOption', (data) => resolve(data)),
+      gateway.joinRoom(
+        userSocketStorage.clients.get(userIds[1]),
+        `game-${gameId}`,
+      );
+      gateway.joinRoom(
+        userSocketStorage.clients.get(userIds[2]),
+        `game-${gameId}`,
+      );
+      const [wsMessageOne, wsMessageTwo, wsError] = await Promise.allSettled([
+        listenPromise(playerOne, 'gameOption'),
+        listenPromise(spectator, 'gameOption'),
+        timeout(1000, listenPromise(playerTwo, 'gameOption')),
+        gateway.emitGameOption(
+          gameId,
+          userSocketStorage.clients.get(userIds[1]),
+          3,
         ),
-        gateway.emitGameOption(userSocketStorage.clients.get(userIds[0]), 3),
       ]);
-      expect(wsMessage).toEqual({ map: 3 });
+      expect(wsError.status).toEqual('rejected');
+      if (
+        wsMessageOne.status === 'rejected' ||
+        wsMessageTwo.status === 'rejected'
+      ) {
+        fail();
+      }
+      expect(wsMessageOne.value).toEqual({ map: 3 });
+      expect(wsMessageTwo.value).toEqual({ map: 3 });
     });
   });
 
@@ -822,12 +842,8 @@ describe('GameGateway (e2e)', () => {
         io(URL, { extraHeaders: { 'x-user-id': userIds[3].toString() } }),
       );
       await Promise.all([
-        new Promise((resolve) =>
-          clientSockets[2].on('connect', () => resolve('done')),
-        ),
-        new Promise((resolve) =>
-          clientSockets[3].on('connect', () => resolve('done')),
-        ),
+        listenPromise(clientSockets[2], 'connect'),
+        listenPromise(clientSockets[3], 'connect'),
       ]);
     });
 

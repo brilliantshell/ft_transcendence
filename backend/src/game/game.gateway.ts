@@ -73,11 +73,15 @@ export class GameGateway {
   /**
    * @description: 게임 옵션 전송
    *
-   * @param invitedSocketId 초대된 유저의 socket id
+   * @param gameId 게임 id
+   * @param ignoreSocketId 무시할 socket id
    * @param map 맵
    */
-  emitGameOption(invitedSocketId: SocketId, map: 1 | 2 | 3) {
-    this.server.to(invitedSocketId).emit('gameOption', { map });
+  emitGameOption(gameId: GameId, ignoreSocketId: SocketId, map: 1 | 2 | 3) {
+    this.server
+      .to(`game-${gameId}`)
+      .except(ignoreSocketId)
+      .emit('gameOption', { map });
   }
 
   // NOTE : ladder 일 때만 호출
@@ -91,7 +95,12 @@ export class GameGateway {
     this.server.to('waitingRoom').emit('gameStarted', gameStartedDto);
   }
 
+  // TODO : gameStatus listener
   // TODO : gameStatus emitter
+  // FIXME : 메시지 추가
+  emitGameStatus(gameId: GameId) {
+    this.server.to(`game-${gameId}`).emit('gameStatus');
+  }
 
   /**
    * @description 게임 비정상 종료 처리
