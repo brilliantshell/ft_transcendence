@@ -1,6 +1,5 @@
 import { DateTime } from 'luxon';
 import { Request } from 'express';
-import { Users } from '../entity/users.entity';
 
 export type UserId = number;
 
@@ -65,8 +64,14 @@ export class GameInfo {
   map: 1 | 2 | 3;
 }
 
+export interface LoginUserInfo {
+  userId: UserId;
+  isRegistered: boolean;
+  authEmail: string;
+}
+
 export interface LoginRequest extends Request {
-  user: { userId: UserId; isRegistered: boolean; authEmail: string };
+  user: LoginUserInfo;
 }
 
 export interface VerifiedRequest extends Request {

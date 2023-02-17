@@ -6,12 +6,13 @@ import {
   Logger,
 } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
-import { Repository } from 'typeorm';
+import { EntityNotFoundError, Repository } from 'typeorm';
 import { Strategy } from 'passport-oauth2';
 import { catchError } from 'rxjs';
 
 import { AuthService } from '../auth/auth.service';
 import { ApiConfigService } from '../config/api-config.service';
+import { LoginUserInfo } from '../util/type';
 import { Users } from '../entity/users.entity';
 
 @Injectable()
@@ -50,23 +51,29 @@ export class FortyTwoStrategy extends PassportStrategy(Strategy, '42') {
       });
   }
 
-  async validate(accessToken: string, refreshToken: string, profile: any) {
+  async validate(
+    accessToken: string,
+    refreshToken: string,
+    profile: LoginUserInfo,
+  ) {
     profile.isRegistered = await this.authService.findUserById(profile.userId);
     if (!profile.isRegistered) {
       return profile;
     }
     try {
       profile.authEmail = (
-        await this.usersRepository.findOne({
+        await this.usersRepository.findOneOrFail({
           where: { userId: profile.userId },
           select: ['authEmail'],
         })
-      )?.authEmail;
+      ).authEmail;
     } catch (e) {
-      this.logger.error(e);
-      throw new InternalServerErrorException(
-        `Failed to find auth email of user(${profile.userId})`,
-      );
+      if (!(e instanceof EntityNotFoundError)) {
+        this.logger.error(e);
+        throw new InternalServerErrorException(
+          `Failed to find auth email of user(${profile.userId})`,
+        );
+      }
     }
     return profile;
   }
