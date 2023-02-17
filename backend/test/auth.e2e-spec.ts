@@ -23,7 +23,7 @@ const ENTITIES = [Achievements, Achievers, MatchHistory, Users];
 
 process.env.DB_HOST = 'localhost';
 
-describe('AuthGuard (e2e)', () => {
+describe('JwtAuthGuard (e2e)', () => {
   let app: INestApplication;
   let initDataSource: DataSource;
   let dataSource: DataSource;
