@@ -134,7 +134,10 @@ export class GameService {
       this.userSocketStorage.clients.get(invitedId),
       `game-${gameId}`,
     );
-    this.gameGateway.emitNewGame(gameId);
+    this.gameGateway.emitNewGame(
+      gameId,
+      this.gameStorage.getGame(gameId).leftNickname,
+    );
     this.gameGateway.joinRoom(
       this.userSocketStorage.clients.get(inviterId),
       `game-${gameId}`,

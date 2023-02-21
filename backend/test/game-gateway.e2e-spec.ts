@@ -197,12 +197,15 @@ describe('GameGateway (e2e)', () => {
       const [wsMessageOne, wsError] = await Promise.allSettled([
         listenPromise(playerOne, 'newGame'),
         timeout(1000, listenPromise(playerTwo, 'newGame')),
-        gateway.emitNewGame(gameId),
+        gateway.emitNewGame(gameId, users[0].nickname),
       ]);
       if (wsMessageOne.status === 'rejected') {
         fail();
       }
-      expect(wsMessageOne.value).toEqual({ gameId });
+      expect(wsMessageOne.value).toEqual({
+        gameId,
+        inviterNickname: users[0].nickname,
+      });
       expect(wsError.status).toEqual('rejected');
     });
   });

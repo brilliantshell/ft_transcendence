@@ -850,7 +850,10 @@ describe('UserModule - /user (e2e)', () => {
       const gameInfo = gameStorage.getGame(gameId);
       expect(gameInfo).toBeDefined();
       expect(gameInfo.isRank).toBeFalsy();
-      expect(wsMessage).toEqual({ gameId });
+      expect(wsMessage).toEqual({
+        gameId,
+        inviterNickname: usersEntities[index].nickname,
+      });
     });
 
     it('should throw BAD REQUEST if the inviter is in game ', async () => {

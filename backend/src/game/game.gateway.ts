@@ -67,9 +67,16 @@ export class GameGateway {
    *
    * @param gameId 게임 id
    */
-  emitNewGame(gameId: GameId) {
-    this.server.to(`game-${gameId}`).emit('newGame', { gameId });
+  emitNewGame(gameId: GameId, inviterNickname: string | null = null) {
+    this.server
+      .to(`game-${gameId}`)
+      .emit(
+        'newGame',
+        inviterNickname ? { gameId, inviterNickname } : { gameId },
+      );
   }
+
+  // emitGameCancelled(gameId: GameId) {}
 
   /**
    * @description: 게임 옵션 전송
@@ -85,7 +92,6 @@ export class GameGateway {
       .emit('gameOption', { map });
   }
 
-  // NOTE : ladder 일 때만 호출
   /**
    * @description 게임 시작 시, waitingRoom UI 에 있는 유저들에게 새 게임 정보 전송
    *
