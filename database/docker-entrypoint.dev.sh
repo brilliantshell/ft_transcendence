@@ -25,7 +25,7 @@ setup_db() {
 	createdb -O ${PGUSER} 
 
   # Create tables and insert data
-  psql -f /workspaces/backend/test/integration/integration.sql > /dev/null 2>&1
+	psql -f /workspaces/backend/test/integration/integration.sql > /dev/null 2>&1
 
 	gosu postgres pg_ctl stop
 }
