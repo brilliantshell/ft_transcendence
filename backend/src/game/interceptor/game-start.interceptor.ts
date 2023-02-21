@@ -18,7 +18,7 @@ const START_QUEUE_TIMEOUT =
   process.env.NODE_ENV !== 'production' ? 1000 : 10000;
 
 @Injectable()
-export class LadderStartInterceptor implements NestInterceptor {
+export class GameStartInterceptor implements NestInterceptor {
   private readonly gameSubjectMap: Map<GameId, ReplaySubject<UserId>> =
     new Map();
   private readonly waitingPlayers: Set<UserId> = new Set();
@@ -85,6 +85,7 @@ export class LadderStartInterceptor implements NestInterceptor {
         this.gameSubjectMap.delete(gameId);
       },
       error: () => {
+        // TODO : 게임이 취소될 경우 취소된 유저에게 알려주는 WS 이벤트가 있어야하지 않을까...?
         this.gameStorage.deleteGame(gameId);
         this.gameSubjectMap.delete(gameId);
         this.waitingPlayers.delete(gameInfo.leftId);
