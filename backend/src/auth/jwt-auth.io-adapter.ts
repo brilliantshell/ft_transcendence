@@ -1,5 +1,5 @@
-import { IoAdapter } from '@nestjs/platform-socket.io';
 import { INestApplication } from '@nestjs/common';
+import { IoAdapter } from '@nestjs/platform-socket.io';
 import { Server, ServerOptions } from 'socket.io';
 
 import {
@@ -21,7 +21,6 @@ export class JwtAuthIoAdapter extends IoAdapter {
   createIOServer(port: number, options?: ServerOptions) {
     options.cors = { origin: 'http://localhost:5173', credentials: true };
     options.allowRequest = this.allowRequest;
-
     const server: Server = super.createIOServer(port, options);
     server.engine.on('initial_headers', this.setCookies);
     return server;
