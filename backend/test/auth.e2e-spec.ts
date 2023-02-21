@@ -10,6 +10,7 @@ import { Achievements } from '../src/entity/achievements.entity';
 import { Achievers } from '../src/entity/achievers.entity';
 import { AppModule } from '../src/app.module';
 import { AuthService } from '../src/auth/auth.service';
+import { JwtAuthIoAdapter } from '../src/auth/jwt-auth.io-adapter';
 import { MatchHistory } from '../src/entity/match-history.entity';
 import {
   TYPEORM_SHARED_CONFIG,
@@ -19,7 +20,6 @@ import {
 import { Users } from '../src/entity/users.entity';
 import { generateUsers } from './util/generate-mock-data';
 import { listenPromise } from './util/util';
-import { JwtAuthIoAdapter } from '../src/auth/jwt-auth.io-adapter';
 
 process.env.DB_HOST = 'localhost';
 process.env.NODE_ENV = 'production';

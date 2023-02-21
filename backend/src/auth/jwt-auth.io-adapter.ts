@@ -9,18 +9,16 @@ import {
 import { AuthService } from './auth.service';
 import { CookieOptions } from 'express';
 import { VerifiedWsRequest } from '../util/type';
-import { WEBSOCKET_CONFIG } from '../config/constant/constant-config';
 
 export class JwtAuthIoAdapter extends IoAdapter {
   private authService: AuthService;
+
   constructor(private app: INestApplication) {
     super(app);
     this.authService = this.app.get(AuthService);
   }
 
   createIOServer(port: number, options?: ServerOptions) {
-    options.cors = WEBSOCKET_CONFIG?.cors;
-    options.cookie = WEBSOCKET_CONFIG?.cookie;
     options.allowRequest = this.allowRequest;
 
     const server: Server = super.createIOServer(port, options);
@@ -74,7 +72,7 @@ export class JwtAuthIoAdapter extends IoAdapter {
 
   private setCookies = (headers: string[], req: VerifiedWsRequest) => {
     if (req.user.accessToken) {
-      headers['Set-Cookie'].push([
+      headers['set-cookie'] = [
         this.setCookieValue(
           `accessToken=${req.user.accessToken}`,
           ACCESS_TOKEN_COOKIE_OPTIONS,
@@ -83,7 +81,7 @@ export class JwtAuthIoAdapter extends IoAdapter {
           `refreshToken=${req.user.refreshToken}`,
           REFRESH_TOKEN_COOKIE_OPTIONS,
         ),
-      ]);
+      ];
     }
   };
 
