@@ -11,6 +11,7 @@ import { UserStatusModule } from '../src/user-status/user-status.module';
 import { listenPromise } from './util/util';
 
 process.env.DB_HOST = 'localhost';
+process.env.NODE_ENV = 'development';
 
 const PORT = 4243;
 const URL = `http://localhost:${PORT}`;

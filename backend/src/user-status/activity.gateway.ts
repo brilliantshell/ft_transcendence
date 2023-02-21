@@ -17,6 +17,7 @@ import {
   GameId,
   SocketId,
   UserId,
+  VerifiedSocket,
 } from '../util/type';
 import { ActivityManager } from './activity.manager';
 import { ChannelStorage } from './channel.storage';
@@ -66,14 +67,11 @@ export class ActivityGateway
    *
    * @param clientSocket connect 된 socket
    */
-  async handleConnection(clientSocket: Socket) {
-    // const accessToken = clientSocket.handshake.headers.cookie
-    //   .split(';')
-    //   .find((cookie) => cookie.includes('access_token='))
-    //   .replace('access_token=', '');
-    // const userId = this.authService.verifyAccessToken(accessToken).id;
-    // // NOTE : will throw error if token is invalid
-    const userId = Number(clientSocket.handshake.headers['x-user-id']);
+  async handleConnection(clientSocket: VerifiedSocket) {
+    const userId =
+      process.env.NODE_ENV === 'development'
+        ? Number(clientSocket.handshake.headers['x-user-id'])
+        : clientSocket.request.user.userId;
     const socketId = clientSocket.id;
     this.userSocketStorage.clients.set(userId, socketId);
     this.userSocketStorage.sockets.set(socketId, userId);
