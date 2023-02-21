@@ -1,5 +1,7 @@
 import { DateTime } from 'luxon';
+import { IncomingMessage } from 'http';
 import { Request } from 'express';
+import { Socket } from 'socket.io';
 
 export type UserId = number;
 
@@ -85,6 +87,14 @@ export interface VerifiedRequest extends Request {
 export interface RelationshipRequest extends VerifiedRequest {
   relationship: Relationship | null;
   targetId: UserId;
+}
+
+export interface VerifiedWsRequest extends IncomingMessage {
+  user: { userId: UserId; accessToken?: string; refreshToken?: string };
+}
+
+export interface VerifiedSocket extends Socket {
+  request: VerifiedWsRequest;
 }
 
 export interface RefreshTokenWrapper {
