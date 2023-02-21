@@ -8,14 +8,17 @@ import {
   NestInterceptor,
   NotFoundException,
 } from '@nestjs/common';
-import { Observable, ReplaySubject, bufferCount, tap } from 'rxjs';
+import { Observable, ReplaySubject, bufferCount, tap, timeout } from 'rxjs';
 
 import { GameId, GameInfo, UserId, VerifiedRequest } from '../../util/type';
 import { GameService } from '../game.service';
 import { GameStorage } from '../game.storage';
 
+const START_QUEUE_TIMEOUT =
+  process.env.NODE_ENV !== 'production' ? 1000 : 10000;
+
 @Injectable()
-export class LadderStartInterceptor implements NestInterceptor {
+export class GameStartInterceptor implements NestInterceptor {
   private readonly gameSubjectMap: Map<GameId, ReplaySubject<UserId>> =
     new Map();
   private readonly waitingPlayers: Set<UserId> = new Set();
@@ -74,11 +77,20 @@ export class LadderStartInterceptor implements NestInterceptor {
     gameId: GameId,
     gameInfo: GameInfo,
   ) {
-    const queue = new ReplaySubject<UserId>();
-    queue.pipe(bufferCount(2)).subscribe((players: [UserId, UserId]) => {
-      players.forEach((userId) => this.waitingPlayers.delete(userId));
-      this.gameService.startGame(gameId, gameInfo);
-      this.gameSubjectMap.delete(gameId);
+    const queue = new ReplaySubject<UserId>(2);
+    queue.pipe(timeout(START_QUEUE_TIMEOUT), bufferCount(2)).subscribe({
+      next: (players: [UserId, UserId]) => {
+        players.forEach((userId) => this.waitingPlayers.delete(userId));
+        this.gameService.startGame(gameId, gameInfo);
+        this.gameSubjectMap.delete(gameId);
+      },
+      error: () => {
+        // TODO : 게임이 취소될 경우 취소된 유저에게 알려주는 WS 이벤트가 있어야하지 않을까...?
+        this.gameStorage.deleteGame(gameId);
+        this.gameSubjectMap.delete(gameId);
+        this.waitingPlayers.delete(gameInfo.leftId);
+        this.waitingPlayers.delete(gameInfo.rightId);
+      },
     });
     this.gameSubjectMap.set(gameId, queue);
     queue.next(requesterId);

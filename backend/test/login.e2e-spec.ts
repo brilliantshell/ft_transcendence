@@ -122,7 +122,7 @@ describe('Login (e2e)', () => {
         `accessToken=${accessToken}`,
         `refreshToken=${refreshToken}`,
       ])
-      .expect(200)
+      .expect(204)
       .expect((res) => {
         expect(res.headers['set-cookie'][0]).toContain(
           'accessToken=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT',

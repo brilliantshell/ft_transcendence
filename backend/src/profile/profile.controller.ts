@@ -3,6 +3,8 @@ import {
   Controller,
   Delete,
   Get,
+  HttpCode,
+  HttpStatus,
   Param,
   Patch,
   Put,
@@ -31,6 +33,7 @@ export class ProfileController {
   }
 
   @Patch('2fa-email')
+  @HttpCode(HttpStatus.NO_CONTENT)
   updateTwoFactorEmail(
     @Req() req: VerifiedRequest,
     @Body() twoFactorEmailDto: TwoFactorEmailDto,
@@ -42,6 +45,7 @@ export class ProfileController {
   }
 
   @Delete('2fa-email')
+  @HttpCode(HttpStatus.NO_CONTENT)
   deleteTwoFactorEmail(@Req() req: VerifiedRequest) {
     return this.profileService.deleteTwoFactorEmail(req.user.userId);
   }
@@ -52,6 +56,7 @@ export class ProfileController {
   }
 
   @Patch('nickname')
+  @HttpCode(HttpStatus.NO_CONTENT)
   updateNickname(
     @Req() req: VerifiedRequest,
     @Body() nicknameDto: NicknameDto,
@@ -63,12 +68,14 @@ export class ProfileController {
   }
 
   @Put('image')
+  @HttpCode(HttpStatus.NO_CONTENT)
   @UseInterceptors(FileInterceptor('profileImage', multerOptions))
   async updateProfileImage(@Req() req: VerifiedRequest) {
     return this.profileService.updateProfileImage(req.user.userId);
   }
 
   @Delete('image')
+  @HttpCode(HttpStatus.NO_CONTENT)
   deleteProfileImage(@Req() req: VerifiedRequest) {
     return this.profileService.deleteProfileImage(req.user.userId);
   }

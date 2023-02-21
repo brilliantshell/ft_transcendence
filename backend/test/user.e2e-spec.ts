@@ -439,7 +439,7 @@ describe('UserModule - /user (e2e)', () => {
       if (responseTwo.status === 'rejected') {
         fail();
       }
-      expect(responseTwo.value.status).toEqual(200);
+      expect(responseTwo.value.status).toEqual(204);
       expect(responseTwo.value.body).toEqual({});
     });
   });
@@ -467,7 +467,7 @@ describe('UserModule - /user (e2e)', () => {
         userId: userIds[0],
         relationship: 'normal',
       });
-      expect(response.status).toEqual(200);
+      expect(response.status).toEqual(204);
       expect(response.body).toEqual({});
     });
   });
@@ -535,7 +535,7 @@ describe('UserModule - /user (e2e)', () => {
       const responseTwo = await request(app.getHttpServer())
         .put(`/user/${userIds[1]}/dm`)
         .set('x-user-id', userIds[0].toString());
-      expect(responseTwo.status).toEqual(200);
+      expect(responseTwo.status).toEqual(204);
       channelMapEntries = channelStorage.getChannels().entries();
       for (const [channelId, { userRoleMap }] of channelMapEntries) {
         if (
@@ -655,7 +655,7 @@ describe('UserModule - /user (e2e)', () => {
       if (responseTwo.status === 'rejected') {
         fail();
       }
-      expect(responseTwo.value.status).toEqual(200);
+      expect(responseTwo.value.status).toEqual(204);
       expect(responseTwo.value.body).toEqual({});
     });
   });
@@ -684,7 +684,7 @@ describe('UserModule - /user (e2e)', () => {
         userId: userIds[0],
         relationship: 'normal',
       });
-      expect(response.status).toEqual(200);
+      expect(response.status).toEqual(204);
       expect(response.body).toEqual({});
     });
 
@@ -705,7 +705,7 @@ describe('UserModule - /user (e2e)', () => {
         userId: userIds[1],
         relationship: 'normal',
       });
-      expect(response.status).toEqual(200);
+      expect(response.status).toEqual(204);
       expect(response.body).toEqual({});
     });
 
@@ -726,7 +726,7 @@ describe('UserModule - /user (e2e)', () => {
         userId: userIds[0],
         relationship: 'normal',
       });
-      expect(response.status).toEqual(200);
+      expect(response.status).toEqual(204);
       expect(response.body).toEqual({});
     });
 
@@ -747,7 +747,7 @@ describe('UserModule - /user (e2e)', () => {
         userId: userIds[1],
         relationship: 'normal',
       });
-      expect(response.status).toEqual(200);
+      expect(response.status).toEqual(204);
       expect(response.body).toEqual({});
     });
   });
@@ -776,7 +776,7 @@ describe('UserModule - /user (e2e)', () => {
         userId: userIds[1],
         relationship: 'friend',
       });
-      expect(response.status).toEqual(200);
+      expect(response.status).toEqual(204);
       expect(response.body).toEqual({});
     });
 
@@ -797,7 +797,7 @@ describe('UserModule - /user (e2e)', () => {
       if (response.status === 'rejected') {
         fail();
       }
-      expect(response.value.status).toEqual(200);
+      expect(response.value.status).toEqual(204);
       expect(response.value.body).toEqual({});
     });
   });

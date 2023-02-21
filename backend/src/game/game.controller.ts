@@ -1,7 +1,10 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
+  HttpCode,
+  HttpStatus,
   Param,
   Patch,
   Post,
@@ -15,7 +18,7 @@ import { GameService } from './game.service';
 import { InGameUiGuard } from './guard/in-game-ui.guard';
 import { InPlayGuard } from './guard/in-play.guard';
 import { LadderQueueInterceptor } from './interceptor/ladder-queue.interceptor';
-import { LadderStartInterceptor } from './interceptor/ladder-start.interceptor';
+import { GameStartInterceptor } from './interceptor/game-start.interceptor';
 import { MockAuthGuard } from '../guard/mock-auth.guard';
 import { VerifiedRequest } from '../util/type';
 
@@ -44,10 +47,17 @@ export class GameController {
     return this.gameService.findGameInfo(req.user.userId, gameId);
   }
 
+  @Post('queue')
   @UseGuards(InPlayGuard)
   @UseInterceptors(LadderQueueInterceptor)
-  @Post('queue')
   enterLadderQueue() {
+    return;
+  }
+
+  @Delete('queue')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @UseInterceptors(LadderQueueInterceptor)
+  exitLadderQueue() {
     return;
   }
 
@@ -65,8 +75,9 @@ export class GameController {
     return this.gameService.findPlayers(req.user.userId, gameId);
   }
 
-  @UseGuards(InGameUiGuard)
   @Patch(':gameId/options')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @UseGuards(InGameUiGuard)
   updateMap(
     @Req() req: VerifiedRequest,
     @Param() { gameId }: GameIdParamDto,
@@ -75,9 +86,10 @@ export class GameController {
     this.gameService.changeMap(req.user.userId, gameId, map);
   }
 
-  @UseGuards(InGameUiGuard)
-  @UseInterceptors(LadderStartInterceptor)
   @Patch(':gameId/start')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @UseGuards(InGameUiGuard)
+  @UseInterceptors(GameStartInterceptor)
   startGame() {
     return;
   }

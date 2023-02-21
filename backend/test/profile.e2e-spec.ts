@@ -142,7 +142,7 @@ describe('ProfileController (e2e)', () => {
         .patch(`/profile/nickname`)
         .set('x-user-id', user.userId.toString())
         .send({ nickname: newNickname })
-        .expect(200);
+        .expect(204);
     });
 
     it('should response 409 when duplicated', async () => {
@@ -200,7 +200,7 @@ describe('ProfileController (e2e)', () => {
         .patch('/profile/2fa-email')
         .set('x-user-id', user.userId.toString())
         .send({ email: newEmail })
-        .expect(200);
+        .expect(204);
     });
 
     it('should return 409 when 2fa email is duplicated', async () => {
@@ -241,12 +241,12 @@ describe('ProfileController (e2e)', () => {
       await request(app.getHttpServer())
         .delete(`/profile/2fa-email`)
         .set('x-user-id', user.userId.toString())
-        .expect(200);
+        .expect(204);
       await request(app.getHttpServer())
         .patch(`/profile/2fa-email`)
         .set('x-user-id', user.userId.toString())
         .send({ email: user.authEmail })
-        .expect(200);
+        .expect(204);
       return request(app.getHttpServer())
         .get(`/profile/2fa-email`)
         .set('x-user-id', user.userId.toString())
@@ -267,7 +267,7 @@ describe('ProfileController (e2e)', () => {
         .put('/profile/image')
         .set('x-user-id', userId)
         .attach('profileImage', `${ASSET_DIR}/tiny.png`)
-        .expect(200)
+        .expect(204)
         .expect(() => {
           const file = join(PROFILE_DIR, userId);
           expect(existsSync(file)).toBeTruthy();
@@ -282,7 +282,7 @@ describe('ProfileController (e2e)', () => {
         .put('/profile/image')
         .set('x-user-id', userId)
         .attach('profileImage', `${ASSET_DIR}/tiny.jpg`)
-        .expect(200)
+        .expect(204)
         .expect(() => {
           const file = join(PROFILE_DIR, userId);
           expect(existsSync(file)).toBeTruthy();
@@ -298,7 +298,7 @@ describe('ProfileController (e2e)', () => {
         .put('/profile/image')
         .set('x-user-id', userId)
         .attach('profileImage', `${ASSET_DIR}/tiny.svg`)
-        .expect(200)
+        .expect(204)
         .expect(() => {
           const file = join(PROFILE_DIR, userId);
           expect(existsSync(file)).toBeTruthy();
@@ -312,7 +312,7 @@ describe('ProfileController (e2e)', () => {
         .put('/profile/image')
         .set('x-user-id', userId)
         .attach('profileImage', '/Users/jun/goinfre/almost-4mb.jpg')
-        .expect(200)
+        .expect(204)
         .expect(() => {
           const file = join(PROFILE_DIR, userId);
           expect(existsSync(file)).toBeTruthy();
@@ -336,7 +336,7 @@ describe('ProfileController (e2e)', () => {
       await request(app.getHttpServer())
         .delete('/profile/image')
         .set('x-user-id', userId)
-        .expect(200);
+        .expect(204);
 
       return request(app.getHttpServer())
         .put('/profile/image')
@@ -357,12 +357,12 @@ describe('ProfileController (e2e)', () => {
         .put('/profile/image')
         .set('x-user-id', userId)
         .attach('profileImage', `${ASSET_DIR}/tiny.png`)
-        .expect(200);
+        .expect(204);
 
       await request(app.getHttpServer())
         .delete('/profile/image')
         .set('x-user-id', userId)
-        .expect(200)
+        .expect(204)
         .expect(() => {
           expect(existsSync(join(PROFILE_DIR, userId))).toBeFalsy();
         });
@@ -379,7 +379,7 @@ describe('ProfileController (e2e)', () => {
       await request(app.getHttpServer())
         .delete('/profile/image')
         .set('x-user-id', userId)
-        .expect(200);
+        .expect(204);
     });
   });
 });

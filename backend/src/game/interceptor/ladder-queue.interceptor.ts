@@ -4,8 +4,9 @@ import {
   ExecutionContext,
   Injectable,
   NestInterceptor,
+  NotFoundException,
 } from '@nestjs/common';
-import { Observable, ReplaySubject, bufferCount, tap } from 'rxjs';
+import { Observable, ReplaySubject, tap } from 'rxjs';
 
 import { GameService } from '../game.service';
 import { UserId, VerifiedRequest } from '../../util/type';
@@ -14,26 +15,50 @@ import { UserId, VerifiedRequest } from '../../util/type';
 export class LadderQueueInterceptor implements NestInterceptor {
   private readonly usersInQueue: Set<UserId> = new Set();
   private readonly waitingQueue: ReplaySubject<UserId> = new ReplaySubject();
+  private matchedPair: UserId[] = [];
 
   constructor(private readonly gameService: GameService) {
-    this.waitingQueue
-      .pipe(bufferCount(2))
-      .subscribe((players: [UserId, UserId]) => {
-        players.forEach((userId) => this.usersInQueue.delete(userId));
-        this.gameService.createLadderGame(players);
-      });
+    this.waitingQueue.subscribe(this.matchMakePlayers.bind(this));
   }
 
   intercept(context: ExecutionContext, next: CallHandler): Observable<void> {
     const {
+      method,
       user: { userId },
     } = context.switchToHttp().getRequest<VerifiedRequest>();
-    if (this.usersInQueue.has(userId)) {
-      throw new ConflictException(
-        `The user(${userId}) has already entered the queue`,
-      );
+    if (method === 'POST') {
+      if (this.usersInQueue.has(userId)) {
+        throw new ConflictException(
+          `The user(${userId}) has already entered the queue`,
+        );
+      }
+      this.usersInQueue.add(userId);
+    } else {
+      if (!this.usersInQueue.has(userId)) {
+        throw new NotFoundException(`The user(${userId}) is not in the queue`);
+      }
+      this.usersInQueue.delete(userId);
     }
-    this.usersInQueue.add(userId);
-    return next.handle().pipe(tap(() => this.waitingQueue.next(userId)));
+    return next
+      .handle()
+      .pipe(tap(() => method === 'POST' && this.waitingQueue.next(userId)));
+  }
+
+  private matchMakePlayers(playerId: UserId) {
+    this.matchedPair.push(playerId);
+    if (this.matchedPair.length === 2) {
+      this.matchedPair = this.matchedPair.filter((id) =>
+        this.usersInQueue.has(id),
+      );
+      if (this.matchedPair.length !== 2) {
+        return;
+      }
+      this.gameService
+        .createLadderGame(this.matchedPair as [UserId, UserId])
+        .finally(() => {
+          this.matchedPair.length = 0;
+          this.matchedPair.forEach((id) => this.usersInQueue.delete(id));
+        });
+    }
   }
 }
