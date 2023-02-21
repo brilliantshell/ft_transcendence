@@ -134,7 +134,10 @@ export class GameService {
       this.userSocketStorage.clients.get(invitedId),
       `game-${gameId}`,
     );
-    this.gameGateway.emitNewGame(gameId);
+    this.gameGateway.emitNewGame(
+      gameId,
+      this.gameStorage.getGame(gameId).leftNickname,
+    );
     this.gameGateway.joinRoom(
       this.userSocketStorage.clients.get(inviterId),
       `game-${gameId}`,
@@ -208,6 +211,16 @@ export class GameService {
       left: gameInfo.leftNickname,
       right: gameInfo.rightNickname,
     });
+  }
+
+  /**
+   * @description 취소된 게임 삭제
+   *
+   * @param gameId 게임 id
+   */
+  deleteCancelledGame(gameId: GameId) {
+    this.gameGateway.emitGameCancelled(gameId);
+    this.gameStorage.deleteGame(gameId);
   }
 
   /*****************************************************************************

@@ -79,12 +79,15 @@ describe('GameService', () => {
       .overrideProvider(GameGateway)
       .useValue({
         joinRoom: jest.fn((socketId: string, roomId: string) => undefined),
-        emitNewGame: jest.fn((gameId: GameId) => undefined),
+        emitNewGame: jest.fn(
+          (gameId: GameId, inviterNickname: string | null = null) => undefined,
+        ),
         emitGameOption: jest.fn(
           (gameId: GameId, socketId: SocketId, map: number) => undefined,
         ),
         emitGameStarted: jest.fn((gameStarted: GameStartedDto) => undefined),
         emitGameStatus: jest.fn((gameId: GameId) => undefined),
+        emitGameCancelled: jest.fn((gameId: GameId) => undefined),
       })
       .compile();
     service = module.get<GameService>(GameService);
@@ -241,7 +244,10 @@ describe('GameService', () => {
         map: 1,
         isRank: false,
       });
-      expect(gameGateway.emitNewGame).toHaveBeenCalledWith(newGameId);
+      expect(gameGateway.emitNewGame).toHaveBeenCalledWith(
+        newGameId,
+        playerOne.nickname,
+      );
       expect(gameGateway.joinRoom).toHaveBeenCalledTimes(2);
       expect(gameGateway.joinRoom).toHaveBeenCalledWith(
         userSocketStorage.clients.get(playerOne.userId),
@@ -383,6 +389,18 @@ describe('GameService', () => {
         left: gameInfo.leftNickname,
         right: gameInfo.rightNickname,
       });
+    });
+  });
+
+  describe('DELETE CANCELLED GAME', () => {
+    it('should delete the game and emit gameCancelled to players and specators', async () => {
+      await gameStorage.createGame(
+        gameId,
+        new GameInfo(playerOne.userId, playerTwo.userId, 1, false),
+      );
+      service.deleteCancelledGame(gameId);
+      expect(gameStorage.getGame(gameId)).toBeUndefined();
+      expect(gameGateway.emitGameCancelled).toHaveBeenCalled();
     });
   });
 });

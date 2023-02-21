@@ -10,6 +10,7 @@ import { GameId } from '../../util/type';
 
 export interface NewGameDto {
   gameId: GameId;
+  inviterNickname?: string;
 }
 
 export interface GameOptionDto {

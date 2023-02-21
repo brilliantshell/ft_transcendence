@@ -197,13 +197,59 @@ describe('GameGateway (e2e)', () => {
       const [wsMessageOne, wsError] = await Promise.allSettled([
         listenPromise(playerOne, 'newGame'),
         timeout(1000, listenPromise(playerTwo, 'newGame')),
-        gateway.emitNewGame(gameId),
+        gateway.emitNewGame(gameId, users[0].nickname),
       ]);
       if (wsMessageOne.status === 'rejected') {
         fail();
       }
-      expect(wsMessageOne.value).toEqual({ gameId });
+      expect(wsMessageOne.value).toEqual({
+        gameId,
+        inviterNickname: users[0].nickname,
+      });
       expect(wsError.status).toEqual('rejected');
+    });
+  });
+
+  /*****************************************************************************
+   *                                                                           *
+   * SECTION : gameStarted Emitter                                             *
+   *                                                                           *
+   ****************************************************************************/
+  /**
+   * 게임이 취소됐을 때, 플레이어들과 관전자들에게 알림을 보낸다
+   */
+
+  describe('gameCancelled', () => {
+    beforeEach(async () => {
+      users.push(usersEntities[index++]);
+      userIds.push(users[2].userId);
+      clientSockets.push(
+        io(URL, { extraHeaders: { 'x-user-id': userIds[2].toString() } }),
+      );
+      await listenPromise(clientSockets[2], 'connect');
+    });
+
+    it('should notify all players and spectators that the game is cancelled', async () => {
+      const [playerOne, playerTwo, spectator] = clientSockets;
+      gateway.joinRoom(
+        userSocketStorage.clients.get(userIds[0]),
+        `game-${gameId}`,
+      );
+      gateway.joinRoom(
+        userSocketStorage.clients.get(userIds[1]),
+        `game-${gameId}`,
+      );
+      gateway.joinRoom(
+        userSocketStorage.clients.get(userIds[2]),
+        `game-${gameId}`,
+      );
+      const results = await Promise.allSettled([
+        listenPromise(playerOne, 'gameCancelled'),
+        listenPromise(playerTwo, 'gameCancelled'),
+        listenPromise(spectator, 'gameCancelled'),
+        gateway.emitGameCancelled(gameId),
+      ]);
+      results.forEach(({ status }) => expect(status).toEqual('fulfilled'));
     });
   });
 

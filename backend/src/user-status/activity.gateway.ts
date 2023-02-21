@@ -227,11 +227,6 @@ export class ActivityGateway
     } else if (ui === 'waitingRoom') {
       this.gameGateway.joinRoom(socketId, 'waitingRoom');
     } else if (ui.startsWith('game-')) {
-      /**
-       * TODO
-       * room 에 이벤트 보낼 일이 있기 전에 유저들이 들어가 있다고 확신할 수 없다
-       * GameService & controller 구현하면서 확인하기
-       */
       this.gameGateway.joinRoom(socketId, ui as `game-${GameId}`);
     } else if (ui === 'ranks') {
       this.ranksGateway.joinRanksRoom(socketId);
