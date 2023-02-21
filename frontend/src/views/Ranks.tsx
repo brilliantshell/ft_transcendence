@@ -1,27 +1,22 @@
-import UserBase from '../components/UserBase';
 import MyRank from '../components/MyRank';
+import RankList from '../components/RankList';
+import socket from '../util/Socket';
+import { useRecoilValueLoadable } from 'recoil';
 import { useEffect } from 'react';
-
-function Right() {
-  return <div>(role)</div>;
-}
-
-function Down() {
-  return <div>down</div>;
-}
+import { myIdState } from '../util/Recoils';
 
 function Ranks() {
-  useEffect(() => {}, []);
+  const myIdLoadable = useRecoilValueLoadable(myIdState);
 
+  if (myIdLoadable.state === 'hasValue') {
+    // FIXME : CORS 문제
+    // socket.emit('currentUi', { userId: myIdLoadable.contents, ui: 'ranks' });
+  }
+  useEffect(() => {}, []);
   return (
     <>
-      <UserBase userId={668} rightChild={<Right />} downChild={<Down />} />
-      <br />
-      <UserBase userId={668} rightChild={<Right />} />
-      <br />
-      <UserBase userId={668} downChild={<Down />} />
-      <br />
-      <UserBase userId={668} />
+      <MyRank />
+      <RankList />
     </>
   );
 }
