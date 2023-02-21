@@ -761,7 +761,7 @@ describe('GameController (e2e)', () => {
     });
 
     it('should throw error when the other user does not join the game start queue in a certain amount of time', async () => {
-      const [playerOne, playerTwo] = userIds;
+      const [playerOne, playerTwo, spectator] = userIds;
       const gameId = nanoid();
       await gameStorage.createGame(
         gameId,
@@ -769,22 +769,31 @@ describe('GameController (e2e)', () => {
       );
       clientSockets[0].emit('currentUi', { ui: `game-${gameId}` });
       clientSockets[1].emit('currentUi', { ui: `game-${gameId}` });
+      clientSockets[2].emit('currentUi', { ui: `game-${gameId}` });
       await waitForExpect(() => {
         expect(activityManager.getActivity(playerOne)).toBe(`game-${gameId}`);
         expect(activityManager.getActivity(playerTwo)).toBe(`game-${gameId}`);
+        expect(activityManager.getActivity(spectator)).toBe(`game-${gameId}`);
       });
       await request(app.getHttpServer())
         .patch(`/game/${gameId}/start`)
         .set('x-user-id', playerOne.toString())
         .expect(204);
-      const [wsError] = await Promise.allSettled([
-        timeout(1200, listenPromise(clientSockets[0], 'gameStatus')),
-        request(app.getHttpServer())
-          .patch(`/game/${gameId}/start`)
-          .set('x-user-id', playerOne.toString())
-          .expect(204),
-      ]);
+      const [wsError, wsSuccessOne, wsSuccessTwo, wsSuccessThree] =
+        await Promise.allSettled([
+          timeout(1200, listenPromise(clientSockets[0], 'gameStatus')),
+          listenPromise(clientSockets[0], 'gameCancelled'),
+          listenPromise(clientSockets[1], 'gameCancelled'),
+          listenPromise(clientSockets[2], 'gameCancelled'),
+          request(app.getHttpServer())
+            .patch(`/game/${gameId}/start`)
+            .set('x-user-id', playerOne.toString())
+            .expect(204),
+        ]);
       expect(wsError.status).toBe('rejected');
+      expect(wsSuccessOne.status).toBe('fulfilled');
+      expect(wsSuccessTwo.status).toBe('fulfilled');
+      expect(wsSuccessThree.status).toBe('fulfilled');
       await request(app.getHttpServer())
         .patch(`/game/${gameId}/start`)
         .set('x-user-id', playerTwo.toString())

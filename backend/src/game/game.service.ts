@@ -213,6 +213,16 @@ export class GameService {
     });
   }
 
+  /**
+   * @description 취소된 게임 삭제
+   *
+   * @param gameId 게임 id
+   */
+  deleteCancelledGame(gameId: GameId) {
+    this.gameGateway.emitGameCancelled(gameId);
+    this.gameStorage.deleteGame(gameId);
+  }
+
   /*****************************************************************************
    *                                                                           *
    * SECTION : Private methods                                                 *

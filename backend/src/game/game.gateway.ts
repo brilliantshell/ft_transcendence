@@ -61,7 +61,6 @@ export class GameGateway {
    *                                                                           *
    ****************************************************************************/
 
-  // NOTE : 일반 게임의 경우 게임 초대 모달을 띄워주기 위해 초대한 유저에 대한 정보를 전해줘야하지 않을까..?
   /**
    * @description 게임 player 들에게 매칭되었다고 알림
    *
@@ -76,7 +75,15 @@ export class GameGateway {
       );
   }
 
-  // emitGameCancelled(gameId: GameId) {}
+  /**
+   * @description 게임이 취소되었다고 알림
+   *
+   * @param gameId 게임 id
+   */
+  emitGameCancelled(gameId: GameId) {
+    this.server.to(`game-${gameId}`).emit(`gameCancelled`);
+    this.server.socketsLeave(`game-${gameId}`);
+  }
 
   /**
    * @description: 게임 옵션 전송
@@ -127,7 +134,7 @@ export class GameGateway {
       gameId,
       gameInfo.leftId === userId ? 'left' : 'right',
     );
-    this.destroyGameRoom(gameId);
+    this.server.socketsLeave(`game-${gameId}`);
   }
 
   /**
@@ -160,15 +167,6 @@ export class GameGateway {
    * SECTION : Private methods                                                 *
    *                                                                           *
    ****************************************************************************/
-
-  /**
-   * @description socket room 삭제
-   *
-   * @param gameId 게임 id
-   */
-  destroyGameRoom(gameId: GameId) {
-    this.server.socketsLeave(`game-${gameId}`);
-  }
 
   /**
    * @description 플레이어가 게임 방을 나거가나 연결이 끊길 경우, 결과 업데이트 및

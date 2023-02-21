@@ -216,6 +216,49 @@ describe('GameGateway (e2e)', () => {
    *                                                                           *
    ****************************************************************************/
   /**
+   * 게임이 취소됐을 때, 플레이어들과 관전자들에게 알림을 보낸다
+   */
+
+  describe('gameCancelled', () => {
+    beforeEach(async () => {
+      users.push(usersEntities[index++]);
+      userIds.push(users[2].userId);
+      clientSockets.push(
+        io(URL, { extraHeaders: { 'x-user-id': userIds[2].toString() } }),
+      );
+      await listenPromise(clientSockets[2], 'connect');
+    });
+
+    it('should notify all players and spectators that the game is cancelled', async () => {
+      const [playerOne, playerTwo, spectator] = clientSockets;
+      gateway.joinRoom(
+        userSocketStorage.clients.get(userIds[0]),
+        `game-${gameId}`,
+      );
+      gateway.joinRoom(
+        userSocketStorage.clients.get(userIds[1]),
+        `game-${gameId}`,
+      );
+      gateway.joinRoom(
+        userSocketStorage.clients.get(userIds[2]),
+        `game-${gameId}`,
+      );
+      const results = await Promise.allSettled([
+        listenPromise(playerOne, 'gameCancelled'),
+        listenPromise(playerTwo, 'gameCancelled'),
+        listenPromise(spectator, 'gameCancelled'),
+        gateway.emitGameCancelled(gameId),
+      ]);
+      results.forEach(({ status }) => expect(status).toEqual('fulfilled'));
+    });
+  });
+
+  /*****************************************************************************
+   *                                                                           *
+   * SECTION : gameStarted Emitter                                             *
+   *                                                                           *
+   ****************************************************************************/
+  /**
    * 게임이 시작되었을 때, waiting-room UI에 있는 유저들에게 알림을 보낸다
    */
 

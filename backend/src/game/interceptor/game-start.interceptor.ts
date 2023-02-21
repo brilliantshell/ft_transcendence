@@ -85,8 +85,7 @@ export class GameStartInterceptor implements NestInterceptor {
         this.gameSubjectMap.delete(gameId);
       },
       error: () => {
-        // TODO : 게임이 취소될 경우 취소된 유저에게 알려주는 WS 이벤트가 있어야하지 않을까...?
-        this.gameStorage.deleteGame(gameId);
+        this.gameService.deleteCancelledGame(gameId);
         this.gameSubjectMap.delete(gameId);
         this.waitingPlayers.delete(gameInfo.leftId);
         this.waitingPlayers.delete(gameInfo.rightId);

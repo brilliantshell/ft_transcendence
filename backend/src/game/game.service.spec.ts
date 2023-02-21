@@ -87,6 +87,7 @@ describe('GameService', () => {
         ),
         emitGameStarted: jest.fn((gameStarted: GameStartedDto) => undefined),
         emitGameStatus: jest.fn((gameId: GameId) => undefined),
+        emitGameCancelled: jest.fn((gameId: GameId) => undefined),
       })
       .compile();
     service = module.get<GameService>(GameService);
@@ -388,6 +389,18 @@ describe('GameService', () => {
         left: gameInfo.leftNickname,
         right: gameInfo.rightNickname,
       });
+    });
+  });
+
+  describe('DELETE CANCELLED GAME', () => {
+    it('should delete the game and emit gameCancelled to players and specators', async () => {
+      await gameStorage.createGame(
+        gameId,
+        new GameInfo(playerOne.userId, playerTwo.userId, 1, false),
+      );
+      service.deleteCancelledGame(gameId);
+      expect(gameStorage.getGame(gameId)).toBeUndefined();
+      expect(gameGateway.emitGameCancelled).toHaveBeenCalled();
     });
   });
 });
