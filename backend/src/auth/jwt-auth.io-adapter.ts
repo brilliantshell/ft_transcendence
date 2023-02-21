@@ -19,6 +19,7 @@ export class JwtAuthIoAdapter extends IoAdapter {
   }
 
   createIOServer(port: number, options?: ServerOptions) {
+    options.cors = { origin: 'http://localhost:5173', credentials: true };
     options.allowRequest = this.allowRequest;
 
     const server: Server = super.createIOServer(port, options);
@@ -89,6 +90,6 @@ export class JwtAuthIoAdapter extends IoAdapter {
     const { httpOnly, sameSite, secure, maxAge } = option;
     return `${value}; Path=/${httpOnly && '; HttpOnly'}; SameSite=${sameSite}${
       secure && '; Secure'
-    }; Max-Age=${maxAge}`;
+    }; Max-Age=${maxAge / 1000}`;
   }
 }
