@@ -24,6 +24,9 @@ setup_db() {
 	# Create Database named ${PGDATABASE} owned by ${PGUSER}
 	createdb -O ${PGUSER} 
 
+  # Create tables and insert data
+	psql -f /workspaces/backend/test/integration/integration.sql > /dev/null 2>&1
+
 	gosu postgres pg_ctl stop
 }
 
@@ -33,7 +36,5 @@ setup_db
 # Start PostgreSQL
 gosu postgres pg_ctl -l ${PGLOG} start -s -o "-c config_file=${CONFIG_FILE}" 
 
-# Create tables if they do not exist
-psql -f /workspaces/backend/test/integration/integration.sql > /dev/null 2>&1
 
 exec "$@"
