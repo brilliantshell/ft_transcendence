@@ -3,6 +3,7 @@ import {
   Controller,
   Delete,
   Get,
+  HttpCode,
   HttpStatus,
   Param,
   ParseIntPipe,
@@ -90,9 +91,10 @@ export class ChatsController {
       userId !== req.user.userId,
       joinChannelDto.password || null,
     );
-    res.status(isNewMember ? HttpStatus.CREATED : HttpStatus.OK).end();
+    res.status(isNewMember ? HttpStatus.CREATED : HttpStatus.NO_CONTENT).end();
   }
 
+  @HttpCode(HttpStatus.NO_CONTENT)
   @Delete(':channelId/user')
   @UseGuards(ChannelExistGuard, MemberExistGuard)
   leaveChannel(

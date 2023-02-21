@@ -569,7 +569,7 @@ describe('UserController (e2e)', () => {
       return request(app.getHttpServer())
         .put(`/chats/${newChannelId}/user/${newChannelMember.userId}`)
         .set('x-user-id', newChannelMember.userId.toString())
-        .expect(200);
+        .expect(204);
     });
 
     it('PUT /chats/:channelId/user/:userId (already user in channel, invite)', async () => {
@@ -596,7 +596,7 @@ describe('UserController (e2e)', () => {
       return request(app.getHttpServer())
         .put(`/chats/${newChannelId}/user/${newChannelMember.userId}`)
         .set('x-user-id', newChannelOwner.userId.toString())
-        .expect(200);
+        .expect(204);
     });
 
     it('DELETE /chats/:channelId/user (owner)', async () => {
@@ -616,7 +616,7 @@ describe('UserController (e2e)', () => {
       return request(app.getHttpServer())
         .delete(`/chats/${newChannelId}/user`)
         .set('x-user-id', newChannelOwner.userId.toString())
-        .expect(200);
+        .expect(204);
     });
 
     it('DELETE /chats/:channelId/user (not owner)', async () => {
@@ -642,7 +642,7 @@ describe('UserController (e2e)', () => {
       return request(app.getHttpServer())
         .delete(`/chats/${newChannelId}/user`)
         .set('x-user-id', newChannelMember.userId.toString())
-        .expect(200);
+        .expect(204);
     });
 
     it('DELETE /chats/:channelId/user (not channel member)', async () => {

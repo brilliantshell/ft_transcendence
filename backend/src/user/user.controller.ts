@@ -2,6 +2,7 @@ import {
   Controller,
   Delete,
   Get,
+  HttpCode,
   HttpStatus,
   Patch,
   Post,
@@ -43,13 +44,14 @@ export class UserController {
     res
       .status(
         (await this.userService.createBlock(req.user.userId, req.targetId))
-          ? 201
-          : 200,
+          ? HttpStatus.CREATED
+          : HttpStatus.NO_CONTENT,
       )
       .end();
   }
 
   @Delete(':userId/block')
+  @HttpCode(HttpStatus.NO_CONTENT)
   @UseGuards(SelfCheckGuard, UserExistGuard, BlockedUserGuard, DeleteBlockGuard)
   deleteBlock(@Req() req: RelationshipRequest) {
     this.userService.deleteBlock(req.user.userId, req.targetId);
@@ -69,7 +71,7 @@ export class UserController {
       req.targetId,
     );
     res
-      .status(isNew ? HttpStatus.CREATED : HttpStatus.OK)
+      .status(isNew ? HttpStatus.CREATED : HttpStatus.NO_CONTENT)
       .set('location', `/chats/${dmId}`)
       .end();
   }
@@ -107,12 +109,13 @@ export class UserController {
           req.targetId,
         ))
           ? HttpStatus.CREATED
-          : HttpStatus.OK,
+          : HttpStatus.NO_CONTENT,
       )
       .end();
   }
 
   @Delete(':userId/friend')
+  @HttpCode(HttpStatus.NO_CONTENT)
   @UseGuards(
     SelfCheckGuard,
     UserExistGuard,
@@ -124,6 +127,7 @@ export class UserController {
   }
 
   @Patch(':userId/friend')
+  @HttpCode(HttpStatus.NO_CONTENT)
   @UseGuards(
     SelfCheckGuard,
     UserExistGuard,

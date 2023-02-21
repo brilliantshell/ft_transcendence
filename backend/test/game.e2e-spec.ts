@@ -522,7 +522,7 @@ describe('GameController (e2e)', () => {
           .patch(`/game/${gameId}/options`)
           .set('x-user-id', playerOne.toString())
           .send({ map: 2 })
-          .expect(200),
+          .expect(204),
       ]);
       expect(wsError.status).toBe('rejected');
       if (
@@ -664,11 +664,11 @@ describe('GameController (e2e)', () => {
         request(app.getHttpServer())
           .patch(`/game/${gameId}/start`)
           .set('x-user-id', playerOne.toString())
-          .expect(200),
+          .expect(204),
         request(app.getHttpServer())
           .patch(`/game/${gameId}/start`)
           .set('x-user-id', playerTwo.toString())
-          .expect(200),
+          .expect(204),
       ]);
       expect(wsMessage).toEqual({
         id: gameId,
@@ -753,7 +753,7 @@ describe('GameController (e2e)', () => {
       await request(app.getHttpServer())
         .patch(`/game/${gameId}/start`)
         .set('x-user-id', playerOne.toString())
-        .expect(200);
+        .expect(204);
       return request(app.getHttpServer())
         .patch(`/game/${gameId}/start`)
         .set('x-user-id', playerOne.toString())
@@ -776,13 +776,13 @@ describe('GameController (e2e)', () => {
       await request(app.getHttpServer())
         .patch(`/game/${gameId}/start`)
         .set('x-user-id', playerOne.toString())
-        .expect(200);
+        .expect(204);
       const [wsError] = await Promise.allSettled([
         timeout(1200, listenPromise(clientSockets[0], 'gameStatus')),
         request(app.getHttpServer())
           .patch(`/game/${gameId}/start`)
           .set('x-user-id', playerOne.toString())
-          .expect(200),
+          .expect(204),
       ]);
       expect(wsError.status).toBe('rejected');
       await request(app.getHttpServer())

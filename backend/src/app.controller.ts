@@ -1,4 +1,4 @@
-import { Controller, Delete, Get, Req, Res } from '@nestjs/common';
+import { Controller, Delete, Get, HttpStatus, Req, Res } from '@nestjs/common';
 import { Response } from 'express';
 
 import { AppService } from './app.service';
@@ -21,7 +21,7 @@ export class AppController {
   async logout(@Req() req: VerifiedRequest, @Res() res: Response) {
     await this.authService.clearRefreshTokens(req.user.userId);
     res
-      .status(200)
+      .status(HttpStatus.NO_CONTENT)
       .cookie('accessToken', '', { expires: new Date(0) })
       .cookie('refreshToken', '', { expires: new Date(0) })
       .end();

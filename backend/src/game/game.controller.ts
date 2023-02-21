@@ -47,16 +47,16 @@ export class GameController {
     return this.gameService.findGameInfo(req.user.userId, gameId);
   }
 
+  @Post('queue')
   @UseGuards(InPlayGuard)
   @UseInterceptors(LadderQueueInterceptor)
-  @Post('queue')
   enterLadderQueue() {
     return;
   }
 
-  @UseInterceptors(LadderQueueInterceptor)
-  @HttpCode(HttpStatus.NO_CONTENT)
   @Delete('queue')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @UseInterceptors(LadderQueueInterceptor)
   exitLadderQueue() {
     return;
   }
@@ -74,8 +74,9 @@ export class GameController {
     return this.gameService.findPlayers(req.user.userId, gameId);
   }
 
-  @UseGuards(InGameUiGuard)
   @Patch(':gameId/options')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @UseGuards(InGameUiGuard)
   updateMap(
     @Req() req: VerifiedRequest,
     @Param() { gameId }: GameIdParamDto,
@@ -84,9 +85,10 @@ export class GameController {
     this.gameService.changeMap(req.user.userId, gameId, map);
   }
 
+  @Patch(':gameId/start')
+  @HttpCode(HttpStatus.NO_CONTENT)
   @UseGuards(InGameUiGuard)
   @UseInterceptors(LadderStartInterceptor)
-  @Patch(':gameId/start')
   startGame() {
     return;
   }
