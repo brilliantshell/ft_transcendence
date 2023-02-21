@@ -759,5 +759,36 @@ describe('GameController (e2e)', () => {
         .set('x-user-id', playerOne.toString())
         .expect(409);
     });
+
+    it('should throw error when the other user does not join the game start queue in a certain amount of time', async () => {
+      const [playerOne, playerTwo] = userIds;
+      const gameId = nanoid();
+      await gameStorage.createGame(
+        gameId,
+        new GameInfo(playerOne, playerTwo, 1, false),
+      );
+      clientSockets[0].emit('currentUi', { ui: `game-${gameId}` });
+      clientSockets[1].emit('currentUi', { ui: `game-${gameId}` });
+      await waitForExpect(() => {
+        expect(activityManager.getActivity(playerOne)).toBe(`game-${gameId}`);
+        expect(activityManager.getActivity(playerTwo)).toBe(`game-${gameId}`);
+      });
+      await request(app.getHttpServer())
+        .patch(`/game/${gameId}/start`)
+        .set('x-user-id', playerOne.toString())
+        .expect(200);
+      const [wsError] = await Promise.allSettled([
+        timeout(1200, listenPromise(clientSockets[0], 'gameStatus')),
+        request(app.getHttpServer())
+          .patch(`/game/${gameId}/start`)
+          .set('x-user-id', playerOne.toString())
+          .expect(200),
+      ]);
+      expect(wsError.status).toBe('rejected');
+      await request(app.getHttpServer())
+        .patch(`/game/${gameId}/start`)
+        .set('x-user-id', playerTwo.toString())
+        .expect(404);
+    });
   });
 });
