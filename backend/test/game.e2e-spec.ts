@@ -15,6 +15,7 @@ import { GameGateway } from '../src/game/game.gateway';
 import { GameInfo, UserId } from '../src/util/type';
 import { GameOptionDto, NewGameDto } from '../src/game/dto/game-gateway.dto';
 import { GameStorage } from '../src/game/game.storage';
+import { LadderQueueInterceptor } from '../src/game/interceptor/ladder-queue.interceptor';
 import {
   TYPEORM_SHARED_CONFIG,
   createDataSources,
@@ -86,7 +87,7 @@ describe('GameController (e2e)', () => {
     index += 4;
     userIds = users.map(({ userId }) => userId);
     clientSockets = await Promise.all(
-      userIds.map(async (id) => {
+      userIds.map((id) => {
         const socket = io(URL, {
           extraHeaders: { 'x-user-id': id.toString() },
         });
@@ -316,7 +317,7 @@ describe('GameController (e2e)', () => {
     });
 
     it('should throw CONFLICT if the user is already in the queue (409)', async () => {
-      const [playerOne] = userIds;
+      const [playerOne, playerTwo] = userIds;
       await request(app.getHttpServer())
         .post('/game/queue')
         .set('x-user-id', playerOne.toString())
@@ -325,6 +326,64 @@ describe('GameController (e2e)', () => {
         .post('/game/queue')
         .set('x-user-id', playerOne.toString())
         .expect(409);
+      await request(app.getHttpServer())
+        .post('/game/queue')
+        .set('x-user-id', playerTwo.toString())
+        .expect(201);
+    });
+  });
+
+  /*****************************************************************************
+   *                                                                           *
+   * ANCHOR : DELETE /game/queue                                               *
+   *                                                                           *
+   ****************************************************************************/
+
+  describe('DELETE /game/queue', () => {
+    it('should remove the user from the queue (204)', async () => {
+      const ladderQueueInterceptor = app.get(LadderQueueInterceptor);
+      const [playerOne, playerTwo, playerThree] = userIds;
+      await request(app.getHttpServer())
+        .post('/game/queue')
+        .set('x-user-id', playerOne.toString())
+        .expect(201);
+      await waitForExpect(() => {
+        expect(
+          (ladderQueueInterceptor as any).usersInQueue.has(playerOne),
+        ).toBeTruthy();
+      });
+      await request(app.getHttpServer())
+        .delete('/game/queue')
+        .set('x-user-id', playerOne.toString())
+        .expect(204);
+      await waitForExpect(() => {
+        expect(
+          (ladderQueueInterceptor as any).usersInQueue.has(playerOne),
+        ).toBeFalsy();
+      });
+      const [wsMessageOne, wsMessageTwo] = await Promise.all([
+        listenPromise<NewGameDto>(clientSockets[1], 'newGame'),
+        listenPromise<NewGameDto>(clientSockets[2], 'newGame'),
+        request(app.getHttpServer())
+          .post('/game/queue')
+          .set('x-user-id', playerTwo.toString())
+          .expect(201),
+        request(app.getHttpServer())
+          .post('/game/queue')
+          .set('x-user-id', playerThree.toString())
+          .expect(201),
+      ]);
+      const gameId = wsMessageOne?.gameId;
+      expect(gameId).toMatch(/^[a-zA-Z0-9_-]{21}$/);
+      expect(gameId).toEqual(wsMessageTwo?.gameId);
+    });
+
+    it('should throw NOT FOUND if the user is not in the queue (404)', async () => {
+      const [playerOne] = userIds;
+      await request(app.getHttpServer())
+        .delete('/game/queue')
+        .set('x-user-id', playerOne.toString())
+        .expect(404);
     });
   });
 

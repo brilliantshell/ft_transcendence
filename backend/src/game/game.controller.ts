@@ -1,7 +1,10 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
+  HttpCode,
+  HttpStatus,
   Param,
   Patch,
   Post,
@@ -51,12 +54,18 @@ export class GameController {
     return;
   }
 
+  @UseInterceptors(LadderQueueInterceptor)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Delete('queue')
+  exitLadderQueue() {
+    return;
+  }
+
   /*****************************************************************************
    *                                                                           *
    * SECTION : Game UI                                                         *
    *                                                                           *
    ****************************************************************************/
-
   @Get(':gameId')
   findPlayers(
     @Req() req: VerifiedRequest,
