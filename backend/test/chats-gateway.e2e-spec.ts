@@ -23,6 +23,7 @@ import {
 import { timeout } from './util/util';
 
 process.env.DB_HOST = 'localhost';
+process.env.NODE_ENV = 'development';
 
 const PORT = 4245;
 const URL = `http://localhost:${PORT}`;
