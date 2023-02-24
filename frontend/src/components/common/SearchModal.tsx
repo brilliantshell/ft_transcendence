@@ -34,50 +34,61 @@ function SearchModal({ setShowSearch }: SearchModalProps) {
     }
   }
 
-  function handleEsc(e: KeyboardEvent) {
-    if (e.key === 'Escape') {
+  function handleKeydown(e: KeyboardEvent) {
+    if (e.key === 'k' && e.metaKey) {
       setShowSearch(false);
+    } else if (e.key === 'Escape') {
+      setShowSearch(false);
+    } else if (e.key === 'ArrowDown') {
+      console.log('ArrowDown');
+      const firstItem = document.querySelector('.search-results-item');
+      console.log(firstItem)
+      if (firstItem) {
+        (firstItem as HTMLElement).focus();
+      }
     }
   }
 
   useEffect(() => {
-    document.addEventListener('keydown', handleEsc);
+    document.addEventListener('keydown', handleKeydown);
     document.addEventListener('mousedown', handleClickOutside);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
-      document.removeEventListener('keydown', handleEsc);
+      document.removeEventListener('keydown', handleKeydown);
     };
   }, []);
 
   return (
     <div className="search-modal" ref={searchRef}>
-      <input
-        className="search-input"
-        type="text"
-        value={search}
-        onChange={handleSearch}
-        autoFocus={true}
-        placeholder="게임할 친구들을 찾아봐요~~!"
-      />
-      {searchResult.length > 0 && (
-        <div className="search-results">
-          {searchResult.map((user, index) => {
-            return (
-              <div key={index} className="search-result">
-                <a href={`/profile/${user.userId}`}>
-                  <img
-                    src="http://localhost:5173/assets/defaultProfile"
-                    width="24px"
-                    height="24px"
-                  />
-                  {/* <img src={user.isDefaultImage ? 'http://localhost:5173/assets/defaultProfile'  : `http://localhost:3000/asset/profile-image/${user.userId}`}/> */}
-                  <span>{user.nickname}</span>
-                </a>{' '}
-              </div>
-            );
-          })}
-        </div>
-      )}
+      <div className="search-modal-contents">
+        <input
+          className="search-input"
+          type="text"
+          value={search}
+          onChange={handleSearch}
+          autoFocus={true}
+          placeholder="게임할 친구들을 찾아봐요~~!"
+        />
+        {searchResult.length > 0 && (
+          <div className="search-results">
+            {searchResult.map((user, index) => {
+              return (
+                <div key={index} className="search-results-item">
+                  <a href={`/profile/${user.userId}`}>
+                    <img
+                      src="http://localhost:5173/assets/defaultProfile"
+                      width="36px"
+                      height="36px"
+                    />
+                    {/* <img src={user.isDefaultImage ? 'http://localhost:5173/assets/defaultProfile'  : `http://localhost:3000/asset/profile-image/${user.userId}`}/> */}
+                    <span>{user.nickname}</span>
+                  </a>{' '}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
