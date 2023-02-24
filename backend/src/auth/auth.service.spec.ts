@@ -1,4 +1,5 @@
 import { DataSource, Repository } from 'typeorm';
+import { MailerService } from '@nestjs-modules/mailer';
 import { Test, TestingModule } from '@nestjs/testing';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
@@ -21,6 +22,7 @@ describe('AuthService', () => {
   let initDataSource: DataSource;
   let dataSource: DataSource;
   let usersRepository: Repository<Users>;
+  let mailerServiceSendMailSpy: jest.SpyInstance;
 
   beforeAll(async () => {
     const dataSources = await createDataSources(TEST_DB, ENTITIES);
@@ -44,6 +46,10 @@ describe('AuthService', () => {
       ],
     }).compile();
 
+    const mailerService = module.get<MailerService>(MailerService);
+    mailerServiceSendMailSpy = jest
+      .spyOn(mailerService, 'sendMail')
+      .mockImplementation(() => Promise.resolve());
     service = module.get<AuthService>(AuthService);
   });
 
@@ -115,5 +121,15 @@ describe('AuthService', () => {
     const { userId } = usersEntities[0];
     const token = service.issueRestrictedAccessToken(userId);
     expect(service.verifyRestrictedAccessToken(token).userId).toBe(userId);
+  });
+
+  it('should generate 2FA code and verify it', async () => {
+    await service.sendTwoFactorCode(12345, '1234@');
+    expect(mailerServiceSendMailSpy).toHaveBeenCalled();
+    const data = await (service as any).cacheManager.get('12345');
+    expect(await service.verifyTwoFactorCode(12345, data.authCode)).toBe(
+      '1234@',
+    );
+    expect(await (service as any).cacheManager.get('12345')).toBeUndefined();
   });
 });

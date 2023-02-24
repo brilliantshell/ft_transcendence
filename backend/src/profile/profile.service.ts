@@ -1,9 +1,11 @@
 import {
   ConflictException,
+  ForbiddenException,
   Injectable,
   InternalServerErrorException,
   Logger,
   NotFoundException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { EntityNotFoundError, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -11,6 +13,7 @@ import { join } from 'path';
 import { rmSync } from 'fs';
 
 import { Achievers } from '../entity/achievers.entity';
+import { AuthService } from '../auth/auth.service';
 import { MatchHistory } from '../entity/match-history.entity';
 import { Users } from '../entity/users.entity';
 import { UserId } from '../util/type';
@@ -22,6 +25,7 @@ export class ProfileService {
   constructor(
     @InjectRepository(Achievers)
     private readonly achieversRepository: Repository<Achievers>,
+    private readonly authService: AuthService,
     @InjectRepository(MatchHistory)
     private readonly matchHistoryRepository: Repository<MatchHistory>,
     @InjectRepository(Users)
@@ -127,6 +131,30 @@ export class ProfileService {
   }
 
   /**
+   * @description 유저의 2FA email 검증 및 이메일 전송
+   *
+   * @param userId 유저의 ID
+   * @param email 검증할 2FA email
+   */
+  async verifyTwoFactorEmail(userId: UserId, email: string) {
+    let isConflict: boolean;
+    try {
+      isConflict = await this.usersRepository.exist({
+        where: { authEmail: email },
+      });
+    } catch (e) {
+      this.logger.error(e);
+      throw new InternalServerErrorException(
+        'Failed to check two-factor email exist',
+      );
+    }
+    if (isConflict) {
+      throw new ConflictException(`Email (${email}) already exists`);
+    }
+    await this.authService.sendTwoFactorCode(userId, email);
+  }
+
+  /**
    * @description 유저의 2FA email 을 변경
    *
    * @param userId 유저의 ID
@@ -146,6 +174,28 @@ export class ProfileService {
       throw new InternalServerErrorException(
         'Failed to update two-factor email',
       );
+    }
+  }
+
+  /**
+   * @description 유저의 2FA code 를 검증
+   *
+   * @param userId 유저의 ID
+   * @param code 검증할 2FA code
+   * @returns 검증된 2FA email
+   */
+  async verifyTwoFactorCode(userId: UserId, code: string) {
+    try {
+      return await this.authService.verifyTwoFactorCode(userId, code);
+    } catch (e) {
+      if (e instanceof NotFoundException) {
+        throw e;
+      }
+      if (e instanceof UnauthorizedException) {
+        throw new ForbiddenException('Incorrect two-factor code');
+      }
+      this.logger.error(e);
+      throw new InternalServerErrorException('Failed to verify 2FA code');
     }
   }
 
