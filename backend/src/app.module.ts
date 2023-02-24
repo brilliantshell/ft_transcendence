@@ -18,6 +18,7 @@ import { ProfileModule } from './profile/profile.module';
 import { RanksModule } from './ranks/ranks.module';
 import { UserModule } from './user/user.module';
 import { UserStatusModule } from './user-status/user-status.module';
+import { Users } from './entity/users.entity';
 
 @Module({
   imports: [
@@ -37,6 +38,7 @@ import { UserStatusModule } from './user-status/user-status.module';
         apiConfigService.postgresConfig,
       inject: [ApiConfigService],
     }),
+    TypeOrmModule.forFeature([Users]),
     AuthModule,
     ChatsModule,
     GameModule,
