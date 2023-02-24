@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import instance from '../../util/Axios';
 import '../../style/Search.css';
+import { useNavigate } from 'react-router-dom';
 
 interface UserInfo {
   userId: number;
@@ -12,10 +13,72 @@ interface SearchModalProps {
   setShowSearch: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
+const useKeyPress = function (targetKey: string) {
+  const [keyPressed, setKeyPressed] = useState<boolean>(false);
+
+  function downHandler({ key }: { key: string }) {
+    if (key === targetKey) {
+      setKeyPressed(true);
+    }
+  }
+
+  const upHandler = ({ key }: { key: string }) => {
+    if (key === targetKey) {
+      setKeyPressed(false);
+    }
+  };
+
+  useEffect(() => {
+    document.addEventListener('keydown', downHandler);
+    document.addEventListener('keyup', upHandler);
+
+    return () => {
+      document.removeEventListener('keydown', downHandler);
+      document.removeEventListener('keyup', upHandler);
+    };
+  });
+
+  return keyPressed;
+};
+
 function SearchModal({ setShowSearch }: SearchModalProps) {
   const searchRef = useRef<HTMLDivElement>(null);
+  const resultRef = useRef<HTMLDivElement>(null);
   const [search, setSearch] = useState<string>('');
   const [searchResult, setSearchResult] = useState<Array<UserInfo>>([]);
+  const [cursor, setCursor] = useState<number>(0);
+  const downPressed = useKeyPress('ArrowDown');
+  const upPressed = useKeyPress('ArrowUp');
+  const enterPressed = useKeyPress('Enter');
+  const nav = useNavigate();
+
+  useEffect(() => {
+    if (downPressed && cursor < searchResult.length - 1) {
+      setCursor(cursor + 1);
+    }
+  }, [downPressed]);
+
+  useEffect(() => {
+    if (upPressed && cursor > 0) {
+      setCursor(cursor - 1);
+    }
+  }, [upPressed]);
+
+  useEffect(() => {
+    if (searchResult.length > 0) {
+      resultRef.current?.children[cursor].scrollIntoView({
+        block: 'nearest',
+      });
+      resultRef.current?.children[cursor];
+    }
+  }, [cursor]);
+  
+  useEffect(() => {
+    if (enterPressed) {
+      nav(`/profile/${searchResult[cursor].userId}`);
+      setShowSearch(false)
+    }
+  }, [enterPressed]);
 
   function handleSearch(e: React.ChangeEvent<HTMLInputElement>) {
     setSearch(e.target.value);
@@ -39,13 +102,6 @@ function SearchModal({ setShowSearch }: SearchModalProps) {
       setShowSearch(false);
     } else if (e.key === 'Escape') {
       setShowSearch(false);
-    } else if (e.key === 'ArrowDown') {
-      console.log('ArrowDown');
-      const firstItem = document.querySelector('.search-results-item');
-      console.log(firstItem)
-      if (firstItem) {
-        (firstItem as HTMLElement).focus();
-      }
     }
   }
 
@@ -70,18 +126,33 @@ function SearchModal({ setShowSearch }: SearchModalProps) {
           placeholder="게임할 친구들을 찾아봐요~~!"
         />
         {searchResult.length > 0 && (
-          <div className="search-results">
+          <div className="search-results" ref={resultRef}>
             {searchResult.map((user, index) => {
               return (
-                <div key={index} className="search-results-item">
-                  <a href={`/profile/${user.userId}`}>
+                <div
+                  key={index}
+                  onKeyDown={e => {
+                    console.log(e);
+                    if (e.key === 'Enter') {
+                      nav(`/profile/${user.userId}`);
+                    }
+                  }}
+                  className={`search-results-item ${
+                    index === cursor ? 'active' : ''
+                  }`}
+                >
+                  <a
+                    href={`/profile/${user.userId}`}
+                    className="search-item-anchor"
+                  >
                     <img
                       src="http://localhost:5173/assets/defaultProfile"
-                      width="36px"
-                      height="36px"
+                      className="search-item-img"
                     />
                     {/* <img src={user.isDefaultImage ? 'http://localhost:5173/assets/defaultProfile'  : `http://localhost:3000/asset/profile-image/${user.userId}`}/> */}
-                    <span>{user.nickname}</span>
+                    <span className="search-item-nickname">
+                      {user.nickname}
+                    </span>
                   </a>{' '}
                 </div>
               );
