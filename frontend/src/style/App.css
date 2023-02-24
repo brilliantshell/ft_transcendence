@@ -1,8 +1,10 @@
+@import './presets/reset.css';
+
 #root {
-  text-align: center;
   display: grid;
-  height: 100vh;
   grid-template: minmax(3rem, auto) 1fr / minmax(5rem, auto) 1fr;
+  height: 100vh;
+  text-align: center;
 }
 
 header {
@@ -16,5 +18,8 @@ nav {
 }
 
 main {
+  /* align-items: center; */
   background-color: lightcoral;
+  display: grid;
+  /* justify-items: center; */
 }
