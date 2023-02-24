@@ -194,7 +194,7 @@ export class AuthService {
   async sendTwoFactorCode(userId: UserId, email: string) {
     const charset = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
     const authCode = customAlphabet(charset, 6)(); // from nanoid
-    await this.cacheManager.set(userId.toString(), { email, authCode }, 900000); // 15 minutes
+    await this.cacheManager.set(userId.toString(), { email, authCode }, 300000); // 5 minutes
 
     // FIXME: enable when mailer is ready
     await this.mailerService.sendMail({
@@ -228,18 +228,6 @@ export class AuthService {
     throw new UnauthorizedException(
       'Invalid two-factor code. Please try again',
     );
-  }
-
-  /**
-   * @description 이메일 내용 생성
-   *
-   * @param code Two-Factor Authentication Code
-   * @returns 이메일 내용
-   */
-  generateEmailTemplate(code: string) {
-    const image =
-      "<img src='https://emoji.slack-edge.com/T039P7U66/daebakjule/af8546a21f0db8d4.gif' width='24' height='24'>";
-    return `<h1>${image}Your two-factor authentication code is ${code}${image}</h1>`;
   }
 
   /*****************************************************************************
@@ -309,5 +297,17 @@ export class AuthService {
       this.cacheManager.get<RefreshTokenWrapper>(userId.toString() + '-prev'),
       this.cacheManager.get<RefreshTokenWrapper>(userId.toString()),
     ]);
+  }
+
+  /**
+   * @description 이메일 내용 생성
+   *
+   * @param code Two-Factor Authentication Code
+   * @returns 이메일 내용
+   */
+  private generateEmailTemplate(code: string) {
+    const image =
+      "<img src='https://emoji.slack-edge.com/T039P7U66/daebakjule/af8546a21f0db8d4.gif' width='24' height='24'>";
+    return `<h1>${image}Your two-factor authentication code is ${code}${image}</h1>`;
   }
 }

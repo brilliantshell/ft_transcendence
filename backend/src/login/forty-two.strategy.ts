@@ -1,3 +1,4 @@
+import { EntityNotFoundError, Repository } from 'typeorm';
 import { HttpService } from '@nestjs/axios';
 import { InjectRepository } from '@nestjs/typeorm';
 import {
@@ -6,18 +7,18 @@ import {
   Logger,
 } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
-import { EntityNotFoundError, Repository } from 'typeorm';
 import { Strategy } from 'passport-oauth2';
 import { catchError } from 'rxjs';
 
-import { AuthService } from '../auth/auth.service';
 import { ApiConfigService } from '../config/api-config.service';
+import { AuthService } from '../auth/auth.service';
 import { LoginUserInfo } from '../util/type';
 import { Users } from '../entity/users.entity';
 
 @Injectable()
 export class FortyTwoStrategy extends PassportStrategy(Strategy, '42') {
   private readonly logger = new Logger(FortyTwoStrategy.name);
+
   constructor(
     private readonly apiConfigService: ApiConfigService,
     private readonly authService: AuthService,
