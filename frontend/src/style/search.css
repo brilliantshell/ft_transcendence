@@ -2,7 +2,16 @@
   height: 50px;
 }
 
-.search-btn {
+.searchModalFooter {
+  background-color: #fff;
+  width: 100%;
+  border-top: 1px solid #ccc;
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.9rem;
+}
+
+.searchButton {
   background-color: lightgray;
   width: 100%;
   height: 100%;
@@ -11,24 +20,24 @@
   font-size: 1rem;
 }
 
-.search-btn:hover {
+.searchButton:hover {
   background-color: #ddd;
 }
 
-.search-modal {
+.searchModalBackground {
   position: absolute;
   top: 0;
   left: 80px;
   width: calc(100% - 80px);
   height: 100vh;
   background-color: rgba(0, 0, 0, 0.3);
-  /* z-index: 1; */
+  z-index: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
 }
 
-.search-modal-contents {
+.searchModal {
   position: absolute;
   top: 100px;
   display: flex;
@@ -45,6 +54,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
+  height: 100%;
   background-color: #fff;
 }
 
