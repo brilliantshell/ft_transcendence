@@ -16,9 +16,9 @@ import { JwtAuthGuard } from './auth/jwt-auth.guard';
 import { LoginModule } from './login/login.module';
 import { ProfileModule } from './profile/profile.module';
 import { RanksModule } from './ranks/ranks.module';
+import { SearchModule } from './search/search.module';
 import { UserModule } from './user/user.module';
 import { UserStatusModule } from './user-status/user-status.module';
-import { Users } from './entity/users.entity';
 
 @Module({
   imports: [
@@ -38,13 +38,13 @@ import { Users } from './entity/users.entity';
         apiConfigService.postgresConfig,
       inject: [ApiConfigService],
     }),
-    TypeOrmModule.forFeature([Users]),
     AuthModule,
     ChatsModule,
     GameModule,
     LoginModule,
     ProfileModule,
     RanksModule,
+    SearchModule,
     UserModule,
     UserStatusModule,
   ],
