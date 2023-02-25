@@ -6,7 +6,7 @@ function Navigation() {
       {/* TODO :위에 로고 */}
       <ul>
         <li>
-          <NavLink to="/profile">Profile</NavLink>
+          <NavLink to="/">Profile</NavLink>
         </li>
         <li>
           <NavLink to="/ranks">Ranks</NavLink>
