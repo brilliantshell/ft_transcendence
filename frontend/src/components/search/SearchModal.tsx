@@ -50,7 +50,7 @@ function SearchModal({ setShowSearch }: SearchModalProps) {
   }
 
   function handleKeydown(e: KeyboardEvent) {
-    if (e.key === 'k' && e.metaKey || e.key === 'Escape') {
+    if ((e.key === 'k' && e.metaKey) || e.key === 'Escape') {
       setShowSearch(false);
     }
   }
@@ -66,20 +66,18 @@ function SearchModal({ setShowSearch }: SearchModalProps) {
 
   return (
     <div className="searchModalBackground" ref={searchRef}>
-      {' '}
-      {/* background */}
       <div className="searchModal">
-        {' '}
-        {/* modal */}
-        <input /* header */
-          className="search-input"
-          type="text"
-          value={query}
-          onChange={handleSearch}
-          autoFocus={true}
-          placeholder="게임할 친구들을 찾아봐요~~!"
-        />
-        <div className="search-results">
+        <div className="searchModalHeader">
+          <input /* header */
+            className="search-input"
+            type="text"
+            value={query}
+            onChange={handleSearch}
+            autoFocus={true}
+            placeholder="게임할 친구들을 찾아봐요~~!"
+          />
+        </div>
+        <div className="searchModalBody">
           {renderError(query, error, searchResult, loading) /* body */ ??
             (query.length > 0 && (
               <SearchResult

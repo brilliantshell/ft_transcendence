@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { UserInfo } from './SearchModal';
 import '../../style/Search.css';
+import { Link } from 'react-router-dom';
 
 interface SearchResultProps {
   searchResult: Array<UserInfo>;
@@ -75,7 +76,7 @@ const SearchResult = ({ searchResult, setShowSearch }: SearchResultProps) => {
   return (
     <>
       {
-        <div className="search-results" ref={resultRef}>
+        <div className="searchResults" ref={resultRef}>
           {searchResult.map((user, index) => {
             return (
               <div
@@ -84,9 +85,10 @@ const SearchResult = ({ searchResult, setShowSearch }: SearchResultProps) => {
                   index === cursor ? 'active' : ''
                 }`}
               >
-                <a
-                  href={`/profile/${user.userId}`}
+                <Link
+                  to={`/profile/${user.userId}`}
                   className="search-item-anchor"
+                  onClick={() => setShowSearch(false)}
                 >
                   <img
                     src="http://localhost:5173/assets/defaultProfile"
@@ -94,7 +96,7 @@ const SearchResult = ({ searchResult, setShowSearch }: SearchResultProps) => {
                   />
                   {/* FIXME: <img src={user.isDefaultImage ? 'http://localhost:5173/assets/defaultProfile'  : `http://localhost:3000/asset/profile-image/${user.userId}`}/> */}
                   <span className="search-item-nickname">{user.nickname}</span>
-                </a>{' '}
+                </Link>
               </div>
             );
           })}

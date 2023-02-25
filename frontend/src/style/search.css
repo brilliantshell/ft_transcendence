@@ -4,20 +4,20 @@
 
 .searchModalFooter {
   background-color: #fff;
-  width: 100%;
   border-top: 1px solid #ccc;
   display: flex;
-  justify-content: space-between;
   font-size: 0.9rem;
+  justify-content: space-between;
+  width: 100%;
 }
 
 .searchButton {
-  background-color: lightgray;
-  width: 100%;
-  height: 100%;
+  background-color: transparent;
   border: none;
-  padding: 10px 0;
   font-size: 1rem;
+  height: 100%;
+  padding: 10px 0;
+  width: 100%;
 }
 
 .searchButton:hover {
@@ -25,61 +25,72 @@
 }
 
 .searchModalBackground {
-  position: absolute;
-  top: 0;
-  left: 80px;
-  width: calc(100% - 80px);
-  height: 100vh;
+  align-items: center;
   background-color: rgba(0, 0, 0, 0.3);
-  z-index: 1;
   display: flex;
   flex-direction: column;
-  align-items: center;
+  height: 100vh;
+  left: 80px;
+  position: absolute;
+  top: 0;
+  width: calc(100% - 80px);
+  z-index: 10;
 }
 
 .searchModal {
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+  border-radius: 10%;
+  height: calc(100% - 150px - 30%);
   position: absolute;
   top: 100px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
   width: 50%;
-  height: calc(100% - 150px - 30%);
-  /* z-index: 2; */
 }
 
-.search-results {
-  width: 100%;
-  overflow-y: auto;
+.searchModalBody {
+  align-items: center;
+  background-color: #fff;
   display: flex;
   flex-direction: column;
-  align-items: center;
   height: 100%;
+  overflow-y: auto;
+  width: 100%;
+  z-index: 11;
+}
+
+.searchResults {
+  align-items: center;
   background-color: #fff;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow-y: auto;
+  width: 100%;
 }
 
 .search-results-item {
-  width: 100%;
   border: 1px solid #ccc;
   border-radius: 4px;
-  margin: 5px 0;
-  padding: 10px;
   box-sizing: border-box;
   font-size: 1rem;
+  margin: 5px 0;
+  padding: 10px;
+  width: 100%;
 }
 
 .search-item-anchor {
-  display: flex;
   align-items: center;
+  color: black;
+  display: flex;
   height: inherit;
   text-decoration: none;
-  color: black;
 }
 
 .search-item-img {
-  width: 2rem;
   height: 2rem;
   margin-right: 10px;
+  width: 2rem;
 }
 
 .search-item-nickname {
@@ -87,14 +98,20 @@
   font-weight: bold;
 }
 
-.search-input {
-  width: 100%;
-  border: 5px solid #ccc;
-  border-radius: 4px;
-  padding: 10px;
+.searchModalHeader {
+  border: 5px solid;
   box-sizing: border-box;
   font-size: 1rem;
   outline: none;
+  width: 100%;
+}
+
+.search-input {
+  border: 5px solid #ccc;
+  box-sizing: border-box;
+  font-size: 1rem;
+  outline: none;
+  width: 100%;
 }
 
 .active {
