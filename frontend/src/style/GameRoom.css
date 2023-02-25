@@ -1,0 +1,81 @@
+@import './presets/font.css';
+
+.gameRoom {
+  aspect-ratio: 16 / 12;
+  display: grid;
+  grid-template-rows: 15% 1fr 10%;
+  min-width: 640px;
+  place-self: center;
+  width: 56%;
+}
+
+.gameInfo,
+.gameMenu,
+.gamePlay {
+  /* TODO: Remove the line below */
+  border: 1px dashed #000;
+  width: 100%;
+}
+
+/* TODO: Remove the style below */
+.gamePlay {
+  border-top: none;
+  border-bottom: none;
+}
+
+/* SECTION : GameInfo */
+
+.gameInfo {
+  align-items: center;
+  display: flex;
+  vertical-align: middle;
+}
+
+.playerInfo {
+  width: 42%;
+}
+
+.gameType {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  justify-content: center;
+  position: relative;
+  width: 16%;
+}
+
+.gameType p:first-of-type {
+  display: block;
+  position: absolute;
+  top: 20%;
+  width: 100%;
+}
+
+/* SECTION : GamePlay */
+
+.gamePlay {
+  display: grid;
+}
+
+#gameBoard {
+  background: #fff;
+  border-radius: 1em;
+  overflow: visible;
+  place-self: center;
+}
+
+/* SECTION : GameMenu */
+
+.gameMenu {
+  align-items: center;
+  display: flex;
+  flex-direction: row-reverse;
+}
+
+.gameButton {
+  border: none;
+  border-radius: 0.5em;
+  margin: 0 2.5% 0 0;
+  height: 3em;
+  width: 15%;
+}
