@@ -1,5 +1,3 @@
-import '../../style/GameRoom.css';
-
 export default function GameInfo({
   isRank,
   leftPlayer,

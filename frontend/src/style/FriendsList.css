@@ -1,0 +1,29 @@
+div.dropup {
+  position: relative;
+  display: inline-block;
+}
+
+.dropup-btn {
+  background-color: #3498db;
+  color: white;
+  cursor: pointer;
+  padding: 16px;
+  font-size: 16px;
+  border: none;
+}
+
+.dropup-content {
+  display: none;
+  position: absolute;
+  background-color: #f1f1f1;
+  min-width: 160px;
+  bottom: 50px;
+  z-index: 1;
+}
+
+.dropup-content div {
+  color: black;
+  padding: 12px 16px;
+  text-decoration: none;
+  display: block;
+}
