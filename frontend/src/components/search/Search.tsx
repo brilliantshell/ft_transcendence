@@ -24,7 +24,9 @@ function Search() {
         className="searchButton"
         onClick={() => setShowSearch(!showSearch)}
       >
-        안녕 여기는 검색 버튼 이란다
+      <img src='/assets/search-icon.svg' alt='search-icon' className='searchIcon' />
+      <span>Search</span>
+      <span className='searchKeyIcon'><kbd>⌘</kbd><kbd>k</kbd></span>
       </button>
       {showSearch && <SearchModal setShowSearch={setShowSearch} />}
     </div>

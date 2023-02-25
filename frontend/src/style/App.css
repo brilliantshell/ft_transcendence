@@ -1,4 +1,5 @@
 @import './presets/reset.css';
+@import './presets/color.css';
 
 #root {
   display: grid;
@@ -6,20 +7,13 @@
   height: 100vh;
   text-align: center;
 }
-/**
-- 배경: Primary #6a7ba2
-- 강조: P - Dark #3d4f73
-- nav: Secondary #ffdfde
-- nav button: S - Dark #ccadac
-- font: S - Light #ffffff
-*/
 
 header {
-  background-color: #ffdfde;
+  background-color: var(--primary-light);
 }
 
 nav {
-  background-color: #ffdfde;
+  background-color: var(--secondary);
   grid-row: 1 / 3;
   grid-column: 1 / 2;
 }
@@ -27,7 +21,7 @@ nav {
 main {
   /* align-items: center; */
   /* background-color: #6a7ba2; */
-  background-color: #99aad3;
+  background-color: var(--primary-light);
   display: grid;
   /* justify-items: center; */
 }
