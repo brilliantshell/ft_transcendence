@@ -342,7 +342,7 @@ describe('GameService', () => {
       });
     });
 
-    it("should return ladder game pleyer's info and on which side they are", async () => {
+    it("should return ladder game pleyers' info and on which side they are", async () => {
       await gameStorage.createGame(
         gameId,
         new GameInfo(playerOne.userId, playerTwo.userId, 1, true),
@@ -393,7 +393,7 @@ describe('GameService', () => {
   });
 
   describe('DELETE CANCELLED GAME', () => {
-    it('should delete the game and emit gameCancelled to players and specators', async () => {
+    it('should delete the game and emit gameCancelled to players and spectators', async () => {
       await gameStorage.createGame(
         gameId,
         new GameInfo(playerOne.userId, playerTwo.userId, 1, false),

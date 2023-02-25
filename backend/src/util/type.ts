@@ -105,3 +105,8 @@ export interface RefreshTokenWrapper {
 export interface JwtPayload {
   userId: UserId;
 }
+
+export interface TwoFactorAuthData {
+  email: string;
+  authCode: string;
+}

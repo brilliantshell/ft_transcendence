@@ -1,5 +1,7 @@
+import { Cache } from 'cache-manager';
 import { DataSource } from 'typeorm';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { MailerService } from '@nestjs-modules/mailer';
 import { Test, TestingModule } from '@nestjs/testing';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { existsSync, unlinkSync } from 'fs';
@@ -16,6 +18,7 @@ import {
 import { Achievements } from '../src/entity/achievements.entity';
 import { Achievers } from '../src/entity/achievers.entity';
 import { AppModule } from '../src/app.module';
+import { AuthService } from '../src/auth/auth.service';
 import { ChannelStorage } from '../src/user-status/channel.storage';
 import { MatchHistory } from '../src/entity/match-history.entity';
 import {
@@ -23,6 +26,7 @@ import {
   createDataSources,
   destroyDataSources,
 } from './util/db-resource-manager';
+import { TwoFactorAuthData } from '../src/util/type';
 import { UserRelationshipStorage } from '../src/user-status/user-relationship.storage';
 import { Users } from '../src/entity/users.entity';
 
@@ -193,7 +197,14 @@ describe('ProfileController (e2e)', () => {
   });
 
   describe('PATCH /profile/2fa-email', () => {
-    it('should return 200 when success to update 2fa email', async () => {
+    beforeAll(() => {
+      const mailService = app.get(MailerService);
+      jest
+        .spyOn(mailService, 'sendMail')
+        .mockImplementation(() => Promise.resolve());
+    });
+
+    it('should return 200 when 2fa email is verified', async () => {
       const user = usersEntities[1];
       const newEmail = 'fooBarBaz@foobar.com';
       request(app.getHttpServer())
@@ -235,6 +246,38 @@ describe('ProfileController (e2e)', () => {
     });
   });
 
+  describe('2FA Email update process', () => {
+    let cacheManager: Cache;
+    beforeAll(() => {
+      const mailService = app.get(MailerService);
+      jest
+        .spyOn(mailService, 'sendMail')
+        .mockImplementation(() => Promise.resolve());
+      const authService = app.get(AuthService);
+      cacheManager = (authService as any).cacheManager;
+    });
+
+    it('should return 200 when 2fa email is verified', async () => {
+      const user = usersEntities[1];
+      const newEmail = 'fooBarBaz@foobar.com';
+      await request(app.getHttpServer())
+        .patch('/profile/2fa-email')
+        .set('x-user-id', user.userId.toString())
+        .send({ email: newEmail })
+        .expect(204);
+      const data: TwoFactorAuthData = await cacheManager.get(
+        user.userId.toString(),
+      );
+      expect(data.email).toBe(newEmail);
+      const authCode = data.authCode;
+      await request(app.getHttpServer())
+        .post('/profile/2fa-email/verification')
+        .set('x-user-id', user.userId.toString())
+        .send({ authCode })
+        .expect(201);
+    });
+  });
+
   describe('DELETE /profile/2fa-email', () => {
     it('should return 200 when success to delete 2fa email', async () => {
       const user = usersEntities[1];
@@ -242,18 +285,10 @@ describe('ProfileController (e2e)', () => {
         .delete(`/profile/2fa-email`)
         .set('x-user-id', user.userId.toString())
         .expect(204);
-      await request(app.getHttpServer())
-        .patch(`/profile/2fa-email`)
-        .set('x-user-id', user.userId.toString())
-        .send({ email: user.authEmail })
-        .expect(204);
       return request(app.getHttpServer())
         .get(`/profile/2fa-email`)
         .set('x-user-id', user.userId.toString())
-        .expect(200)
-        .expect(async (res) => {
-          expect(res.body.email).toBe(user.authEmail);
-        });
+        .expect(404);
     });
   });
 
