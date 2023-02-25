@@ -1,8 +1,7 @@
-import { useEffect, useRef, useState } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
 import instance from '../../util/Axios';
 import SearchResult from './SearchResult';
 import { AxiosError } from 'axios';
-import '../../style/Search.css';
 
 export interface UserInfo {
   userId: number;
@@ -68,8 +67,8 @@ function SearchModal({ setShowSearch }: SearchModalProps) {
     <div className="searchModalBackground" ref={searchRef}>
       <div className="searchModal">
         <div className="searchModalHeader">
-          <input /* header */
-            className="search-input"
+          <input
+            className="searchInput"
             type="text"
             value={query}
             onChange={handleSearch}
@@ -78,7 +77,7 @@ function SearchModal({ setShowSearch }: SearchModalProps) {
           />
         </div>
         <div className="searchModalBody">
-          {renderError(query, error, searchResult, loading) /* body */ ??
+          {renderError(query, error, searchResult, loading) ??
             (query.length > 0 && (
               <SearchResult
                 searchResult={searchResult}
@@ -101,13 +100,13 @@ const renderError = (
   searchResult: Array<UserInfo>,
   loading: boolean,
 ) => {
-  if (loading) {
-    return (
-      <div className="search-result-item">
-        <div className="search-result-item-nickname">로딩중...</div>
-      </div>
-    );
-  }
+  // if (loading) {
+  //   return (
+  //     <div className="search-result-item">
+  //       <div className="search-result-item-nickname">로딩중...</div>
+  //     </div>
+  //   );
+  // }
   if (error.length > 0) {
     return (
       <div className="search-result-item">
