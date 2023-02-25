@@ -12,15 +12,15 @@ import { Users } from '../entity/users.entity';
 @Module({
   imports: [
     CacheModule.register({ ttl: 1209600000 /* 14 days */, max: 40000 }),
-    TypeOrmModule.forFeature([Users]),
-    forwardRef(() => ApiConfigModule),
+    JwtModule.register({}),
     MailerModule.forRootAsync({
       imports: [ApiConfigModule],
       useFactory: (apiConfigService: ApiConfigService) =>
         apiConfigService.mailerConfig,
       inject: [ApiConfigService],
     }),
-    JwtModule.register({}),
+    TypeOrmModule.forFeature([Users]),
+    forwardRef(() => ApiConfigModule),
   ],
   providers: [AuthService],
   exports: [AuthService],

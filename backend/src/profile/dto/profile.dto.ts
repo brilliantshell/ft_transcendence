@@ -10,3 +10,9 @@ export class TwoFactorEmailDto {
   @IsEmail()
   email: string;
 }
+
+export class AuthCodeDto {
+  @IsString()
+  @Length(6, 6)
+  authCode: string;
+}

@@ -1,6 +1,12 @@
-import { ConflictException, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
+import { Cache } from 'cache-manager';
 import { DataSource } from 'typeorm';
 import { DateTime } from 'luxon';
+import { MailerService } from '@nestjs-modules/mailer';
 import { Test, TestingModule } from '@nestjs/testing';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
@@ -13,14 +19,17 @@ import {
 } from '../../test/util/generate-mock-data';
 import { Achievements } from '../entity/achievements.entity';
 import { Achievers } from '../entity/achievers.entity';
+import { AppModule } from '../app.module';
+import { AuthService } from '../auth/auth.service';
 import { MatchHistory } from '../entity/match-history.entity';
 import { ProfileService } from './profile.service';
-import { Users } from '../entity/users.entity';
 import {
   TYPEORM_SHARED_CONFIG,
   createDataSources,
   destroyDataSources,
 } from '../../test/util/db-resource-manager';
+import { TwoFactorAuthData } from 'src/util/type';
+import { Users } from '../entity/users.entity';
 
 const TEST_DB = 'test_db_profile_service';
 const ENTITIES = [Achievements, Achievers, MatchHistory, Users];
@@ -33,6 +42,8 @@ describe('ProfileService', () => {
   let achieversEntities: Achievers[];
   let matchHistoryEntities: MatchHistory[];
   let usersEntities: Users[];
+  let authService: AuthService;
+  let cacheManager: Cache;
 
   beforeAll(async () => {
     const dataSources = await createDataSources(TEST_DB, ENTITIES);
@@ -66,17 +77,18 @@ describe('ProfileService', () => {
           autoLoadEntities: true,
           database: TEST_DB,
         }),
-        TypeOrmModule.forFeature([
-          Achievements,
-          Achievers,
-          MatchHistory,
-          Users,
-        ]),
+        TypeOrmModule.forFeature(ENTITIES),
+        AppModule,
       ],
-      providers: [ProfileService],
     }).compile();
 
+    const mailerService = module.get<MailerService>(MailerService);
+    jest
+      .spyOn(mailerService, 'sendMail')
+      .mockImplementation(() => Promise.resolve());
     service = module.get<ProfileService>(ProfileService);
+    authService = module.get<AuthService>(AuthService);
+    cacheManager = (authService as any).cacheManager;
   });
 
   it('should be defined', async () => {
@@ -252,7 +264,13 @@ describe('ProfileService', () => {
       async () => await service.findTwoFactorEmail(user.userId),
     ).rejects.toThrowError(NotFoundException);
     const newEmail = 'twofactor@example.com';
-    await service.updateTwoFactorEmail(user.userId, newEmail);
+    await service.verifyTwoFactorEmail(user.userId, newEmail);
+    const data: TwoFactorAuthData = await cacheManager.get(
+      user.userId.toString(),
+    );
+    expect(data.email).toEqual(newEmail);
+    const email = await service.verifyTwoFactorCode(user.userId, data.authCode);
+    await service.updateTwoFactorEmail(user.userId, email);
     expect(await service.findTwoFactorEmail(user.userId)).toEqual({
       email: newEmail,
     });
@@ -263,10 +281,32 @@ describe('ProfileService', () => {
     const [user] = generateUsers(1);
     await dataSource.getRepository(Users).insert(user);
     const newEmail = 'twofactor@example.com';
-    await service.updateTwoFactorEmail(user.userId, newEmail);
+    await service.verifyTwoFactorEmail(user.userId, newEmail);
+    const data: TwoFactorAuthData = await cacheManager.get(
+      user.userId.toString(),
+    );
+    expect(data.email).toEqual(newEmail);
+    const email = await service.verifyTwoFactorCode(user.userId, data.authCode);
+    await service.updateTwoFactorEmail(user.userId, email);
     expect(await service.findTwoFactorEmail(user.userId)).toEqual({
       email: newEmail,
     });
+    await dataSource.getRepository(Users).delete(user.userId);
+  });
+
+  it('should not update 2FA email (incorrect auth code)', async () => {
+    const [user] = generateUsers(1);
+    await dataSource.getRepository(Users).insert(user);
+    const newEmail = 'twofactor@example.com';
+    await service.verifyTwoFactorEmail(user.userId, newEmail);
+    const data: TwoFactorAuthData = await cacheManager.get(
+      user.userId.toString(),
+    );
+    expect(data.email).toEqual(newEmail);
+    await expect(
+      async () =>
+        await service.verifyTwoFactorCode(user.userId, data.authCode + '1'),
+    ).rejects.toThrowError(ForbiddenException);
     await dataSource.getRepository(Users).delete(user.userId);
   });
 
@@ -274,8 +314,17 @@ describe('ProfileService', () => {
     const [userOne, userTwo] = usersEntities;
     await expect(
       async () =>
-        await service.updateTwoFactorEmail(userOne.userId, userTwo.authEmail),
+        await service.verifyTwoFactorEmail(userOne.userId, userTwo.authEmail),
     ).rejects.toThrowError(ConflictException);
+  });
+
+  it('should throw exception when try confirm email without verification', async () => {
+    const [user] = generateUsers(1);
+    delete user.authEmail;
+    await dataSource.getRepository(Users).insert(user);
+    await expect(
+      async () => await service.verifyTwoFactorCode(user.userId, '123456'),
+    ).rejects.toThrowError(NotFoundException);
   });
 
   it('should delete 2FA email', async () => {
@@ -284,10 +333,9 @@ describe('ProfileService', () => {
     await expect(
       async () => await service.findTwoFactorEmail(user.userId),
     ).rejects.toThrowError(NotFoundException);
-    await service.updateTwoFactorEmail(user.userId, user.authEmail);
   });
 
-  it('should delete 2FA email', async () => {
+  it('should delete 2FA email (call twice)', async () => {
     const user = usersEntities[0];
     await service.deleteTwoFactorEmail(user.userId);
     await service.deleteTwoFactorEmail(user.userId);

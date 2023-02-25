@@ -7,6 +7,7 @@ import {
   HttpStatus,
   Param,
   Patch,
+  Post,
   Put,
   Req,
   UseGuards,
@@ -14,8 +15,8 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 
+import { AuthCodeDto, NicknameDto, TwoFactorEmailDto } from './dto/profile.dto';
 import { MockAuthGuard } from '../guard/mock-auth.guard';
-import { NicknameDto, TwoFactorEmailDto } from './dto/profile.dto';
 import { ProfileService } from './profile.service';
 import { UserId, VerifiedRequest } from '../util/type';
 import { ValidateUserIdPipe } from './pipe/validate-user-id.pipe';
@@ -34,14 +35,28 @@ export class ProfileController {
 
   @Patch('2fa-email')
   @HttpCode(HttpStatus.NO_CONTENT)
-  updateTwoFactorEmail(
+  verifyTwoFactorEmail(
     @Req() req: VerifiedRequest,
     @Body() twoFactorEmailDto: TwoFactorEmailDto,
   ) {
-    return this.profileService.updateTwoFactorEmail(
+    return this.profileService.verifyTwoFactorEmail(
       req.user.userId,
       twoFactorEmailDto.email,
     );
+  }
+
+  @Post('2fa-email/verification')
+  async confirmTwoFactorEmail(
+    @Req() req: VerifiedRequest,
+    @Body() authCodeDto: AuthCodeDto,
+  ) {
+    const { userId } = req.user;
+    const { authCode } = authCodeDto;
+    const verifiedEmail = await this.profileService.verifyTwoFactorCode(
+      userId,
+      authCode,
+    );
+    return this.profileService.updateTwoFactorEmail(userId, verifiedEmail);
   }
 
   @Delete('2fa-email')
