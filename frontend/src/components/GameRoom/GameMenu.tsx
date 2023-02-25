@@ -1,5 +1,3 @@
-import '../../style/GameRoom.css';
-
 export default function GameMenu({ isOwner }: GameMenuProps) {
   return (
     <div className="gameMenu">

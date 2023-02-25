@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import UserBase from './UserBase';
 import { useRecoilValue } from 'recoil';
 import { myIdState } from '../util/Recoils';
-import '../style/Ranks.css';
+
 // TODO : 글씨 크기
 function MyRank() {
   const [data, setData] = useState<{ myRank: number; total: number }>();

@@ -3,7 +3,6 @@ import UserBase from './UserBase';
 import { useEffect, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 import { myIdState } from '../util/Recoils';
-import '../style/User.css';
 import { Link } from 'react-router-dom';
 import socket from '../util/Socket';
 interface Props {
