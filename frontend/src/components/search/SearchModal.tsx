@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
 import instance from '../../util/Axios';
 import SearchResult from './SearchResult';
 import { AxiosError } from 'axios';

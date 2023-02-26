@@ -9,12 +9,16 @@
 }
 
 header {
+<<<<<<< HEAD
   align-items: center;
   background-color: var(--primary-light);
   display: flex;
   flex-direction: row-reverse;
   height: 50px;
   justify-content: flex-start;
+=======
+  background-color: var(--primary-light);
+>>>>>>> 9d2b527824ea3113b9d23333a99a5ee1dde04157
 }
 
 nav {

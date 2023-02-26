@@ -78,6 +78,7 @@ const SearchResult = ({
 
   return (
     <>
+<<<<<<< HEAD
       {searchResult.map((user, index) => {
         return (
           <Link
@@ -98,6 +99,35 @@ const SearchResult = ({
           </Link>
         );
       })}
+=======
+      {
+        <div className="searchResults" ref={resultRef}>
+          {searchResult.map((user, index) => {
+            return (
+              <div
+                key={index}
+                className={`searchResultsItem ${
+                  index === cursor ? 'searchResultActive' : ''
+                }`}
+              >
+                <Link
+                  to={`/profile/${user.userId}`}
+                  className="searchItemLink"
+                  onClick={() => setShowSearch(false)}
+                >
+                  <img
+                    src="http://localhost:5173/assets/defaultProfile"
+                    className="searchItemImage"
+                  />
+                  {/* FIXME: <img src={user.isDefaultImage ? 'http://localhost:5173/assets/defaultProfile'  : `http://localhost:3000/asset/profile-image/${user.userId}`}/> */}
+                  <span className="searchItemNickname">{user.nickname}</span>
+                </Link>
+              </div>
+            );
+          })}
+        </div>
+      }
+>>>>>>> 9d2b527824ea3113b9d23333a99a5ee1dde04157
     </>
   );
 };

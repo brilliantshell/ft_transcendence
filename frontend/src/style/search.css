@@ -28,6 +28,14 @@
   width: 1.5rem;
 }
 
+.searchModalFooter {
+  background-color: #fff;
+  display: flex;
+  font-size: 0.9rem;
+  justify-content: space-between;
+  width: 100%;
+}
+
 .searchModalBackground {
   align-items: center;
   background-color: rgba(0, 0, 0, 0.5);
