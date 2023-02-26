@@ -1,25 +1,26 @@
 import instance from '../util/Axios';
 import { useEffect, useState } from 'react';
 import UserBase from './UserBase';
-import '../style/Ranks.css';
+import { useRecoilValue } from 'recoil';
+import { myIdState } from '../util/Recoils';
 
-// TODO : myRank div 위치 조정
-
+// TODO : 글씨 크기
 function MyRank() {
   const [data, setData] = useState<{ myRank: number; total: number }>();
+  const myId = useRecoilValue(myIdState);
+
   useEffect(() => {
     instance
       .get('/ranks/my-rank')
       .then(result => {
         setData(result.data);
       })
-      .catch(() => {
-        console.error('axios get error /ranks/my-rank');
+      .catch(reason => {
+        console.error(reason);
       });
   }, []);
   return (
     <>
-      <UserBase userId={47281}></UserBase>
       <div className="myRank">
         당신은 <b>{data?.total}</b>명 중에 <b>{data?.myRank}</b>등 입니다.
       </div>

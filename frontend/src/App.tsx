@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import { BrowserRouter } from 'react-router-dom';
 import { RecoilRoot } from 'recoil';
 import Header from './components/common/Header';
@@ -11,7 +12,9 @@ function App() {
       <BrowserRouter>
         <Header />
         <Navigation />
-        <Main />
+        <Suspense fallback={<div>Loading...</div>}>
+          <Main />
+        </Suspense>
       </BrowserRouter>
     </RecoilRoot>
   );

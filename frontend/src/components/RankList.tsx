@@ -1,7 +1,9 @@
 import instance from '../util/Axios';
-import UserBase from './UserBase';
+import User from './User';
 import { useEffect, useState, useMemo } from 'react';
 // TODO : 우선 TOP50으로 하고 이후에 수정할 지 고민
+// TODO : websocket 순위 변동 적용 예정
+
 function RankList() {
   const columns = ['Rank', 'User', 'Level'];
 
@@ -10,7 +12,7 @@ function RankList() {
   >([]);
   useEffect(() => {
     instance
-      .get('/ranks?range=1,50')
+      .get('/ranks?range=0,50')
       .then(result => {
         setData(result.data.users);
       })
@@ -36,8 +38,7 @@ function RankList() {
           <tr key={id}>
             <td>{rank}</td>
             <td>
-              {/* TODO :이후에 User component로 바꿀 예정 */}
-              <UserBase userId={id} />
+              <User userId={id} />
             </td>
             <td>{ladder}</td>
           </tr>

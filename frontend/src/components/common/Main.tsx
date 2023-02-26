@@ -1,10 +1,10 @@
 import Routers from './Routers';
-
+import FriendsList from './FriendsList';
 function Main() {
   return (
     <main>
       <Routers />
-      {/* TODO : FriendList */}
+      <FriendsList></FriendsList>
     </main>
   );
 }

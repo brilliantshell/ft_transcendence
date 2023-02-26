@@ -29,7 +29,7 @@ div.profileDiv > div {
   z-index: 1;
 }
 
-div.userNickname {
+.userNickname {
   font-size: medium;
   margin: auto;
 }
