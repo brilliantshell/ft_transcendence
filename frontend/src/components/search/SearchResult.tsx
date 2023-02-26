@@ -5,8 +5,7 @@ import { Link } from 'react-router-dom';
 
 interface SearchResultProps {
   searchResult: Array<UserInfo>;
-  searchBodyRef: React.RefObject<HTMLDivElement>;
-  hideModal : () => void;
+  hideModal: () => void;
 }
 
 const useKeyPress = function (targetKey: string) {
@@ -40,13 +39,13 @@ const useKeyPress = function (targetKey: string) {
 const SearchResult = ({
   searchResult,
   hideModal,
-  searchBodyRef: bodyRef,
 }: SearchResultProps) => {
   const nav = useNavigate();
   const downPressed = useKeyPress('ArrowDown');
   const upPressed = useKeyPress('ArrowUp');
   const enterPressed = useKeyPress('Enter');
   const [cursor, setCursor] = useState<number>(0);
+  const bodyRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (downPressed && cursor < searchResult.length - 1) {
@@ -77,7 +76,7 @@ const SearchResult = ({
   }, [enterPressed]);
 
   return (
-    <>
+    <div className="searchModalBody" ref={bodyRef}>
       {searchResult.map((user, index) => {
         return (
           <Link
@@ -87,7 +86,7 @@ const SearchResult = ({
             }`}
             onMouseOver={() => setCursor(index)}
             to={`/profile/${user.userId}`}
-            onClick={() => hideModal() }
+            onClick={() => hideModal()}
           >
             <img
               src="http://localhost:5173/assets/defaultProfile.svg"
@@ -98,7 +97,7 @@ const SearchResult = ({
           </Link>
         );
       })}
-    </>
+    </div>
   );
 };
 

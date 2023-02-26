@@ -1,8 +1,9 @@
 import { Suspense, useEffect, useRef, useState } from 'react';
 import instance from '../../util/Axios';
-import SearchResult from './SearchResult';
 import { AxiosError } from 'axios';
 import SearchModalHeader from './SearchModalHeader';
+import SearchResult from './SearchResult';
+import SearchModalFooter from './SearchModalFooter';
 
 export interface UserInfo {
   userId: number;
@@ -14,9 +15,29 @@ interface SearchModalProps {
   hideModal: () => void;
 }
 
+const generateErrorElement = (
+  query: string,
+  error: string,
+  searchResult: Array<UserInfo>,
+) => {
+  const elm = (msg: string) => (
+    <div className="searchModalBody">
+      <div className="searchModalBodyContents">
+        <div className="searchModalBodyMessage">{msg}</div>
+      </div>
+    </div>
+  );
+  return error.length > 0
+    ? elm(error)
+    : query.length > 16
+    ? elm('닉네임은 16자 이하로 입력해주세요.')
+    : searchResult.length === 0
+    ? elm('유저의 닉네임을 입력해주세요.')
+    : null;
+};
+
 function SearchModal({ hideModal }: SearchModalProps) {
   const searchRef = useRef<HTMLDivElement>(null);
-  const searchBodyRef = useRef<HTMLDivElement>(null);
   const [error, setError] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
   const [query, setQuery] = useState<string>('');
@@ -48,6 +69,7 @@ function SearchModal({ hideModal }: SearchModalProps) {
       })
       .finally(() => {
         clearTimeout(timeout);
+        setSearchResult([]);
         setLoading(false);
       });
   }
@@ -73,42 +95,18 @@ function SearchModal({ hideModal }: SearchModalProps) {
     };
   }, []);
 
-  const renderError = (
-    query: string,
-    error: string,
-    searchResult: Array<UserInfo>,
-  ) => {
-    const elm = (msg: string) => (
-      <div className="searchModalBodyContents">
-        <div className="searchModalBodyMessage">{msg}</div>
-      </div>
-    );
-    return error.length > 0
-      ? elm(error)
-      : query.length > 16
-      ? elm('닉네임은 16자 이하로 입력해주세요.')
-      : searchResult.length === 0
-      ? elm('유저의 닉네임을 입력해주세요.')
-      : null;
-  };
-
   return (
     <div className="searchModalBackground" ref={searchRef}>
       <div className="searchModal">
-        <SearchModalHeader query={query} loading={loading} handleSearch={handleSearch}/>
-        <div className="searchModalBody" ref={searchBodyRef}>
-          {renderError(query, error, searchResult) ?? (
-            <SearchResult
-              searchResult={searchResult}
-              searchBodyRef={searchBodyRef}
-              hideModal={hideModal}
-            />
-          )}
-        </div>
-        <div className="searchModalFooter">
-          <span> ↩ : 검색 </span> <span> ↑↓ : 이동 </span>{' '}
-          <span> ␛ : 닫기 </span> <span>Powered By 기절초퐁</span>
-        </div>
+        <SearchModalHeader
+          query={query}
+          loading={loading}
+          handleSearch={handleSearch}
+        />
+        {generateErrorElement(query, error, searchResult) ?? (
+          <SearchResult searchResult={searchResult} hideModal={hideModal} />
+        )}
+        <SearchModalFooter />
       </div>
     </div>
   );
