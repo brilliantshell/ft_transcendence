@@ -5,7 +5,8 @@ import { Link } from 'react-router-dom';
 
 interface SearchResultProps {
   searchResult: Array<UserInfo>;
-  setShowSearch: React.Dispatch<React.SetStateAction<boolean>>;
+  searchBodyRef: React.RefObject<HTMLDivElement>;
+  hideModal : () => void;
 }
 
 const useKeyPress = function (targetKey: string) {
@@ -36,8 +37,11 @@ const useKeyPress = function (targetKey: string) {
   return keyPressed;
 };
 
-const SearchResult = ({ searchResult, setShowSearch }: SearchResultProps) => {
-  const resultRef = useRef<HTMLDivElement>(null);
+const SearchResult = ({
+  searchResult,
+  hideModal,
+  searchBodyRef: bodyRef,
+}: SearchResultProps) => {
   const nav = useNavigate();
   const downPressed = useKeyPress('ArrowDown');
   const upPressed = useKeyPress('ArrowUp');
@@ -58,49 +62,42 @@ const SearchResult = ({ searchResult, setShowSearch }: SearchResultProps) => {
 
   useEffect(() => {
     if (searchResult.length > 0) {
-      resultRef.current?.children[cursor].scrollIntoView({
+      bodyRef.current?.children[cursor].scrollIntoView({
         block: 'nearest',
       });
-      resultRef.current?.children[cursor];
+      bodyRef.current?.children[cursor];
     }
   }, [cursor]);
 
   useEffect(() => {
     if (enterPressed && searchResult.length > 0) {
       nav(`/profile/${searchResult[cursor].userId}`);
-      setShowSearch(false);
+      hideModal();
     }
   }, [enterPressed]);
 
   return (
     <>
-      {
-        <div className="searchResults" ref={resultRef}>
-          {searchResult.map((user, index) => {
-            return (
-              <div
-                key={index}
-                className={`searchResultsItem ${
-                  index === cursor ? 'searchResultActive' : ''
-                }`}
-              >
-                <Link
-                  to={`/profile/${user.userId}`}
-                  className="searchItemLink"
-                  onClick={() => setShowSearch(false)}
-                >
-                  <img
-                    src="http://localhost:5173/assets/defaultProfile"
-                    className="searchItemImage"
-                  />
-                  {/* FIXME: <img src={user.isDefaultImage ? 'http://localhost:5173/assets/defaultProfile'  : `http://localhost:3000/asset/profile-image/${user.userId}`}/> */}
-                  <span className="searchItemNickname">{user.nickname}</span>
-                </Link>
-              </div>
-            );
-          })}
-        </div>
-      }
+      {searchResult.map((user, index) => {
+        return (
+          <Link
+            key={index}
+            className={`searchResult ${
+              index === cursor ? 'searchResultActive' : ''
+            }`}
+            onMouseOver={() => setCursor(index)}
+            to={`/profile/${user.userId}`}
+            onClick={() => hideModal() }
+          >
+            <img
+              src="http://localhost:5173/assets/defaultProfile.svg"
+              className="searchResultImage"
+            />
+            {/* FIXME: <img src={user.isDefaultImage ? 'http://localhost:5173/assets/defaultProfile'  : `http://localhost:3000/asset/profile-image/${user.userId}`}/> */}
+            <span className="searchResultNickname">{user.nickname}</span>
+          </Link>
+        );
+      })}
     </>
   );
 };

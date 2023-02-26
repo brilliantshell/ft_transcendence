@@ -9,7 +9,12 @@
 }
 
 header {
+  align-items: center;
   background-color: var(--primary-light);
+  display: flex;
+  flex-direction: row-reverse;
+  height: 50px;
+  justify-content: flex-start;
 }
 
 nav {

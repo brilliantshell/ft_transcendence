@@ -11,6 +11,10 @@ function Search() {
     }
   }
 
+  const hideModal = () => {
+    setShowSearch(false);
+  };
+
   useEffect(() => {
     document.addEventListener('keydown', handleKeydown);
     return () => {
@@ -19,17 +23,21 @@ function Search() {
   }, []);
 
   return (
-    <div className="search">
+    <>
       <button
         className="searchButton"
         onClick={() => setShowSearch(!showSearch)}
       >
-      <img src='/assets/search-icon.svg' alt='search-icon' className='searchIcon' />
-      <span>Search</span>
-      <span className='searchKeyIcon'><kbd>⌘</kbd><kbd>k</kbd></span>
+        <img
+          className="searchIcon"
+          src="/assets/search-icon.svg"
+          alt="search-icon"
+        />
+        <span>Search</span>
+        <span className="xsmall">⌘+k</span>
       </button>
-      {showSearch && <SearchModal setShowSearch={setShowSearch} />}
-    </div>
+      {showSearch && <SearchModal hideModal={hideModal} />}
+    </>
   );
 }
 

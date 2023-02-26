@@ -1,7 +1,8 @@
-import { Suspense, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import instance from '../../util/Axios';
 import SearchResult from './SearchResult';
 import { AxiosError } from 'axios';
+import SearchModalHeader from './SearchModalHeader';
 
 export interface UserInfo {
   userId: number;
@@ -10,11 +11,12 @@ export interface UserInfo {
 }
 
 interface SearchModalProps {
-  setShowSearch: React.Dispatch<React.SetStateAction<boolean>>;
+  hideModal: () => void;
 }
 
-function SearchModal({ setShowSearch }: SearchModalProps) {
+function SearchModal({ hideModal }: SearchModalProps) {
   const searchRef = useRef<HTMLDivElement>(null);
+  const searchBodyRef = useRef<HTMLDivElement>(null);
   const [error, setError] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
   const [query, setQuery] = useState<string>('');
@@ -22,12 +24,15 @@ function SearchModal({ setShowSearch }: SearchModalProps) {
 
   function handleSearch(e: React.ChangeEvent<HTMLInputElement>) {
     setQuery(e.target.value);
-    setLoading(true);
-    if (e.target.value === '') {
-      setLoading(false);
+    if (e.target.value.length === 0 || e.target.value.length > 16) {
       setSearchResult([]);
+      setError('');
+      setLoading(false);
       return;
     }
+    const timeout = setTimeout(() => {
+      setLoading(true);
+    }, 300);
     instance
       .get(`/search?value=${e.target.value}`)
       .then(res => {
@@ -35,22 +40,27 @@ function SearchModal({ setShowSearch }: SearchModalProps) {
         setError('');
       })
       .catch((err: AxiosError) => {
-        setError(err.message);
+        if (err.response?.status === 404) {
+          setError('해당 유저가 존재하지 않습니다.');
+        } else {
+          setError('오류가 발생하였습니다.');
+        }
       })
       .finally(() => {
+        clearTimeout(timeout);
         setLoading(false);
       });
   }
 
   function handleClickOutside(e: MouseEvent) {
     if (searchRef.current && searchRef.current === (e.target as Node)) {
-      setShowSearch(false);
+      hideModal();
     }
   }
 
   function handleKeydown(e: KeyboardEvent) {
     if ((e.key === 'k' && e.metaKey) || e.key === 'Escape') {
-      setShowSearch(false);
+      hideModal();
     }
   }
 
@@ -63,70 +73,45 @@ function SearchModal({ setShowSearch }: SearchModalProps) {
     };
   }, []);
 
+  const renderError = (
+    query: string,
+    error: string,
+    searchResult: Array<UserInfo>,
+  ) => {
+    const elm = (msg: string) => (
+      <div className="searchModalBodyContents">
+        <div className="searchModalBodyMessage">{msg}</div>
+      </div>
+    );
+    return error.length > 0
+      ? elm(error)
+      : query.length > 16
+      ? elm('닉네임은 16자 이하로 입력해주세요.')
+      : searchResult.length === 0
+      ? elm('유저의 닉네임을 입력해주세요.')
+      : null;
+  };
+
   return (
     <div className="searchModalBackground" ref={searchRef}>
       <div className="searchModal">
-        <div className="searchModalHeader">
-          <input
-            className="searchInput"
-            type="text"
-            value={query}
-            onChange={handleSearch}
-            autoFocus={true}
-            placeholder="게임할 친구들을 찾아봐요~~!"
-          />
-        </div>
-        <div className="searchModalBody">
-          {renderError(query, error, searchResult, loading) ??
-            (query.length > 0 && (
-              <SearchResult
-                searchResult={searchResult}
-                setShowSearch={setShowSearch}
-              />
-            ))}
+        <SearchModalHeader query={query} loading={loading} handleSearch={handleSearch}/>
+        <div className="searchModalBody" ref={searchBodyRef}>
+          {renderError(query, error, searchResult) ?? (
+            <SearchResult
+              searchResult={searchResult}
+              searchBodyRef={searchBodyRef}
+              hideModal={hideModal}
+            />
+          )}
         </div>
         <div className="searchModalFooter">
-          <div>[엔터]: 검색 [방향키]: 네비 [esc]: 닫기 </div>
-          {/* <div> 여기는 푸터랍니다~</div> */}
+          <span> ↩ : 검색 </span> <span> ↑↓ : 이동 </span>{' '}
+          <span> ␛ : 닫기 </span> <span>Powered By 기절초퐁</span>
         </div>
       </div>
     </div>
   );
 }
 
-const renderError = (
-  query: string,
-  error: string,
-  searchResult: Array<UserInfo>,
-  loading: boolean,
-) => {
-  // if (loading) {
-  //   return (
-  //     <div className="search-result-item">
-  //       <div className="search-result-item-nickname">로딩중...</div>
-  //     </div>
-  //   );
-  // }
-  if (error.length > 0) {
-    return (
-      <div className="search-result-item">
-        <div className="search-result-item-nickname">{error}</div>
-      </div>
-    );
-  }
-  if (searchResult.length === 0) {
-    return (
-      <div className="search-result-item">
-        <div className="search-result-item-nickname">
-          {query.length === 0
-            ? '유저의 닉네임을 입력해주세요.'
-            : query.length > 16
-            ? '닉네임은 16자 이하로 입력해주세요.'
-            : ` ${query} 유저가 없습니다.`}
-        </div>
-      </div>
-    );
-  }
-  return null;
-};
 export default SearchModal;
