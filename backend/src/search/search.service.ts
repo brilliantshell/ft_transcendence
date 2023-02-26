@@ -2,6 +2,7 @@ import {
   Injectable,
   InternalServerErrorException,
   Logger,
+  NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Like, Repository } from 'typeorm';
@@ -17,16 +18,23 @@ export class SearchService {
     private readonly usersRepository: Repository<Users>,
   ) {}
 
-  find(value: string) {
+  async find(value: string) {
     try {
-      return this.usersRepository.find({
+      const result = await this.usersRepository.find({
         where: {
           nickname: Like(`${value}%`),
         },
         take: 20,
         select: ['userId', 'nickname', 'isDefaultImage'],
       });
+      if (result.length === 0) {
+        throw new NotFoundException('No user found');
+      }
+      return result;
     } catch (e) {
+      if (e instanceof NotFoundException) {
+        throw e;
+      }
       this.logger.error(e);
       throw new InternalServerErrorException('Failed to search user');
     }
