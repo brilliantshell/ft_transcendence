@@ -1,5 +1,11 @@
+import Search from "../search/Search";
+
 function Header() {
-  return <header>headerheaderheaderheaderheader</header>;
+  return (
+    <header>
+      <Search />
+    </header>
+  );
 }
 
 export default Header;

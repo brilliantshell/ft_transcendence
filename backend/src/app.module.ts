@@ -16,6 +16,7 @@ import { JwtAuthGuard } from './auth/jwt-auth.guard';
 import { LoginModule } from './login/login.module';
 import { ProfileModule } from './profile/profile.module';
 import { RanksModule } from './ranks/ranks.module';
+import { SearchModule } from './search/search.module';
 import { UserModule } from './user/user.module';
 import { UserStatusModule } from './user-status/user-status.module';
 
@@ -43,6 +44,7 @@ import { UserStatusModule } from './user-status/user-status.module';
     LoginModule,
     ProfileModule,
     RanksModule,
+    SearchModule,
     UserModule,
     UserStatusModule,
   ],
