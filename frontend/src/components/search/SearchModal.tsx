@@ -1,6 +1,6 @@
-import { Suspense, useEffect, useRef, useState } from 'react';
-import instance from '../../util/Axios';
+import { useEffect, useRef, useState } from 'react';
 import { AxiosError } from 'axios';
+import instance from '../../util/Axios';
 import SearchModalHeader from './SearchModalHeader';
 import SearchModalBody from './SearchModalBody';
 import SearchModalFooter from './SearchModalFooter';
@@ -49,6 +49,7 @@ function SearchModal({ hideModal }: SearchModalProps) {
         setError(err.response?.status === 404 ? NOT_FOUND_MSG : ERROR_MSG);
       })
       .finally(() => {
+        const { length } = e.target.value;
         if (length === 0 || length > 16) {
           setError(length === 0 ? EMPTY_MSG : LENGTH_ERROR_MSG);
           setSearchResult([]);
@@ -81,15 +82,15 @@ function SearchModal({ hideModal }: SearchModalProps) {
 
   return (
     <div className="searchModalBackground" ref={searchRef}>
-      <div className="searchModal">
+      <div className="searchModal regular">
         <SearchModalHeader
           query={query}
           loading={loading}
           handleSearch={handleSearch}
         />
         {error.length > 0 ? (
-          <div className="searchModalError">
-            <div className="searchModalErrorMessage small">{error}</div>
+          <div className="searchModalError small">
+            <div className="searchModalErrorMessage">{error}</div>
           </div>
         ) : (
           <SearchModalBody searchResult={searchResult} hideModal={hideModal} />

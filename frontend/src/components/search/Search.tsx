@@ -25,7 +25,7 @@ function Search() {
   return (
     <>
       <button
-        className="searchButton"
+        className="searchButton selectNone"
         onClick={() => setShowSearch(!showSearch)}
       >
         <img

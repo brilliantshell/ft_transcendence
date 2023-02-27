@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { UserInfo } from './SearchModal';
 import { Link } from 'react-router-dom';
+import { UserInfo } from './SearchModal';
 
 interface SearchModalBodyProps {
   searchResult: Array<UserInfo>;
@@ -36,10 +36,7 @@ const useKeyPress = function (targetKey: string) {
   return keyPressed;
 };
 
-const SearchModalBody = ({
-  searchResult,
-  hideModal,
-}: SearchModalBodyProps) => {
+const SearchModalBody = ({ searchResult, hideModal }: SearchModalBodyProps) => {
   const nav = useNavigate();
   const downPressed = useKeyPress('ArrowDown');
   const upPressed = useKeyPress('ArrowUp');
@@ -90,7 +87,7 @@ const SearchModalBody = ({
           >
             <img
               src="http://localhost:5173/assets/defaultProfile.svg"
-              className="searchResultImage"
+              className="searchResultImage selectNone"
             />
             {/* FIXME: <img src={user.isDefaultImage ? 'http://localhost:5173/assets/defaultProfile'  : `http://localhost:3000/asset/profile-image/${user.userId}`}/> */}
             <span className="searchResultNickname">{user.nickname}</span>
