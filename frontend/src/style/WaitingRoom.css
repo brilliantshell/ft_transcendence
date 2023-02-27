@@ -1,0 +1,91 @@
+@font-face {
+  font-family: 'DungGeunMo';
+  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_six@1.2/DungGeunMo.woff')
+    format('woff');
+  font-weight: normal;
+  font-style: normal;
+}
+
+.waitingRoom {
+  aspect-ratio: 5 / 4;
+  display: grid;
+  font-family: 'DungGeunMo';
+  grid-template-rows: 25% 1fr;
+  min-height: 700px;
+  min-width: 600px;
+  width: 60%;
+}
+
+.gameStartButton {
+  font-family: 'DungGeunMo';
+  background-color: var(--secondary);
+  border: none;
+  border-radius: 1rem;
+  box-shadow: 0.5rem 0.5rem var(--primary);
+  color: var(--primary);
+  height: 80%;
+  place-self: center;
+  transition: 0.5s;
+  width: 84%;
+}
+
+.gameStartButton:hover {
+  background-color: var(--primary);
+  box-shadow: 0.5rem 0.5rem var(--secondary);
+  color: var(--secondary);
+}
+
+.gamesList {
+  align-items: center;
+  background-color: var(--primary_dark);
+  border-radius: 1rem;
+  display: flex;
+  flex-direction: column;
+  height: 94%;
+  justify-self: center;
+  width: 86%;
+  padding: 1em 0.5em;
+  overflow-y: auto;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE 10+ */
+}
+
+/* Hide scrollbar for Chrome, Safari and Opera */
+.gamesList::-webkit-scrollbar {
+  display: none;
+}
+
+.gameWrapper {
+  display: grid;
+  min-height: 25%;
+  width: 100%;
+}
+
+.gameInProgressButton {
+  align-items: center;
+  background-color: var(--primary);
+  border: none;
+  border-radius: 1rem;
+  color: var(--secondary);
+  display: flex;
+  font-family: 'DungGeunMo';
+  height: 92%;
+  justify-content: space-evenly;
+  padding: 0 10%;
+  place-self: center;
+  transition: 0.8s;
+  width: 96%;
+}
+
+.gameInProgressButton:hover {
+  background-color: var(--primary_light);
+  color: var(--primary_dark);
+}
+
+.gameInProgressButton div {
+  width: 33.33%;
+}
+
+.gameInProgress div:nth-child(2) {
+  color: var(--secondary_light);
+}

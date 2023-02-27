@@ -15,7 +15,7 @@ function Navigation() {
           <NavLink to="/chats">Chats</NavLink>
         </li>
         <li>
-          <NavLink to="/game">Game</NavLink>
+          <NavLink to="/waiting-room">Game</NavLink>
         </li>
       </ul>
       {/* TODO : 아래 로그아웃 */}
