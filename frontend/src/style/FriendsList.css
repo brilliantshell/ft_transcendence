@@ -1,6 +1,9 @@
 div.dropup {
   position: relative;
   display: inline-block;
+  position: absolute;
+  right: 0;
+  bottom: 0;
 }
 
 .dropup-btn {

@@ -1,0 +1,67 @@
+.chats {
+  display: grid;
+  grid-template-columns:
+    1fr minmax(auto, 500px) 5% minmax(auto, 500px)
+    1fr;
+  grid-template-rows: 10% 75% 15%;
+  height: calc(100vh - 50px);
+  width: 100%;
+}
+
+.chatsAll,
+.chatsJoined {
+  background-color: transparent;
+  display: flex;
+  flex-direction: column;
+}
+
+.chatsJoined {
+  grid-row: 2;
+  grid-column: 2;
+}
+
+.chatsAll {
+  grid-row: 2;
+  grid-column: 4;
+}
+
+@media screen and (max-width: 1280px) {
+  .chats {
+    grid-template-columns: 1fr minmax(auto, 500px) 1fr;
+    grid-template-rows: 5% 1fr 5% 1fr 5%;
+  }
+
+  .chatsJoined {
+    grid-row: 2;
+    grid-column: 2;
+  }
+
+  .chatsAll {
+    grid-row: 4;
+    grid-column: 2;
+  }
+}
+
+.chatsBaseHeader {
+  height: 80px;
+  background-color: var(--secondary);
+  border-radius: 10px 10px 0 0;
+}
+
+.chatsBaseBody {
+  height: 100%;
+  background-color: var(--secondary_light);
+  border-radius: 0 0 10px 10px;
+  overflow-y: auto;
+}
+
+.channel {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 10px;
+  border-radius: 10px;
+  margin: 10px;
+  cursor: pointer;
+  transition: 0.2s;
+}
