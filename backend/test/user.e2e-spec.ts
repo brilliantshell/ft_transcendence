@@ -601,6 +601,35 @@ describe('UserModule - /user (e2e)', () => {
       await dataSource.manager.remove(Friends, friendsEntities);
       await dataSource.manager.remove(Users, newUsersEntities);
     });
+
+    it('should emit the count of pending friend requests when a user is connected', async () => {
+      const newUsersEntities = generateUsers(30).filter(
+        ({ userId }) => !allUserIds.includes(userId),
+      );
+      const newFriendRequests: Friends[] = [];
+      let countPending = 0;
+      newUsersEntities.forEach((user, i) => {
+        if (i === 0) {
+          return;
+        }
+        const [newFriend] = generateFriends([user, newUsersEntities[0]]);
+        newFriend.isAccepted === false && countPending++;
+        newFriendRequests.push(newFriend);
+      });
+      await dataSource.manager.save(Users, newUsersEntities);
+      await dataSource.manager.save(Friends, newFriendRequests);
+      const [_, requestDiff] = await Promise.all([
+        clientSockets.push(
+          io(URL, {
+            extraHeaders: {
+              'x-user-id': newUsersEntities[0].userId.toString(),
+            },
+          }),
+        ),
+        listenPromise(clientSockets[2], 'friendRequestDiff'),
+      ]);
+      expect(requestDiff).toEqual({ requestDiff: countPending });
+    });
   });
 
   /*****************************************************************************
