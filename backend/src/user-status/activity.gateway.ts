@@ -27,6 +27,7 @@ import { GameGateway } from '../game/game.gateway';
 import { GameStorage } from '../game/game.storage';
 import { RanksGateway } from '../ranks/ranks.gateway';
 import { UserActivityDto } from './dto/user-status.dto';
+import { UserGateway } from '../user/user.gateway';
 import { UserRelationshipStorage } from './user-relationship.storage';
 import { UserSocketStorage } from './user-socket.storage';
 import { WEBSOCKET_CONFIG } from '../config/constant/constant-config';
@@ -52,6 +53,7 @@ export class ActivityGateway
     private readonly gameGateway: GameGateway,
     private readonly gameStorage: GameStorage,
     private readonly ranksGateway: RanksGateway,
+    private readonly userGateway: UserGateway,
     private readonly userRelationshipStorage: UserRelationshipStorage,
     private readonly userSocketStorage: UserSocketStorage,
   ) {}
@@ -85,6 +87,10 @@ export class ActivityGateway
         this.chatsGateway.joinChannelRoom(channelId, userId);
       }
     }
+    this.userGateway.emitFriendRequestDiff(
+      socketId,
+      this.userRelationshipStorage.countPendingRequests(userId),
+    );
     clientSocket.on('disconnecting', () =>
       this.handleDisconnecting(clientSocket.id, clientSocket.rooms),
     );

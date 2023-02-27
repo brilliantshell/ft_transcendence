@@ -15,7 +15,7 @@ export class UserGateway {
    * @param receiverSocketId
    * @param requestDiff
    */
-  emitFriendRequestDiff(receiverSocketId: SocketId, requestDiff: 1 | -1) {
+  emitFriendRequestDiff(receiverSocketId: SocketId, requestDiff: number) {
     this.server.to(receiverSocketId).emit('friendRequestDiff', { requestDiff });
   }
 

@@ -395,4 +395,17 @@ describe('UserRelationshipService', () => {
       ).length,
     ).toBe(0);
   });
+
+  it('should count the number of pending friend requests', async () => {
+    const receiverId = usersPool[2][0].userId;
+    for (let i = 1; i < usersPool[2].length; i++) {
+      const senderId = usersPool[2][i].userId;
+      await userRelationshipStorage.load(senderId);
+      await userRelationshipStorage.sendFriendRequest(senderId, receiverId);
+    }
+    await userRelationshipStorage.load(receiverId);
+    expect(userRelationshipStorage.countPendingRequests(receiverId)).toBe(
+      usersPool[2].length - 1,
+    );
+  });
 });
