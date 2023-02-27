@@ -148,10 +148,6 @@
   width: 2rem;
 }
 
-.searchResultNickname {
-  font-weight: bold;
-}
-
 .searchResultActive {
   background-color: var(--secondary);
   color: var(--primary_dark);

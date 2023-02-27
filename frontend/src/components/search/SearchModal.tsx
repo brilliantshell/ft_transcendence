@@ -27,7 +27,7 @@ function SearchModal({ hideModal }: SearchModalProps) {
   const [query, setQuery] = useState<string>('');
   const [searchResult, setSearchResult] = useState<Array<UserInfo>>([]);
 
-  function handleSearch(e: React.ChangeEvent<HTMLInputElement>) {
+  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setQuery(e.target.value);
     const { length } = e.target.value;
     if (length === 0 || length > 16) {
@@ -57,19 +57,19 @@ function SearchModal({ hideModal }: SearchModalProps) {
         clearTimeout(timeout);
         setLoading(false);
       });
-  }
+  };
 
-  function handleClickOutside(e: MouseEvent) {
+  const handleClickOutside = (e: MouseEvent) => {
     if (searchRef.current && searchRef.current === (e.target as Node)) {
       hideModal();
     }
-  }
+  };
 
-  function handleKeydown(e: KeyboardEvent) {
+  const handleKeydown = (e: KeyboardEvent) => {
     if ((e.key === 'k' && e.metaKey) || e.key === 'Escape') {
       hideModal();
     }
-  }
+  };
 
   useEffect(() => {
     document.addEventListener('keydown', handleKeydown);

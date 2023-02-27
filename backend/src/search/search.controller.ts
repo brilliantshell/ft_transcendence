@@ -8,6 +8,6 @@ export class SearchController {
 
   @Get()
   search(@Query('value') value: string) {
-    return this.searchService.find(value);
+    return this.searchService.findUsers(value);
   }
 }

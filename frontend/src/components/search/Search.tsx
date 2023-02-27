@@ -5,11 +5,11 @@ import '../../style/Search.css';
 function Search() {
   const [showSearch, setShowSearch] = useState<boolean>(false);
 
-  function handleKeydown(e: KeyboardEvent) {
+  const handleKeydown = (e: KeyboardEvent) => {
     if (e.key === 'k' && e.metaKey) {
       setShowSearch(true);
     }
-  }
+  };
 
   const hideModal = () => {
     setShowSearch(false);

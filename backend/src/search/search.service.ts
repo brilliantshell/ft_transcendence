@@ -18,12 +18,10 @@ export class SearchService {
     private readonly usersRepository: Repository<Users>,
   ) {}
 
-  async find(value: string) {
+  async findUsers(value: string) {
     try {
       const result = await this.usersRepository.find({
-        where: {
-          nickname: Like(`${value}%`),
-        },
+        where: { nickname: Like(`${value}%`) },
         take: 20,
         select: ['userId', 'nickname', 'isDefaultImage'],
       });

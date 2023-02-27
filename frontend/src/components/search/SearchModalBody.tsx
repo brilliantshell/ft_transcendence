@@ -2,41 +2,14 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Link } from 'react-router-dom';
 import { UserInfo } from './SearchModal';
+import { useKeyPress } from './hooks/SearchKeyPress';
 
 interface SearchModalBodyProps {
   searchResult: Array<UserInfo>;
   hideModal: () => void;
 }
 
-const useKeyPress = function (targetKey: string) {
-  const [keyPressed, setKeyPressed] = useState<boolean>(false);
-
-  function downHandler({ key }: { key: string }) {
-    if (key === targetKey) {
-      setKeyPressed(true);
-    }
-  }
-
-  const upHandler = ({ key }: { key: string }) => {
-    if (key === targetKey) {
-      setKeyPressed(false);
-    }
-  };
-
-  useEffect(() => {
-    document.addEventListener('keydown', downHandler);
-    document.addEventListener('keyup', upHandler);
-
-    return () => {
-      document.removeEventListener('keydown', downHandler);
-      document.removeEventListener('keyup', upHandler);
-    };
-  });
-
-  return keyPressed;
-};
-
-const SearchModalBody = ({ searchResult, hideModal }: SearchModalBodyProps) => {
+function SearchModalBody({ searchResult, hideModal }: SearchModalBodyProps) {
   const nav = useNavigate();
   const downPressed = useKeyPress('ArrowDown');
   const upPressed = useKeyPress('ArrowUp');
@@ -57,12 +30,7 @@ const SearchModalBody = ({ searchResult, hideModal }: SearchModalBodyProps) => {
   }, [upPressed]);
 
   useEffect(() => {
-    if (searchResult.length > 0) {
-      bodyRef.current?.children[cursor].scrollIntoView({
-        block: 'nearest',
-      });
-      bodyRef.current?.children[cursor];
-    }
+    bodyRef.current?.children[cursor].scrollIntoView({ block: 'nearest' });
   }, [cursor]);
 
   useEffect(() => {
@@ -90,12 +58,12 @@ const SearchModalBody = ({ searchResult, hideModal }: SearchModalBodyProps) => {
               className="searchResultImage selectNone"
             />
             {/* FIXME: <img src={user.isDefaultImage ? 'http://localhost:5173/assets/defaultProfile'  : `http://localhost:3000/asset/profile-image/${user.userId}`}/> */}
-            <span className="searchResultNickname">{user.nickname}</span>
+            <span className="textBold">{user.nickname}</span>
           </Link>
         );
       })}
     </div>
   );
-};
+}
 
 export default SearchModalBody;
