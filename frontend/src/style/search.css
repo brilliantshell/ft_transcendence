@@ -1,13 +1,12 @@
 .searchButton {
   align-items: center;
-  background-color: var(--primary-dark);
+  background-color: var(--primary_dark);
   border-color: transparent;
   border-radius: 40px;
   border-width: 5px;
-  color: var(--secondary-light);
+  color: var(--secondary_light);
   cursor: pointer;
   display: flex;
-  font-size: 1rem;
   height: 80%;
   justify-content: space-evenly;
   margin-right: 10px;
@@ -28,21 +27,12 @@
   width: 1.5rem;
 }
 
-.searchModalFooter {
-  background-color: #fff;
-  display: flex;
-  font-size: 0.9rem;
-  justify-content: space-between;
-  width: 100%;
-}
-
 .searchModalBackground {
   align-items: center;
   background-color: rgba(0, 0, 0, 0.5);
   display: flex;
   flex-direction: column;
   height: 100vh;
-  /* left: 80px; */
   position: absolute;
   top: 0;
   width: 100%;
@@ -54,7 +44,7 @@
   border-radius: 10px;
   box-shadow: 0px 5px 5px rgba(0, 0, 0, 0.5);
   display: grid;
-  grid-template-rows: 4rem 1fr 2rem;
+  grid-template-rows: 5rem 1fr 2rem;
   max-height: 60%;
   min-height: 30%;
   min-width: 400px; /* FIXME : media-query 로 반응형  */
@@ -65,25 +55,23 @@
 
 .searchModalHeader {
   align-items: center;
-  background: var(--primary-dark);
+  background: var(--primary_dark);
   border-radius: 10px 10px 0 0;
   display: flex;
-  font-size: 1rem;
-  height: 4rem;
+  height: 100%;
+  justify-content: center;
   width: 100%;
 }
 
-/* FIXME: border width and color */
 .searchModalHeaderForm {
   align-items: center;
   background: var(--primary);
-  border: solid 2px var(--secondary);
-  border-radius: 2.5px;
-  color: var(--secondary-light);
+  border: solid 3px var(--secondary);
+  border-radius: 3px;
+  color: var(--secondary_light);
   display: flex;
-  height: calc(100% - 20px);
-  margin: 10px;
-  width: calc(100% - 20px);
+  height: calc(100% - 40px);
+  width: calc(100% - 40px);
 }
 
 .searchModalHeaderIcon {
@@ -115,8 +103,7 @@
 .searchModalHeaderInput {
   background: var(--primary);
   border-width: 0;
-  color: var(--secondary-light);
-  font-size: 1rem;
+  color: var(--secondary_light);
   margin: 0 10px;
   outline: none;
   padding: 0;
@@ -124,19 +111,19 @@
 }
 
 .searchModalHeaderInput::placeholder {
-  color: var(--secondary-light);
+  color: var(--secondary_light);
   filter: opacity(0.5);
   user-select: none;
 }
 
 .searchModalHeaderInput::-moz-placeholder {
-  color: var(--secondary-light);
+  color: var(--secondary_light);
   filter: opacity(0.5);
   user-select: none;
 }
 
 .searchModalHeaderInput::-webkit-input-placeholder {
-  color: var(--secondary-light);
+  color: var(--secondary_light);
   filter: opacity(0.5);
   user-select: none;
 }
@@ -144,7 +131,7 @@
 .searchModalError,
 .searchModalBody {
   align-items: center;
-  background-color: var(--primary-dark);
+  background-color: var(--primary_dark);
   display: flex;
   flex-direction: column;
   height: 100%;
@@ -153,24 +140,8 @@
   z-index: 11;
 }
 
-.searchModalBodyContents {
-  align-items: center;
-  background-color: var(--primary-dark);
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  overflow-y: auto;
-  width: 100%;
-}
-
-.searchModalBodyMessage {
-  align-items: center;
-  color: var(--secondary-light);
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  justify-content: center;
-  width: 100%;
+.searchModalErrorMessage {
+  color: var(--secondary_light);
 }
 
 .searchResult {
@@ -178,7 +149,7 @@
   background-color: var(--primary);
   border-radius: 10px;
   box-shadow: 3px 3px 3px rgba(0, 0, 0, 0.5);
-  color: var(--secondary-light) !important;
+  color: var(--secondary_light) !important;
   display: flex;
   font-size: 1rem;
   margin: 5px;
@@ -203,7 +174,7 @@
 
 .searchResultActive {
   background-color: var(--secondary);
-  color: var(--primary-dark) !important;
+  color: var(--primary_dark) !important;
 }
 
 .searchModalFooter {
@@ -211,13 +182,12 @@
   background-color: var(--primary);
   border-radius: 0 0 10px 10px;
   box-shadow: 0px -10px 10px rgba(0, 0, 0, 0.2);
-  color: var(--secondary-light);
+  color: var(--secondary_light);
   display: flex;
   filter: opacity(0.8);
   font-size: 0.9rem;
-  height: 2rem;
+  height: 100%;
   justify-content: space-between;
-  padding: 0 10px;
   z-index: 12;
 }
 
