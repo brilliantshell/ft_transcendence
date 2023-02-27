@@ -5,7 +5,6 @@
   display: grid;
   grid-template-rows: 15% 1fr 10%;
   min-width: 640px;
-  place-self: center;
   width: 56%;
 }
 
