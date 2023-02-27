@@ -2,9 +2,14 @@
 
 #root {
   display: grid;
+  font-family: 'DungGeunMo', 'Apple SD Gothic Neo', arial, sans-serif;
   grid-template: minmax(3rem, auto) 1fr / minmax(5rem, auto) 1fr;
   height: 100vh;
   text-align: center;
+}
+
+button {
+  font-family: 'DungGeunMo', 'Apple SD Gothic Neo', arial, sans-serif;
 }
 
 header {

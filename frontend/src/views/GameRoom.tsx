@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
+import { useParams } from 'react-router-dom';
 import GameInfo from '../components/GameRoom/GameInfo';
 import GameMenu from '../components/GameRoom/GameMenu';
 import GamePlay from '../components/GameRoom/GamePlay';
 import '../style/GameRoom.css';
 import instance from '../util/Axios';
 
-export default function GameRoom({ gameId }: GameRoomProps) {
+export default function GameRoom() {
+  const { gameId } = useParams();
   const [gameInfo, setGameInfo] = useState<GameInfo | null>({
     isRank: false,
     isLeft: true,
@@ -43,7 +45,7 @@ export default function GameRoom({ gameId }: GameRoomProps) {
             leftPlayer={players[0]}
             rightPlayer={players[1]}
           />
-          <GamePlay />
+          <GamePlay isLeft={gameInfo.isLeft} />
           <GameMenu isOwner={gameInfo.isLeft} />
         </>
       )}
