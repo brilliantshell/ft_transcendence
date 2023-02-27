@@ -1,10 +1,10 @@
+import { InjectRepository } from '@nestjs/typeorm';
 import {
   Injectable,
   InternalServerErrorException,
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
 import { Like, Repository } from 'typeorm';
 
 import { Users } from '../entity/users.entity';
