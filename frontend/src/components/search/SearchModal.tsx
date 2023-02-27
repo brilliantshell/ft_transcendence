@@ -2,8 +2,13 @@ import { Suspense, useEffect, useRef, useState } from 'react';
 import instance from '../../util/Axios';
 import { AxiosError } from 'axios';
 import SearchModalHeader from './SearchModalHeader';
-import SearchResult from './SearchResult';
+import SearchModalBody from './SearchModalBody';
 import SearchModalFooter from './SearchModalFooter';
+
+const EMPTY_MSG = '유저의 닉네임을 입력해주세요.';
+const ERROR_MSG = '오류가 발생하였습니다.';
+const NOT_FOUND_MSG = '해당 유저가 존재하지 않습니다.';
+const LENGTH_ERROR_MSG = '닉네임은 16자 이하로 입력해주세요.';
 
 export interface UserInfo {
   userId: number;
@@ -15,39 +20,19 @@ interface SearchModalProps {
   hideModal: () => void;
 }
 
-const generateErrorElement = (
-  query: string,
-  error: string,
-  searchResult: Array<UserInfo>,
-) => {
-  const elm = (msg: string) => (
-    <div className="searchModalBody">
-      <div className="searchModalBodyContents">
-        <div className="searchModalBodyMessage">{msg}</div>
-      </div>
-    </div>
-  );
-  return error.length > 0
-    ? elm(error)
-    : query.length > 16
-    ? elm('닉네임은 16자 이하로 입력해주세요.')
-    : searchResult.length === 0
-    ? elm('유저의 닉네임을 입력해주세요.')
-    : null;
-};
-
 function SearchModal({ hideModal }: SearchModalProps) {
   const searchRef = useRef<HTMLDivElement>(null);
-  const [error, setError] = useState<string>('');
+  const [error, setError] = useState<string>(EMPTY_MSG);
   const [loading, setLoading] = useState<boolean>(false);
   const [query, setQuery] = useState<string>('');
   const [searchResult, setSearchResult] = useState<Array<UserInfo>>([]);
 
   function handleSearch(e: React.ChangeEvent<HTMLInputElement>) {
     setQuery(e.target.value);
-    if (e.target.value.length === 0 || e.target.value.length > 16) {
+    const { length } = e.target.value;
+    if (length === 0 || length > 16) {
+      setError(length === 0 ? EMPTY_MSG : LENGTH_ERROR_MSG);
       setSearchResult([]);
-      setError('');
       setLoading(false);
       return;
     }
@@ -61,15 +46,14 @@ function SearchModal({ hideModal }: SearchModalProps) {
         setError('');
       })
       .catch((err: AxiosError) => {
-        if (err.response?.status === 404) {
-          setError('해당 유저가 존재하지 않습니다.');
-        } else {
-          setError('오류가 발생하였습니다.');
-        }
+        setError(err.response?.status === 404 ? NOT_FOUND_MSG : ERROR_MSG);
       })
       .finally(() => {
+        if (length === 0 || length > 16) {
+          setError(length === 0 ? EMPTY_MSG : LENGTH_ERROR_MSG);
+          setSearchResult([]);
+        }
         clearTimeout(timeout);
-        setSearchResult([]);
         setLoading(false);
       });
   }
@@ -103,8 +87,12 @@ function SearchModal({ hideModal }: SearchModalProps) {
           loading={loading}
           handleSearch={handleSearch}
         />
-        {generateErrorElement(query, error, searchResult) ?? (
-          <SearchResult searchResult={searchResult} hideModal={hideModal} />
+        {error.length > 0 ? (
+          <div className="searchModalError">
+            <div className="searchModalErrorMessage small">{error}</div>
+          </div>
+        ) : (
+          <SearchModalBody searchResult={searchResult} hideModal={hideModal} />
         )}
         <SearchModalFooter />
       </div>

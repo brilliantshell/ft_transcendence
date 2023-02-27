@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { UserInfo } from './SearchModal';
 import { Link } from 'react-router-dom';
 
-interface SearchResultProps {
+interface SearchModalBodyProps {
   searchResult: Array<UserInfo>;
   hideModal: () => void;
 }
@@ -36,10 +36,10 @@ const useKeyPress = function (targetKey: string) {
   return keyPressed;
 };
 
-const SearchResult = ({
+const SearchModalBody = ({
   searchResult,
   hideModal,
-}: SearchResultProps) => {
+}: SearchModalBodyProps) => {
   const nav = useNavigate();
   const downPressed = useKeyPress('ArrowDown');
   const upPressed = useKeyPress('ArrowUp');
@@ -101,4 +101,4 @@ const SearchResult = ({
   );
 };
 
-export default SearchResult;
+export default SearchModalBody;
