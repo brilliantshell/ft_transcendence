@@ -9,7 +9,11 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   process.env.NODE_ENV === 'production'
     ? app.useWebSocketAdapter(new JwtAuthIoAdapter(app))
-    : app.enableCors({ origin: 'http://localhost:5173', credentials: true });
+    : app.enableCors({
+        exposedHeaders: 'location',
+        credentials: true,
+        origin: 'http://localhost:5173',
+      });
   app.use(cookieParser());
   app.useGlobalPipes(
     new ValidationPipe({
