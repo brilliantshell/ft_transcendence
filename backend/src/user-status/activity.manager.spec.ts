@@ -41,4 +41,27 @@ describe('ActivityService', () => {
     manager.deleteActivity(userId);
     expect(manager.getActivity(userId)).toBeNull();
   });
+
+  /*****************************************************************************
+   *                                                                           *
+   * SECTION : watchedUsers                                                    *
+   *                                                                           *
+   ****************************************************************************/
+
+  it('should return an empty array if no users are being watched', () => {
+    const { userId } = usersEntities[0];
+    expect(manager.getWatchedUsers('profile', userId)).toEqual([]);
+  });
+
+  it('should return an array of watched users by a user', () => {
+    const { userId } = usersEntities[0];
+
+    for (let i = 1; i < 10; i++) {
+      manager.setWatchingUser('profile', usersEntities[i].userId, userId);
+    }
+    expect(manager.getWatchedUsers('profile', userId)).toEqual(
+      usersEntities.slice(1, 10).map(({ userId }) => userId),
+    );
+    // manager.deleteWatchingUser
+  });
 });
