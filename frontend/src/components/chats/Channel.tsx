@@ -8,18 +8,19 @@ interface ChannelProps {
 function Channel({ channel }: ChannelProps) {
   const { channelId, channelName, isDm, memberCount, accessMode, unseenCount } =
     channel;
+
+  const icon =
+    accessMode === 'public' ? '🌎' : accessMode === 'protected' ? '🔐' : '🚧';
+
+  // TODO : Link 대신 적절한 방 입장 요청을 보내야함, protected 면 비번 입력 모달
   return (
-    <Link
-      className={`channel${isDm ? 'Dm' : ''}`}
-      to={`/chats/${channelId}`}
-    >
-      아름다운 채널 컴포넌트
-      <div className="channelName">{channelName}</div>
-      <div className="channelMemberCount">{memberCount} 명~</div>
-      <div className="channelAccessMode">{accessMode}</div>
-      {unseenCount && (
-        <div className="channelUnseenCount">{unseenCount} 개 안읽씹중 </div>
-      )}
+    <Link className={`channel${isDm ? ' Dm' : ''}`} to={`/chats/${channelId}`}>
+      <div className="channelName xlarge">방제: {channelName}</div>
+      <div className="channelUnseen small">
+        {unseenCount === undefined ? '' : `📨 : ${unseenCount}`}
+      </div>
+      <div className="channelMemberCount small">{memberCount} 명</div>
+      <div className="channelAccessMode small">{icon}</div>
     </Link>
   );
 }

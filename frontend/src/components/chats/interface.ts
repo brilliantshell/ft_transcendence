@@ -1,23 +1,13 @@
-
-export interface joinedChannel {
-  channelId: number;
-  isDm: boolean;
-  channelName: string;
-  memberCount: number;
-  accessMode: string;
-  unseenCount: number;
-}
-
-export interface otherChannel {
+export interface ChannelInfo {
   channelId: number;
   channelName: string;
   memberCount: number;
   accessMode: string;
+  isDm?: boolean;
+  unseenCount?: number;
 }
-
-export interface ChannelInfo extends Partial<joinedChannel> {} ;
 
 export interface Channels {
-  joinedChannels: joinedChannel[];
-  otherChannels: otherChannel[];
+  joinedChannels: ChannelInfo[];
+  otherChannels: ChannelInfo[];
 }
