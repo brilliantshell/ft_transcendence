@@ -4,7 +4,7 @@ function Main() {
   return (
     <main>
       <Routers />
-      {/* <FriendsList></FriendsList> */}
+      <FriendsList></FriendsList>
     </main>
   );
 }
