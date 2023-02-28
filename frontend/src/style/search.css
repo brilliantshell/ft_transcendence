@@ -4,7 +4,6 @@
   border-radius: 40px;
   border-color: transparent;
   color: var(--secondary_light);
-  cursor: pointer;
   display: flex;
   height: 80%;
   justify-content: space-evenly;

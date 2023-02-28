@@ -90,7 +90,7 @@ describe('UserService', () => {
           userId: UserId,
           relationship: Relationship | 'normal',
         ) => undefined,
-        emitFriendRequestDiff: (socketId: SocketId, requestDiff: 1 | -1) =>
+        emitFriendRequestDiff: (socketId: SocketId, requestDiff: number) =>
           undefined,
       })
       .overrideProvider(ActivityGateway)

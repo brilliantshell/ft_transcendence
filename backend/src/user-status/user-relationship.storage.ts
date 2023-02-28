@@ -304,6 +304,20 @@ export class UserRelationshipStorage implements OnModuleInit {
     this.users.get(to)?.delete(from);
   }
 
+  /**
+   * @description 받은 친구 요청 개수 반환
+   *
+   * @param userId 유저 id
+   * @returns 받은 친구 요청 개수
+   */
+  countPendingRequests(userId: UserId) {
+    let count = 0;
+    this.users
+      .get(userId)
+      .forEach((status) => status === 'pendingReceiver' && count++);
+    return count;
+  }
+
   /*****************************************************************************
    *                                                                           *
    * NOTE : TEST ONLY                                                          *
