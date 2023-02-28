@@ -35,7 +35,7 @@ export default function GameInProgressButton({
             <img src="../../public/assets/fire.gif" />
           </div>
         ) : (
-          <div className="xlarge">VS</div>
+          <div className="gameVersusText xlarge">VS</div>
         )}
         <div>{rightNickname}</div>
       </button>
