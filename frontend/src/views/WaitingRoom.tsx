@@ -1,12 +1,12 @@
-import GameStartButton from '../components/WaitingRoom/GameStartButton';
-import GamesInProgress from '../components/WaitingRoom/GamesInProgress';
+import GameQueueButton from '../components/WaitingRoom/GameQueueButton';
+import GamesList from '../components/WaitingRoom/GamesList';
 import '../style/WaitingRoom.css';
 
 export default function WaitingRoom() {
   return (
     <div className="waitingRoom">
-      <GameStartButton />
-      <GamesInProgress />
+      <GameQueueButton />
+      <GamesList />
     </div>
   );
 }

@@ -6,6 +6,10 @@
   font-style: normal;
 }
 
+.xxsmall {
+  font-size: 0.64rem;
+}
+
 .xsmall {
   font-size: 0.75rem;
 }

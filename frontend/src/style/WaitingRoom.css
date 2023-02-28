@@ -1,25 +1,19 @@
-@font-face {
-  font-family: 'DungGeunMo';
-  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_six@1.2/DungGeunMo.woff')
-    format('woff');
-  font-weight: normal;
-  font-style: normal;
-}
-
 .waitingRoom {
   aspect-ratio: 5 / 4;
   display: grid;
   font-family: 'DungGeunMo';
   grid-template-rows: 25% 1fr;
+  max-width: 1300px;
   min-height: 700px;
   min-width: 600px;
   width: 60%;
 }
 
-.gameStartButton {
+/* SECTION : GameQueueButton */
+
+.gameQueueButton {
   font-family: 'DungGeunMo';
   background-color: var(--secondary);
-  border: none;
   border-radius: 1rem;
   box-shadow: 0.5rem 0.5rem var(--primary);
   color: var(--primary);
@@ -29,11 +23,13 @@
   width: 84%;
 }
 
-.gameStartButton:hover {
+.gameQueueButton:hover {
   background-color: var(--primary);
   box-shadow: 0.5rem 0.5rem var(--secondary);
   color: var(--secondary);
 }
+
+/* SECTION : GamesList */
 
 .gamesList {
   align-items: center;
@@ -61,14 +57,14 @@
   width: 100%;
 }
 
+/* SECTION : GamesInProgressButton */
+
 .gameInProgressButton {
   align-items: center;
   background-color: var(--primary);
-  border: none;
   border-radius: 1rem;
   color: var(--secondary);
   display: flex;
-  font-family: 'DungGeunMo';
   height: 92%;
   justify-content: space-evenly;
   padding: 0 10%;
@@ -86,6 +82,18 @@
   width: 33.33%;
 }
 
-.gameInProgress div:nth-child(2) {
+.gameInProgressButton img {
+  width: 4rem;
+}
+
+.gameInProgress div:nth-of-type(2) {
   color: var(--secondary_light);
+}
+
+.playerName {
+  display: flex;
+}
+
+.playerName p {
+  vertical-align: middle;
 }

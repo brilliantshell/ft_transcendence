@@ -1,10 +1,51 @@
 import { useEffect, useState } from 'react';
 import instance from '../../util/Axios';
+import GameInProgressButton from './GameInProgressButton';
 
-export default function GamesInProgress() {
+export default function GamesList() {
   const [games, setGames] = useState<
     { id: string; left: string; right: string }[]
   >([
+    {
+      id: 'example',
+      left: 'ghan',
+      right: 'yongjule',
+    },
+    {
+      id: 'example',
+      left: 'eunlee',
+      right: 'hankkim',
+    },
+    {
+      id: 'example',
+      left: 'jiskim',
+      right: 'hannkim',
+    },
+    {
+      id: 'example',
+      left: 'nkim',
+      right: 'jiychoi',
+    },
+    {
+      id: 'example',
+      left: 'ghan',
+      right: 'yongjule',
+    },
+    {
+      id: 'example',
+      left: 'eunlee',
+      right: 'hankkim',
+    },
+    {
+      id: 'example',
+      left: 'jiskim',
+      right: 'hannkim',
+    },
+    {
+      id: 'example',
+      left: 'nkim',
+      right: 'jiychoi',
+    },
     {
       id: 'example',
       left: 'ghan',
@@ -62,11 +103,10 @@ export default function GamesInProgress() {
       {games?.map(game => {
         return (
           <div className="gameWrapper">
-            <button className="gameInProgressButton xxlarge">
-              <div>{game.left}</div>
-              <div className="xlarge">VS</div>
-              <div>{game.right}</div>
-            </button>
+            <GameInProgressButton
+              leftNickname={game.left}
+              rightNickname={game.right}
+            />
           </div>
         );
       })}

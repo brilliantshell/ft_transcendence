@@ -1,6 +1,7 @@
 @import './presets/color.css';
 @import './presets/font.css';
 @import './presets/reset.css';
+@import './presets/general.css';
 @import './App.css';
 @import './UserBase.css';
 @import './User.css';
