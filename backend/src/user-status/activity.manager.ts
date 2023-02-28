@@ -21,6 +21,13 @@ export class ActivityManager {
     this.userActivity.delete(userId);
   }
 
+  /**
+   * @description 특정 UI 에서 특정 유저가 보고 있는 유저 컴포넌트들의 유저 ID 반환
+   *
+   * @param ui 특정 UI
+   * @param watcherId 유저 컴포넌트들을 보고 있는 유저의 ID
+   * @returns 보여지고 있는 유저들의 ID
+   */
   getWatchedUsers(ui: CurrentUi, watcherId: UserId) {
     const watchedMap = this.watchers.get(ui);
     if (watchedMap === undefined) return [];
@@ -31,6 +38,14 @@ export class ActivityManager {
     return watchedUsers;
   }
 
+  /**
+   * @description 특정 UI 에서 어떤 유저가 특정 유저의 유저 컴포넌트를 보는 경우
+   *              보여 지고 있는 유저 컴포넌트의 유저를 보고 있는 유저들 목록에 추가
+   *
+   * @param ui 특정 UI
+   * @param watchedId 보여지고 있는 유저 컴포넌트의 유저 ID
+   * @param watcherId 보고 있는 유저의 ID
+   */
   setWatchingUser(ui: CurrentUi, watchedId: UserId, watcherId: UserId) {
     const watchedMap = this.watchers.get(ui);
     if (watchedMap === undefined) {
@@ -45,6 +60,13 @@ export class ActivityManager {
     watcherSet.add(watcherId);
   }
 
+  /**
+   * @description 유저가 특정 UI 를 떠날 때, 떠나는 유저를 유저 컴포넌트가 보여 지고 있는
+   *              유저들을 보고 있는 유저들 목록에서 삭제
+   *
+   * @param ui 특정 UI
+   * @param watcherId 떠나는 유저의 ID
+   */
   deleteWatchingUser(ui: CurrentUi, watcherId: UserId) {
     const watchedMap = this.watchers.get(ui);
     if (watchedMap === undefined) {
@@ -57,6 +79,12 @@ export class ActivityManager {
     watchedMap.size === 0 && this.watchers.delete(ui);
   }
 
+  /**
+   * @description 친구 토글 리스트를 보고 있는 유저가 보고 있는 유저 컴포넌트들의 유저 ID 반환
+   *
+   * @param watcherId 유저 컴포넌트들을 보고 있는 유저의 ID
+   * @returns 보여지고 있는 유저들의 ID
+   */
   getFriendWatchedUsers(watcherId: UserId) {
     const watchedUsers = [];
     for (const [watchedId, watcherSet] of this.friendWatchers) {
@@ -65,6 +93,13 @@ export class ActivityManager {
     return watchedUsers;
   }
 
+  /**
+   * @description 친구 토글 리스트를 보고 있는 유저가 특정 유저의 유저 컴포넌트를 보는 경우
+   *              보여 지고 있는 유저 컴포넌트의 유저를 보고 있는 유저들 목록에 추가
+   *
+   * @param watchedId 보여지고 있는 유저 컴포넌트의 유저 ID
+   * @param watcherId 보고 있는 유저의 ID
+   */
   setFriendWatchingUser(watchedId: UserId, watcherId: UserId) {
     const watcherSet = this.friendWatchers.get(watchedId);
     watcherSet === undefined
@@ -72,6 +107,11 @@ export class ActivityManager {
       : watcherSet.add(watcherId);
   }
 
+  /**
+   * @description 유저가 친구 토글 리스트를 닫을 때, 떠나는 유저를 유저 컴포넌트가 보여 지고 있는
+   *              유저들을 보고 있는 유저들 목록에서 삭제
+   * @param watcherId 떠나는 유저의 ID
+   */
   deleteFriendWatchingUser(watcherId: UserId) {
     for (const [watchedId, watcherSet] of this.friendWatchers) {
       watcherSet.delete(watcherId);
