@@ -1,0 +1,22 @@
+button {
+  border: none;
+  cursor: pointer;
+  font-family: 'DungGeunMo', 'Apple SD Gothic Neo', arial, sans-serif;
+  user-select: none;
+}
+
+.hoverBox {
+  background-color: rgba(0, 0, 0, 0.6);
+  border-radius: 0.5rem;
+  color: var(--secondary_light);
+  padding: 1rem 1rem;
+  max-width: 7rem;
+}
+
+.hidden {
+  display: none;
+}
+
+.show {
+  display: inline-block;
+}

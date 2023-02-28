@@ -28,8 +28,3 @@ main {
   display: grid;
   justify-items: center;
 }
-
-button {
-  cursor: pointer;
-  font-family: 'DungGeunMo', 'Apple SD Gothic Neo', arial, sans-serif;
-}
