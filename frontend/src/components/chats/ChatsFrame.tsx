@@ -1,4 +1,5 @@
 import '../../style/Chats.css';
+import ChannelCreate from './ChannelCreate';
 
 interface ChatsBaseProps {
   purpose: string;
@@ -14,7 +15,7 @@ function ChatsFrame({ purpose, children }: ChatsBaseProps) {
         ) : (
           <>
             <span>전체 채널 </span>
-            <button className="chatsNewButton">Create!</button>
+            <ChannelCreate />
           </>
         )}
       </div>
