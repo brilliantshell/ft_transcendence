@@ -1,18 +1,39 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
+import { GamePainter } from '../util/GamePainter';
 
-export function useCanvasResize(parentRef: React.RefObject<HTMLDivElement>) {
-  const [width, setWidth] = useState(0);
-  const [height, setHeight] = useState(0);
+export function useGamePlay(
+  canvasRef: React.RefObject<HTMLCanvasElement>,
+  isLeft: boolean,
+  w: number,
+  h: number,
+) {
   useEffect(() => {
-    const handleResize = () => {
-      if (parentRef.current) {
-        setWidth((parentRef.current.offsetWidth * 19) / 20);
-        setHeight((parentRef.current.offsetHeight * 19) / 20);
+    const canvas = canvasRef.current;
+    let painter: GamePainter;
+    if (canvas) {
+      const context = canvas.getContext('2d');
+      if (context && w > 0) {
+        painter = new GamePainter(isLeft, context, { w, h });
+        document.addEventListener('keyup', painter.keyUpHandler.bind(painter));
+        document.addEventListener(
+          'keydown',
+          painter.keyDownHandler.bind(painter),
+        );
+        painter.startGame();
+      }
+    }
+    return () => {
+      if (painter !== undefined) {
+        clearInterval(painter.intervalId);
+        document.removeEventListener(
+          'keyup',
+          painter.keyUpHandler.bind(painter),
+        );
+        document.removeEventListener(
+          'keydown',
+          painter.keyDownHandler.bind(painter),
+        );
       }
     };
-    handleResize();
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-  return { width, height };
+  });
 }

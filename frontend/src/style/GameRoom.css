@@ -1,5 +1,3 @@
-@import './presets/font.css';
-
 .gameRoom {
   aspect-ratio: 16 / 12;
   display: grid;
@@ -11,8 +9,6 @@
 .gameInfo,
 .gameMenu,
 .gamePlay {
-  /* TODO: Remove the line below */
-  border: 1px dashed #000;
   width: 100%;
 }
 
@@ -26,6 +22,9 @@
 
 .gameInfo {
   align-items: center;
+  background: var(--primary);
+  border-radius: 1em 1em 0 0;
+  color: var(--secondary_light);
   display: flex;
   vertical-align: middle;
 }
@@ -44,22 +43,23 @@
 }
 
 .gameType p:first-of-type {
+  color: var(--secondary);
   display: block;
   position: absolute;
-  top: 20%;
+  top: 16%;
   width: 100%;
 }
 
 /* SECTION : GamePlay */
 
 .gamePlay {
+  background: var(--primary);
   display: grid;
 }
 
 #gameBoard {
-  background: #fff;
+  background: #eee;
   border-radius: 1em;
-  overflow: visible;
   place-self: center;
 }
 
@@ -67,14 +67,24 @@
 
 .gameMenu {
   align-items: center;
+  background: var(--primary);
+  border-radius: 0 0 1em 1em;
   display: flex;
   flex-direction: row-reverse;
 }
 
 .gameButton {
+  background: var(--primary_light);
   border: none;
   border-radius: 0.5em;
-  margin: 0 2.5% 0 0;
+  font-family: inherit;
   height: 3em;
+  margin: 0 2.5% 0 0;
+  transition: 0.7s;
   width: 15%;
+}
+
+.gameButton:hover {
+  background: var(--primary_dark);
+  color: var(--secondary);
 }

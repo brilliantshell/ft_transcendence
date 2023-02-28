@@ -11,7 +11,7 @@ function Routers() {
       <Route path="/profile/:id" element={<Profile />} />
       <Route path="/ranks" element={<Ranks />} />
       <Route path="/chats" element={<Chats />} />
-      <Route path="/game/example" element={<GameRoom gameId="example" />} />
+      <Route path="/game/:gameId" element={<GameRoom />} />
     </Routes>
   );
 }
