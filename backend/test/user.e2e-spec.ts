@@ -67,7 +67,7 @@ describe('UserModule - /user (e2e)', () => {
     const dataSources = await createDataSources(TEST_DB, ENTITIES);
     initDataSource = dataSources.initDataSource;
     dataSource = dataSources.dataSource;
-    usersEntities = generateUsers(100);
+    usersEntities = generateUsers(120);
     allUserIds = usersEntities.map(({ userId }) => userId);
     await dataSource.manager.save(Users, usersEntities);
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -970,19 +970,39 @@ describe('UserModule - /user (e2e)', () => {
 
     it('should return nickname, profileImage (HTTP) & online, normal (WS) (both are logged in)', async () => {
       const [requesterId, targetId] = userIds;
-      const [wsMessage, response] = await Promise.all([
-        listenPromise(clientSockets[0], 'userActivity'),
-        request(app.getHttpServer())
-          .get(`/user/${targetId}/info`)
-          .set('x-user-id', requesterId.toString()),
-      ]);
-      expect(wsMessage).toEqual({
+      const [wsActivity, wsRelationship, response, wsErrorOne, wsErrorTwo] =
+        await Promise.allSettled([
+          listenPromise(clientSockets[0], 'userActivity'),
+          listenPromise(clientSockets[0], 'userRelationship'),
+          request(app.getHttpServer())
+            .get(`/user/${targetId}/info`)
+            .set('x-user-id', requesterId.toString()),
+          timeout(500, listenPromise(clientSockets[1], 'userActivity')),
+          timeout(500, listenPromise(clientSockets[1], 'userRelationship')),
+        ]);
+      expect(wsErrorOne.status).toBe('rejected');
+      expect(wsErrorTwo.status).toBe('rejected');
+      expect(wsActivity.status).toBe('fulfilled');
+      expect(wsRelationship.status).toBe('fulfilled');
+      expect(response.status).toBe('fulfilled');
+      if (
+        wsActivity.status === 'rejected' ||
+        wsRelationship.status === 'rejected' ||
+        response.status === 'rejected'
+      ) {
+        fail();
+      }
+      expect(wsActivity.value).toEqual({
         activity: 'online',
         gameId: null,
         userId: targetId,
       });
-      expect(response.status).toEqual(200);
-      expect(response.body).toEqual({
+      expect(wsRelationship.value).toEqual({
+        relationship: 'normal',
+        userId: targetId,
+      });
+      expect(response.value.status).toEqual(200);
+      expect(response.value.body).toEqual({
         nickname: usersEntities[index + 1].nickname,
         isDefaultImage: usersEntities[index + 1].isDefaultImage,
       });
@@ -994,15 +1014,20 @@ describe('UserModule - /user (e2e)', () => {
       await waitForExpect(() => {
         expect(activityManager.getActivity(targetId)).toBeNull();
       });
-      const [wsMessage, response] = await Promise.all([
+      const [wsActivity, wsRelationship, response] = await Promise.all([
         listenPromise(clientSockets[0], 'userActivity'),
+        listenPromise(clientSockets[0], 'userRelationship'),
         request(app.getHttpServer())
           .get(`/user/${targetId}/info`)
           .set('x-user-id', requesterId.toString()),
       ]);
-      expect(wsMessage).toEqual({
+      expect(wsActivity).toEqual({
         activity: 'offline',
         gameId: null,
+        userId: targetId,
+      });
+      expect(wsRelationship).toEqual({
+        relationship: 'normal',
         userId: targetId,
       });
       expect(response.status).toEqual(200);
@@ -1019,15 +1044,31 @@ describe('UserModule - /user (e2e)', () => {
       );
       await dataSource.manager.save(BlockedUsers, blockedUsersEntities);
       await userRelationshipStorage.load(requesterId);
-      const [wsMessage] = await Promise.all([
-        listenPromise(clientSockets[0], 'userActivity'),
-        request(app.getHttpServer())
-          .get(`/user/${targetId}/info`)
-          .set('x-user-id', requesterId.toString()),
-      ]);
-      expect(wsMessage).toEqual({
+      const [wsActivity, wsRelationship, wsErrorOne, wsErrorTwo] =
+        await Promise.allSettled([
+          listenPromise(clientSockets[0], 'userActivity'),
+          listenPromise(clientSockets[0], 'userRelationship'),
+          timeout(500, listenPromise(clientSockets[1], 'userActivity')),
+          timeout(500, listenPromise(clientSockets[1], 'userRelationship')),
+          request(app.getHttpServer())
+            .get(`/user/${targetId}/info`)
+            .set('x-user-id', requesterId.toString()),
+        ]);
+      expect(wsErrorOne.status).toEqual('rejected');
+      expect(wsErrorTwo.status).toEqual('rejected');
+      if (
+        wsActivity.status === 'rejected' ||
+        wsRelationship.status === 'rejected'
+      ) {
+        fail();
+      }
+      expect(wsActivity.value).toEqual({
         activity: 'online',
         gameId: null,
+        userId: targetId,
+      });
+      expect(wsRelationship.value).toEqual({
+        relationship: 'blocker',
         userId: targetId,
       });
     });
@@ -1043,15 +1084,20 @@ describe('UserModule - /user (e2e)', () => {
       await waitForExpect(() => {
         expect(activityManager.getActivity(targetId)).toBeNull();
       });
-      const [wsMessage] = await Promise.all([
+      const [wsActivity, wsRelationship] = await Promise.all([
         listenPromise(clientSockets[1], 'userActivity'),
+        listenPromise(clientSockets[1], 'userRelationship'),
         request(app.getHttpServer())
           .get(`/user/${targetId}/info`)
           .set('x-user-id', requesterId.toString()),
       ]);
-      expect(wsMessage).toEqual({
+      expect(wsActivity).toEqual({
         activity: 'offline',
         gameId: null,
+        userId: targetId,
+      });
+      expect(wsRelationship).toEqual({
+        relationship: 'blocked',
         userId: targetId,
       });
     });
@@ -1064,15 +1110,31 @@ describe('UserModule - /user (e2e)', () => {
       friendsEntities[0].isAccepted = false;
       await dataSource.manager.save(Friends, friendsEntities);
       await userRelationshipStorage.load(requesterId);
-      const [wsMessage] = await Promise.all([
-        listenPromise(clientSockets[0], 'userActivity'),
-        request(app.getHttpServer())
-          .get(`/user/${targetId}/info`)
-          .set('x-user-id', requesterId.toString()),
-      ]);
-      expect(wsMessage).toEqual({
+      const [wsActivity, wsRelationship, wsErrorOne, wsErrorTwo] =
+        await Promise.allSettled([
+          listenPromise(clientSockets[0], 'userActivity'),
+          listenPromise(clientSockets[0], 'userRelationship'),
+          timeout(500, listenPromise(clientSockets[1], 'userActivity')),
+          timeout(500, listenPromise(clientSockets[1], 'userRelationship')),
+          request(app.getHttpServer())
+            .get(`/user/${targetId}/info`)
+            .set('x-user-id', requesterId.toString()),
+        ]);
+      expect(wsErrorOne.status).toEqual('rejected');
+      expect(wsErrorTwo.status).toEqual('rejected');
+      if (
+        wsActivity.status === 'rejected' ||
+        wsRelationship.status === 'rejected'
+      ) {
+        fail();
+      }
+      expect(wsActivity.value).toEqual({
         activity: 'online',
         gameId: null,
+        userId: targetId,
+      });
+      expect(wsRelationship.value).toEqual({
+        relationship: 'pendingSender',
         userId: targetId,
       });
     });
@@ -1089,15 +1151,20 @@ describe('UserModule - /user (e2e)', () => {
       await waitForExpect(() => {
         expect(activityManager.getActivity(targetId)).toBeNull();
       });
-      const [wsMessage] = await Promise.all([
+      const [wsActivity, wsRelationship] = await Promise.all([
         listenPromise(clientSockets[1], 'userActivity'),
+        listenPromise(clientSockets[1], 'userRelationship'),
         request(app.getHttpServer())
           .get(`/user/${targetId}/info`)
           .set('x-user-id', requesterId.toString()),
       ]);
-      expect(wsMessage).toEqual({
+      expect(wsActivity).toEqual({
         activity: 'offline',
         gameId: null,
+        userId: targetId,
+      });
+      expect(wsRelationship).toEqual({
+        relationship: 'pendingReceiver',
         userId: targetId,
       });
     });
@@ -1110,20 +1177,35 @@ describe('UserModule - /user (e2e)', () => {
       friendsEntities[0].isAccepted = true;
       await dataSource.manager.save(Friends, friendsEntities);
       await userRelationshipStorage.load(requesterId);
-      const [wsMessage] = await Promise.all([
-        listenPromise(clientSockets[0], 'userActivity'),
-        request(app.getHttpServer())
-          .get(`/user/${targetId}/info`)
-          .set('x-user-id', requesterId.toString()),
-      ]);
-      expect(wsMessage).toEqual({
+      const [wsActivity, wsRelationship, wsErrorOne, wsErrorTwo] =
+        await Promise.allSettled([
+          listenPromise(clientSockets[0], 'userActivity'),
+          listenPromise(clientSockets[0], 'userRelationship'),
+          timeout(500, listenPromise(clientSockets[1], 'userActivity')),
+          timeout(500, listenPromise(clientSockets[1], 'userRelationship')),
+          request(app.getHttpServer())
+            .get(`/user/${targetId}/info`)
+            .set('x-user-id', requesterId.toString()),
+        ]);
+      expect(wsErrorOne.status).toEqual('rejected');
+      expect(wsErrorTwo.status).toEqual('rejected');
+      if (
+        wsActivity.status === 'rejected' ||
+        wsRelationship.status === 'rejected'
+      ) {
+        fail();
+      }
+      expect(wsActivity.value).toEqual({
         activity: 'online',
         gameId: null,
         userId: targetId,
       });
+      expect(wsRelationship.value).toEqual({
+        relationship: 'friend',
+        userId: targetId,
+      });
     });
 
-    // TODO - GAME TEST
     it('should return online, inGame (WS) (both are logged in)', async () => {
       const [requesterId, targetId] = userIds;
       const gameId = nanoid();
@@ -1152,6 +1234,175 @@ describe('UserModule - /user (e2e)', () => {
         userId: targetId,
       });
       gameStorage.deleteGame(gameId);
+    });
+
+    it("should notify the watcher of the target's activity when the target connects and disconnects (WS)", async () => {
+      userIds.push(usersEntities[index + 2].userId);
+      const [wsConnected, wsConnectError] = await Promise.allSettled([
+        listenPromise(clientSockets[0], 'userActivity'),
+        timeout(500, listenPromise(clientSockets[1], 'userActivity')),
+        clientSockets.push(
+          io(URL, { extraHeaders: { 'x-user-id': userIds[2].toString() } }),
+        ),
+        listenPromise(clientSockets[2], 'connect')
+          .then(() => clientSockets[2].emit('currentUi', { ui: 'profile' }))
+          .then(() =>
+            waitForExpect(() =>
+              expect(activityManager.getActivity(userIds[2])).not.toBeNull(),
+            ),
+          )
+          .then(() =>
+            request(app.getHttpServer())
+              .get(`/user/${userIds[2]}/info`)
+              .set('x-user-id', userIds[0].toString()),
+          ),
+      ]);
+      expect(wsConnectError.status).toEqual('rejected');
+      if (wsConnected.status === 'rejected') {
+        fail();
+      }
+      expect(wsConnected.value).toEqual({
+        activity: 'online',
+        gameId: null,
+        userId: userIds[2],
+      });
+      const [wsDisconnected, wsDisconnectError] = await Promise.allSettled([
+        listenPromise(clientSockets[0], 'userActivity'),
+        timeout(500, listenPromise(clientSockets[1], 'userActivity')),
+        clientSockets[2].disconnect(),
+      ]);
+      expect(wsDisconnectError.status).toEqual('rejected');
+      if (wsDisconnected.status === 'rejected') {
+        fail();
+      }
+      expect(wsDisconnected.value).toEqual({
+        activity: 'offline',
+        gameId: null,
+        userId: userIds[2],
+      });
+      index += 1;
+    });
+
+    it("should not notify the watcher of the target's activity when the request is from friendToggleList and it is closed (WS)", async () => {
+      userIds.push(usersEntities[index + 2].userId);
+      clientSockets[0].emit('friendListOpened');
+      const [wsConnected, wsConnectError] = await Promise.allSettled([
+        listenPromise(clientSockets[0], 'userActivity'),
+        timeout(500, listenPromise(clientSockets[1], 'userActivity')),
+        clientSockets.push(
+          io(URL, { extraHeaders: { 'x-user-id': userIds[2].toString() } }),
+        ),
+        listenPromise(clientSockets[2], 'connect')
+          .then(() => clientSockets[2].emit('currentUi', { ui: 'profile' }))
+          .then(() =>
+            waitForExpect(() =>
+              expect(activityManager.getActivity(userIds[2])).not.toBeNull(),
+            ),
+          )
+          .then(() =>
+            request(app.getHttpServer())
+              .get(`/user/${userIds[2]}/info`)
+              .set('x-user-id', userIds[0].toString()),
+          ),
+      ]);
+      expect(wsConnectError.status).toEqual('rejected');
+      if (wsConnected.status === 'rejected') {
+        fail();
+      }
+      expect(wsConnected.value).toEqual({
+        activity: 'online',
+        gameId: null,
+        userId: userIds[2],
+      });
+      clientSockets[0].emit('friendListClosed');
+      const [wsDisconnectErrorOne, wsDisconnectErrorTwo] =
+        await Promise.allSettled([
+          timeout(500, listenPromise(clientSockets[0], 'userActivity')),
+          timeout(500, listenPromise(clientSockets[1], 'userActivity')),
+          clientSockets[2].disconnect(),
+        ]);
+      expect(wsDisconnectErrorOne.status).toEqual('rejected');
+      expect(wsDisconnectErrorTwo.status).toEqual('rejected');
+      index += 1;
+    });
+
+    it("should still notify the watcher of the target's activity when the request had been made before opening the friendToggleList \
+    and then another request is originated from friendToggleList and it is closed (WS)", async () => {
+      userIds.push(usersEntities[index + 2].userId);
+      const [wsConnected, wsConnectError] = await Promise.allSettled([
+        listenPromise(clientSockets[0], 'userActivity'),
+        timeout(500, listenPromise(clientSockets[1], 'userActivity')),
+        clientSockets.push(
+          io(URL, { extraHeaders: { 'x-user-id': userIds[2].toString() } }),
+        ),
+        listenPromise(clientSockets[2], 'connect')
+          .then(() => clientSockets[2].emit('currentUi', { ui: 'profile' }))
+          .then(() =>
+            waitForExpect(() =>
+              expect(activityManager.getActivity(userIds[2])).not.toBeNull(),
+            ),
+          )
+          .then(() =>
+            request(app.getHttpServer())
+              .get(`/user/${userIds[2]}/info`)
+              .set('x-user-id', userIds[0].toString()),
+          ),
+      ]);
+      expect(wsConnectError.status).toEqual('rejected');
+      if (wsConnected.status === 'rejected') {
+        fail();
+      }
+      expect(wsConnected.value).toEqual({
+        activity: 'online',
+        gameId: null,
+        userId: userIds[2],
+      });
+      clientSockets[0].emit('friendListOpened');
+      const [wsDisconnected, wsDisconnectError] = await Promise.allSettled([
+        listenPromise(clientSockets[0], 'userActivity'),
+        timeout(500, listenPromise(clientSockets[1], 'userActivity')),
+        clientSockets[2].disconnect(),
+      ]);
+      expect(wsDisconnectError.status).toEqual('rejected');
+      if (wsDisconnected.status === 'rejected') {
+        fail();
+      }
+      expect(wsDisconnected.value).toEqual({
+        activity: 'offline',
+        gameId: null,
+        userId: userIds[2],
+      });
+      clientSockets.pop();
+      clientSockets[0].emit('friendListClosed');
+      const [wsReconnected, wsReconnectError] = await Promise.allSettled([
+        listenPromise(clientSockets[0], 'userActivity'),
+        timeout(500, listenPromise(clientSockets[1], 'userActivity')),
+        clientSockets.push(
+          io(URL, { extraHeaders: { 'x-user-id': userIds[2].toString() } }),
+        ),
+        listenPromise(clientSockets[2], 'connect')
+          .then(() => clientSockets[2].emit('currentUi', { ui: 'profile' }))
+          .then(() =>
+            waitForExpect(() =>
+              expect(activityManager.getActivity(userIds[2])).not.toBeNull(),
+            ),
+          )
+          .then(() =>
+            request(app.getHttpServer())
+              .get(`/user/${userIds[2]}/info`)
+              .set('x-user-id', userIds[0].toString()),
+          ),
+      ]);
+      expect(wsReconnectError.status).toEqual('rejected');
+      if (wsReconnected.status === 'rejected') {
+        fail();
+      }
+      expect(wsReconnected.value).toEqual({
+        activity: 'online',
+        gameId: null,
+        userId: userIds[2],
+      });
+      index += 1;
     });
   });
 });

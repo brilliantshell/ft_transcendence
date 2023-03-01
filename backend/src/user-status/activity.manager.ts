@@ -4,6 +4,7 @@ import { CurrentUi, UserId } from '../util/type';
 
 @Injectable()
 export class ActivityManager {
+  readonly friendListOpenedBy: Set<UserId> = new Set();
   private readonly userActivity: Map<UserId, CurrentUi> = new Map();
   private readonly watchers: Map<CurrentUi, Map<UserId, Set<UserId>>> =
     new Map();

@@ -72,7 +72,7 @@ export class ActivityGateway
   async handleConnection(clientSocket: VerifiedSocket) {
     const userId =
       process.env.NODE_ENV === 'development'
-        ? Number(clientSocket.handshake.headers['x-user-id'])
+        ? Math.floor(Number(clientSocket.handshake.headers['x-user-id']))
         : clientSocket.request.user.userId;
     const socketId = clientSocket.id;
     this.userSocketStorage.clients.set(userId, socketId);
@@ -119,12 +119,13 @@ export class ActivityGateway
    */
   @SubscribeMessage('currentUi')
   handleCurrentUi(
-    @ConnectedSocket() clientSocket: Socket,
+    @ConnectedSocket() clientSocket: VerifiedSocket,
     @MessageBody() { ui }: CurrentUiDto,
   ) {
-    const userId = Math.floor(
-      Number(clientSocket.handshake.headers['x-user-id']),
-    );
+    const userId =
+      process.env.NODE_ENV === 'development'
+        ? Math.floor(Number(clientSocket.handshake.headers['x-user-id']))
+        : clientSocket.request.user.userId;
     const prevUi = this.activityManager.getActivity(userId);
     this.activityManager.setActivity(userId, ui);
     prevUi
@@ -134,13 +135,72 @@ export class ActivityGateway
   }
 
   /**
+   * @description 유저가 친구 리스트 토글을 열었을 때 소켓룸 관리
+   *
+   * @param clientSocket 유저의 socket
+   */
+  @SubscribeMessage('friendListOpened')
+  handleFriendListOpened(@ConnectedSocket() clientSocket: VerifiedSocket) {
+    this.activityManager.friendListOpenedBy.add(
+      process.env.NODE_ENV === 'development'
+        ? Math.floor(Number(clientSocket.handshake.headers['x-user-id']))
+        : clientSocket.request.user.userId,
+    );
+  }
+
+  /**
+   * @description 유저가 친구 리스트 토글을 닫았을 때 소켓룸 관리
+   *
+   * @param clientSocket 유저의 socket
+   */
+  @SubscribeMessage('friendListClosed')
+  handleFriendListClosed(@ConnectedSocket() clientSocket: VerifiedSocket) {
+    const userId =
+      process.env.NODE_ENV === 'development'
+        ? Math.floor(Number(clientSocket.handshake.headers['x-user-id']))
+        : clientSocket.request.user.userId;
+    this.activityManager.friendListOpenedBy.delete(userId);
+    const currentUiWatchedList = this.activityManager.getWatchedUsers(
+      this.activityManager.getActivity(userId),
+      userId,
+    );
+    this.activityManager
+      .getFriendWatchedUsers(userId)
+      .forEach(
+        (watchedId) =>
+          !currentUiWatchedList.includes(watchedId) &&
+          this.server.in(clientSocket.id).socketsLeave(`activity-${watchedId}`),
+      );
+    this.activityManager.deleteFriendWatchingUser(userId);
+  }
+
+  /**
    * @description activity 정보 전달
    *
-   * @param requesterSocketId 요청한 유저의 socket id
-   * @param userActivity 요청한 유저의 activity & relationship 정보
+   * @param targetId 요청한 유저의 ID
    */
   emitUserActivity(targetId: UserId) {
-    this.server.emit('userActivity', this.createUserActivityDto(targetId));
+    this.server
+      .to(`activity-${targetId}`)
+      .emit('userActivity', this.createUserActivityDto(targetId));
+  }
+
+  /**
+   * @description 유저가 특정 유저의 유저 컴포넌트를 보면 그 유저의 activity room 에 join
+   *
+   * @param socketId 요청한 유저의 socket id
+   * @param requesterId 요청한 유저의 id
+   * @param targetId activity 변화 시 알림을 받을 유저의 id
+   */
+  joinActivityRoom(socketId: SocketId, requesterId: UserId, targetId: UserId) {
+    this.server.in(socketId).socketsJoin(`activity-${targetId}`);
+    this.activityManager.friendListOpenedBy.has(requesterId)
+      ? this.activityManager.setFriendWatchingUser(targetId, requesterId)
+      : this.activityManager.setWatchingUser(
+          this.activityManager.getActivity(requesterId),
+          targetId,
+          requesterId,
+        );
   }
 
   /*****************************************************************************
@@ -194,19 +254,26 @@ export class ActivityGateway
    * @param prevUi 이전 UI
    */
   private leaveRooms(socketId: SocketId, userId: UserId, prevUi: CurrentUi) {
-    if (prevUi.startsWith('chatRooms-') === true) {
-      this.chatsGateway.leaveRoom(
-        socketId,
-        (prevUi + '-active') as `chatRooms-${ChannelId}-active`,
-      );
-    } else if (prevUi === 'chats') {
+    if (prevUi === 'chats') {
       this.chatsGateway.leaveRoom(socketId, prevUi);
     } else if (prevUi === 'waitingRoom') {
       this.gameGateway.leaveRoom(socketId, 'waitingRoom');
     } else if (prevUi.startsWith('game-')) {
       this.gameGateway.abortIfPlayerLeave(prevUi.replace('game-', ''), userId);
-    } else if (prevUi === 'ranks') {
-      this.ranksGateway.leaveRanksRoom(socketId);
+    } else {
+      if (prevUi === 'ranks') {
+        this.ranksGateway.leaveRanksRoom(socketId);
+      } else if (prevUi.startsWith('chatRooms-') === true) {
+        this.chatsGateway.leaveRoom(
+          socketId,
+          (prevUi + '-active') as `chatRooms-${ChannelId}-active`,
+        );
+      }
+      this.activityManager
+        .getWatchedUsers(prevUi, userId)
+        .forEach((watchedUserId) =>
+          this.server.in(socketId).socketsLeave(`activity-${watchedUserId}`),
+        );
     }
   }
 
