@@ -1,6 +1,10 @@
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+
 import instance from '../../util/Axios';
+import '../../style/Modal.css';
+import { createPortal } from 'react-dom';
+import FormModal from './FormModal';
 
 function CreateForm() {
   const [channelName, setChannelName] = useState<string>('');
@@ -20,7 +24,7 @@ function CreateForm() {
   };
 
   return (
-    <div>
+    <form action="put">
       <div>방 이름</div>
       <input
         type="text"
@@ -45,27 +49,31 @@ function CreateForm() {
           />
         </div>
       )}
-    </div>
+    </form>
   );
 }
 
 function ChannelCreate() {
   const nav = useNavigate();
-  const handleClick = () => {
-    alert('방 만들기 모달. 성공한다면 넌 방으로 갈거란다');
-    instance
-      .post('/chats', { channelName: '방이름', accessMode: 'public' })
-      .then(res => {
-        alert('방 만들기 성공~');
-        nav(`/chats/${res.headers.location}`);
-      })
-      .catch(err => alert(`방 만들기 실패~ ${err.response.status}`));
-  };
+  const [showModal, setShowModal] = useState<boolean>(false);
 
   return (
-    <button className="chatsNewButton" onClick={handleClick}>
-      Create!
-    </button>
+    <>
+      <button
+        className="chatsNewButton"
+        onClick={() => setShowModal(!showModal)}
+      >
+        Create!
+      </button>
+      {showModal &&
+        createPortal(
+          <FormModal
+            form={<CreateForm />}
+            hidden={() => setShowModal(false)}
+          />,
+          document.body,
+        )}
+    </>
   );
 }
 

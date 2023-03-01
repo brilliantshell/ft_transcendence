@@ -1,4 +1,4 @@
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useRecoilValue } from 'recoil';
 import instance from '../../util/Axios';
 import { myIdState } from '../../util/Recoils';
