@@ -274,6 +274,7 @@ export class ActivityGateway
         .forEach((watchedUserId) =>
           this.server.in(socketId).socketsLeave(`activity-${watchedUserId}`),
         );
+      this.activityManager.deleteWatchingUser(prevUi, userId);
     }
   }
 

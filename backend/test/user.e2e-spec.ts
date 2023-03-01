@@ -1404,5 +1404,39 @@ describe('UserModule - /user (e2e)', () => {
       });
       index += 1;
     });
+
+    it('should not notify the previous watcher when the watcher changes its UI (WS)', async () => {
+      userIds.push(usersEntities[index + 2].userId);
+      const [wsConnected] = await Promise.all([
+        listenPromise(clientSockets[0], 'userActivity'),
+        clientSockets.push(
+          io(URL, { extraHeaders: { 'x-user-id': userIds[2].toString() } }),
+        ),
+        listenPromise(clientSockets[2], 'connect')
+          .then(() => clientSockets[2].emit('currentUi', { ui: 'profile' }))
+          .then(() =>
+            waitForExpect(() =>
+              expect(activityManager.getActivity(userIds[2])).not.toBeNull(),
+            ),
+          )
+          .then(() =>
+            request(app.getHttpServer())
+              .get(`/user/${userIds[2]}/info`)
+              .set('x-user-id', userIds[0].toString()),
+          ),
+      ]);
+      expect(wsConnected).toEqual({
+        activity: 'online',
+        gameId: null,
+        userId: userIds[2],
+      });
+      clientSockets[0].emit('currentUi', { ui: 'chats' });
+      const [wsError] = await Promise.allSettled([
+        timeout(500, listenPromise(clientSockets[0], 'userActivity')),
+        clientSockets[2].disconnect(),
+      ]);
+      expect(wsError.status).toEqual('rejected');
+      index += 1;
+    });
   });
 });
