@@ -93,6 +93,11 @@
   grid-area: accessMode;
 }
 
+.channelDm {
+  background-color: var(--secondary);
+  filter: grayscale(100%);
+}
+
 /** SECTION: responsive */
 
 @media screen and (max-width: 1280px) {

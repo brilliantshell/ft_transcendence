@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { AxiosError } from 'axios';
 import { Channels } from '../components/chats/interface';
 import ChatsFrame from '../components/chats/ChatsFrame';
 import ChatsBody from '../components/chats/ChatsBody';
@@ -17,8 +16,10 @@ function Chats() {
   // const [error, setError] = useState<string>('');
 
   useEffect(() => {
-    socket.emit('currentUi', { ui: 'chats' });
     (async () => {
+      socket.disconnected &&
+        (await new Promise((resolve: any) => socket.on('connect', resolve)));
+      socket.emit('currentUi', { ui: 'chats' });
       try {
         const { joinedChannels, otherChannels } = (
           await instance.get<Channels>('/chats')
@@ -35,10 +36,10 @@ function Chats() {
   return (
     <div className="chats">
       <ChatsFrame purpose={'chatsJoined'}>
-        <ChatsBody channels={joinedChannels} />
+        <ChatsBody channels={joinedChannels} isJoined={true} />
       </ChatsFrame>
       <ChatsFrame purpose={'chatsAll'}>
-        <ChatsBody channels={otherChannels} />
+        <ChatsBody channels={otherChannels} isJoined={false} />
       </ChatsFrame>
     </div>
   );
