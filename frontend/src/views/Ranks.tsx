@@ -1,6 +1,6 @@
 import MyRank from '../components/MyRank';
 import RankList from '../components/RankList';
-import socket from '../util/Socket';
+import { socket } from '../util/Socket';
 import { useEffect } from 'react';
 
 function Ranks() {
