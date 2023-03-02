@@ -59,8 +59,8 @@ export class LadderQueueInterceptor implements NestInterceptor {
       this.gameService
         .createLadderGame(this.matchedPair as [UserId, UserId])
         .finally(() => {
-          this.matchedPair.length = 0;
           this.matchedPair.forEach((id) => this.usersInQueue.delete(id));
+          this.matchedPair.length = 0;
         });
     }
   }
