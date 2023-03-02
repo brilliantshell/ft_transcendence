@@ -1,9 +1,8 @@
 import Swal from 'sweetalert2';
 import withReactContent from 'sweetalert2-react-content';
+import '../style/presets/Alert.css'
 
 export const ReactSwal = withReactContent(Swal).mixin({
-  background: '#3d4f73', // primary_dark
-  color: '#fff',
   customClass: {
     confirmButton: 'swal2-confirm-custom',
     denyButton: 'swal2-deny-custom',

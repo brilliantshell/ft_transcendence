@@ -25,20 +25,3 @@ input {
 .show {
   display: inline-block;
 }
-
-/** SECTION - SweetAlert2 */
-
-.swal2-popup {
-  font-family: 'DungGeunMo', 'Apple SD Gothic Neo', arial, sans-serif;
-}
-
-.swal2-confirm-custom {
-  background-color: var(--secondary) !important;
-  color: var(--primary_dark) !important;
-}
-
-.swal2-cancel-custom,
-.swal2-deny-custom {
-  background-color: var(--primary_dark) !important;
-  color: var(--secondary_light) !important;
-}
