@@ -37,31 +37,34 @@ function Channel({ channel, isJoined }: ChannelProps) {
   };
 
   return (
-    <div className={`channel${isDm ? ' channelDm' : ''}`} onClick={handleClick}>
-      <div className="channelName xlarge">방제: {channelName}</div>
-      <div className="channelUnseen small">
-        {unseenCount === undefined ? '' : `📨 : ${unseenCount}`}
+    <>
+      <div
+        className={`channel${isDm ? ' channelDm' : ''}`}
+        onClick={handleClick}
+      >
+        <div className="channelName xlarge">방제: {channelName}</div>
+        <div className="channelUnseen small">
+          {unseenCount === undefined ? '' : `📨 : ${unseenCount}`}
+        </div>
+        <div className="channelMemberCount small">{memberCount} 명</div>
+        <div className="channelAccessMode small">{icon}</div>
       </div>
-      <div className="channelMemberCount small">{memberCount} 명</div>
-      <div className="channelAccessMode small">{icon}</div>
       {showModal &&
         createPortal(
           <FormModal
             title={'비밀번호를 입력해주세요'}
             form={
               <PasswordForm
+                hidden={() => setShowModal(false)}
                 channelId={channelId}
                 myId={myId}
-                hidden={() => setShowModal(false)}
               />
             }
-            hidden={() => {
-              setShowModal(false);
-            }}
+            hidden={() => setShowModal(false)}
           />,
           document.body,
         )}
-    </div>
+    </>
   );
 }
 

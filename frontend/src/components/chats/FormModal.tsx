@@ -26,7 +26,6 @@ function FormModal({ title, form, hidden }: Props) {
   };
 
   const disableSearchKeyDown = (e: KeyboardEvent) => {
-    console.log(1);
     if (e.key === 'k' && e.metaKey) {
       e.stopPropagation();
     }

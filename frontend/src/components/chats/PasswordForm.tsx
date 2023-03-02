@@ -1,34 +1,60 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import instance from '../../util/Axios';
+import { ErrorAlert, SuccessAlert } from '../../util/Alert';
 
-interface Props {
+const PASSWORD_ERR = '비밀번호는 8~16자로 입력해주세요';
+
+interface PasswordFormProps {
+  hidden: () => void;
   myId: number;
   channelId: number;
-  hidden: () => void;
 }
-function PasswordForm({ myId, channelId, hidden }: Props) {
+
+function PasswordForm({ hidden, myId, channelId }: PasswordFormProps) {
   const [password, setPassword] = useState<string | undefined>(undefined);
+  const [error, setError] = useState<string>('empty');
   const nav = useNavigate();
 
   const handlePassword = (e: any) => {
-    setPassword(e.target.value);
+    const { value } = e.target;
+    if (value.length > 7 && value.length < 17) {
+      setPassword(value);
+      setError('none');
+    } else {
+      setError('password');
+    }
   };
 
   const handleSubmit = (e: any) => {
     e.preventDefault();
-    instance
-      .put(`/chats/${channelId}/user/${myId}`, {
-        password,
-      })
-      .then(() => nav(`/chats/${channelId}`))
-      .catch(err => alert(`히히 못들어가! ${err.response.status}`));
+    error === 'none'
+      ? instance
+          .put(`/chats/${channelId}/user/${myId}`, {
+            password,
+          })
+          .then(() => {
+            SuccessAlert('채널 입장 성공', '채널로 이동합니다').then(() => {
+              hidden();
+              nav(`/chats/${channelId}`);
+            });
+          })
+          .catch(err => {
+            console.log(err);
+            ErrorAlert(
+              '채널 입장 실패',
+              err.response.status === 403
+                ? '패스워드가 틀렸을걸?'
+                : '뭔가 문제 있단다', // FIXME
+            );
+          })
+      : ErrorAlert('채널 입장 실패', '패스워드를 확인해주세요');
   };
 
   return (
     <>
       <form className="formModalBody" onSubmit={handleSubmit} id="joinChat">
-        <label htmlFor="password">
+        <label className="formModalField" htmlFor="password">
           비밀번호
           <input
             type="password"
@@ -38,17 +64,11 @@ function PasswordForm({ myId, channelId, hidden }: Props) {
           />
         </label>
       </form>
-      <div>
+      <div className="formModalButtons">
         <button type="submit" form="joinChat">
           확인
         </button>
-        <button
-          onClick={() => {
-            hidden();
-          }}
-        >
-          취소
-        </button>
+        <button onClick={() => hidden()}>취소</button>
       </div>
     </>
   );
