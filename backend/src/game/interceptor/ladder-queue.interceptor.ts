@@ -38,6 +38,9 @@ export class LadderQueueInterceptor implements NestInterceptor {
         throw new NotFoundException(`The user(${userId}) is not in the queue`);
       }
       this.usersInQueue.delete(userId);
+      if (this.matchedPair[0] === userId) {
+        this.matchedPair.length = 0;
+      }
     }
     return next
       .handle()
