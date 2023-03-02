@@ -23,9 +23,9 @@ export class UserService {
     private readonly channelStorage: ChannelStorage,
     private readonly userGateway: UserGateway,
     private readonly userRelationshipStorage: UserRelationshipStorage,
-    private readonly userSocketStorage: UserSocketStorage,
     @InjectRepository(Users)
     private readonly usersRepository: Repository<Users>,
+    private readonly userSocketStorage: UserSocketStorage,
   ) {}
 
   /*****************************************************************************
@@ -237,6 +237,11 @@ export class UserService {
     }
     const requesterSocketId = this.userSocketStorage.clients.get(requesterId);
     if (requesterSocketId !== undefined) {
+      this.activityGateway.joinActivityRoom(
+        requesterSocketId,
+        requesterId,
+        targetId,
+      );
       this.activityGateway.emitUserActivity(targetId);
       this.userGateway.emitUserRelationship(
         requesterSocketId,

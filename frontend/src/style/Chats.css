@@ -1,0 +1,124 @@
+.chats {
+  display: grid;
+  grid-template-columns:
+    1fr minmax(auto, 500px) 5% minmax(auto, 500px)
+    1fr;
+  grid-template-rows: 10% 75% 15%;
+  height: calc(100vh - 50px);
+  width: 100%;
+}
+
+.chatsJoined {
+  grid-row: 2;
+  grid-column: 2;
+}
+
+.chatsAll {
+  grid-row: 2;
+  grid-column: 4;
+}
+
+.chatsFrame {
+  background-color: transparent;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.chatsHeader {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 80px;
+  height: 80px;
+  background-color: var(--secondary);
+  border-radius: 10px 10px 0 0;
+}
+
+.chatsNewButton {
+  position: absolute;
+  top: 50%;
+  right: 10px;
+  transform: translateY(-50%);
+}
+
+.chatsBody {
+  height: calc(100% - 80px);
+  background-color: var(--secondary_light);
+  border-radius: 0 0 10px 10px;
+  overflow-y: auto;
+}
+
+/** SECTION: channel component */
+
+.channel {
+  display: grid;
+  grid-template-columns: repeat(1fr, 3);
+  grid-template-rows: repeat(1fr, 2);
+  grid-template-areas: 'name name name' 'members unseen accessMode';
+  padding: 10px;
+  margin: 10px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: 0.2s;
+  background-color: var(--secondary);
+  text-decoration: none;
+}
+
+.channelName,
+.channelUnseen,
+.channelMemberCount,
+.channelAccessMode {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--primary);
+  background-color: var(--secondary);
+}
+
+.channelName {
+  grid-area: name;
+}
+
+.channelUnseen {
+  grid-area: unseen;
+}
+
+.channelMemberCount {
+  grid-area: members;
+}
+
+.channelAccessMode {
+  grid-area: accessMode;
+}
+
+.channelDm {
+  background-color: var(--secondary);
+  filter: grayscale(100%);
+}
+
+/** SECTION: responsive */
+
+@media screen and (max-width: 1280px) {
+  .chats {
+    display: grid;
+    grid-template-columns: 1fr minmax(auto, 500px) 1fr;
+    grid-template-rows: 5% 1fr 5% 1fr 5%;
+  }
+
+  .chatsJoined {
+    grid-row: 2;
+    grid-column: 2;
+  }
+
+  .chatsAll {
+    grid-row: 4;
+    grid-column: 2;
+  }
+
+  .chatsFrame {
+    min-height: 100%;
+    max-height: 42.5vh;
+  }
+}
