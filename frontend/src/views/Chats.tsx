@@ -1,4 +1,4 @@
-import User from '../components/User';
+import User from '../components/User/User';
 import { useRecoilValue } from 'recoil';
 import { myIdState } from '../util/Recoils';
 
