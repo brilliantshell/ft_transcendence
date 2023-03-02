@@ -16,7 +16,7 @@ function ChannelCreate() {
       {showModal &&
         createPortal(
           <FormModal
-            title={'방을 만들어 보아요~'}
+            title={'채팅방 생성'}
             form={<ChannelCreateForm hidden={() => setShowModal(false)} />}
             hidden={() => setShowModal(false)}
           />,

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { useRecoilValue } from 'recoil';
+import { ErrorAlert } from '../../util/Alert';
 import instance from '../../util/Axios';
 import { myIdState } from '../../util/Recoils';
 import FormModal from './FormModal';
@@ -19,7 +20,6 @@ function Channel({ channel, isJoined }: ChannelProps) {
   const { channelId, channelName, isDm, memberCount, accessMode, unseenCount } =
     channel;
   const nav = useNavigate();
-
   const icon =
     accessMode === 'public' ? '🌎' : accessMode === 'protected' ? '🔐' : '🚧';
 
@@ -33,7 +33,7 @@ function Channel({ channel, isJoined }: ChannelProps) {
       instance
         .put(`/chats/${channelId}/user/${myId}`)
         .then(() => nav(`/chats/${channelId}`))
-        .catch(err => alert(`히히 못들어가! ${err.response.status}`));
+        .catch(() => ErrorAlert('채널 입장 실패', '오류가 발생했습니다.'));
   };
 
   return (

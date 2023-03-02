@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import instance from '../../util/Axios';
 import { ErrorAlert, SuccessAlert } from '../../util/Alert';
 
-const PASSWORD_ERR = '비밀번호는 8~16자로 입력해주세요';
+const PWD_REGEX = /^[a-zA-Z0-9]{8,16}$/;
+const PWD_ERR = '비밀번호는 8~16자로 입력해주세요';
 
 interface PasswordFormProps {
   hidden: () => void;
@@ -13,55 +14,57 @@ interface PasswordFormProps {
 
 function PasswordForm({ hidden, myId, channelId }: PasswordFormProps) {
   const [password, setPassword] = useState<string | undefined>(undefined);
-  const [error, setError] = useState<string>('empty');
+  const [error, setError] = useState<boolean>(false);
   const nav = useNavigate();
 
   const handlePassword = (e: any) => {
     const { value } = e.target;
-    if (value.length > 7 && value.length < 17) {
-      setPassword(value);
-      setError('none');
-    } else {
-      setError('password');
-    }
+    setPassword(value);
+    PWD_REGEX.test(value) ? setError(false) : setError(true);
   };
 
   const handleSubmit = (e: any) => {
     e.preventDefault();
-    error === 'none'
-      ? instance
+    error
+      ? ErrorAlert('채널 입장 실패', '비밀번호를 확인해주세요.')
+      : instance
           .put(`/chats/${channelId}/user/${myId}`, {
             password,
           })
           .then(() => {
-            SuccessAlert('채널 입장 성공', '채널로 이동합니다').then(() => {
+            SuccessAlert('채널 입장 성공', '채널로 이동합니다.').then(() => {
               hidden();
               nav(`/chats/${channelId}`);
             });
           })
           .catch(err => {
-            console.log(err);
             ErrorAlert(
               '채널 입장 실패',
-              err.response.status === 403
-                ? '패스워드가 틀렸을걸?'
-                : '뭔가 문제 있단다', // FIXME
+              err.response?.status === 403
+                ? '비밀번호가 틀렸습니다.'
+                : '오류가 발생했습니다.',
             );
-          })
-      : ErrorAlert('채널 입장 실패', '패스워드를 확인해주세요');
+          });
   };
 
   return (
     <>
       <form className="formModalBody" onSubmit={handleSubmit} id="joinChat">
         <label className="formModalField" htmlFor="password">
-          비밀번호
-          <input
-            type="password"
-            name="password"
-            onChange={handlePassword}
-            autoFocus={true}
-          />
+          <div className="formModalFieldName">비밀번호</div>
+          <div className="formModalFieldValue">
+            <input
+              className="formModalFieldInput"
+              type="password"
+              name="password"
+              autoFocus={true}
+              value={password}
+              onChange={handlePassword}
+            />
+            {error && (
+              <span className="formModalFieldError xsmall"> {PWD_ERR} </span>
+            )}
+          </div>
         </label>
       </form>
       <div className="formModalButtons">
