@@ -1,39 +1,37 @@
-import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
 import GameInfo from '../components/GameRoom/GameInfo';
 import GameMenu from '../components/GameRoom/GameMenu';
 import GamePlay from '../components/GameRoom/GamePlay';
-import '../style/GameRoom.css';
 import instance from '../util/Axios';
+import { useEffect, useState } from 'react';
+import { useParams } from 'react-router-dom';
+import { ErrorAlert } from '../util/Alert';
+import { socket } from '../util/Socket';
+import { useCurrentUi } from '../components/hooks/EmitCurrentUi';
+import '../style/GameRoom.css';
 
 export default function GameRoom() {
   const { gameId } = useParams();
-  const [gameInfo, setGameInfo] = useState<GameInfo | null>({
-    isRank: false,
-    isLeft: true,
-    playerId: 0,
-    playerNickname: 'ghan',
-    opponentId: 0,
-    opponentNickname: 'yongjule',
-  });
-  const [players, setPlayers] = useState<[string, string] | null>([
-    'ghan',
-    'yongjule',
-  ]);
+  const [isConnected, setIsConnected] = useState(socket.connected);
+  const [gameInfo, setGameInfo] = useState<GameInfoData | null>(null);
+  const [players, setPlayers] = useState<[string, string] | null>(null);
+
+  useCurrentUi(isConnected, setIsConnected, `game-${gameId}`);
+
   useEffect(() => {
-    instance;
-    // .get(`/game/${gameId}`)
-    // .then(({ data }) => {
-    //   setGameInfo(data);
-    //   setPlayers(
-    //     data.isLeft
-    //       ? [data.playerNickname, data.opponentNickname]
-    //       : [data.opponentNickname, data.playerNickname],
-    //   );
-    // })
-    // .catch(error => {
-    //   console.error(error); // FIXME : 추후 적절한 에러처리
-    // });
+    isConnected &&
+      instance
+        .get(`/game/${gameId}`)
+        .then(({ data }: { data: GameInfoData }) => {
+          setGameInfo(data);
+          setPlayers(
+            data.isLeft
+              ? [data.playerNickname, data.opponentNickname]
+              : [data.opponentNickname, data.playerNickname],
+          );
+        })
+        .catch(() =>
+          ErrorAlert('게임 정보 요청', '게임 정보를 가져오는데 실패했습니다.'),
+        );
   }, []);
 
   return (
@@ -59,7 +57,7 @@ interface GameRoomProps {
   gameId: string;
 }
 
-interface GameInfo {
+interface GameInfoData {
   isRank: boolean;
   isLeft: boolean;
   playerId: number;

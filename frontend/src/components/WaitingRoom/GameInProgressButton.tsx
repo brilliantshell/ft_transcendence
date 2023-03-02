@@ -2,6 +2,7 @@ import { MouseEvent, useState } from 'react';
 import { HoverBox } from '../common/HoverBox';
 
 export default function GameInProgressButton({
+  gameId,
   leftNickname,
   rightNickname,
 }: GameInProgressButtonProps) {
@@ -51,6 +52,7 @@ export default function GameInProgressButton({
 // SECTION: Interfaces
 
 interface GameInProgressButtonProps {
+  gameId: string;
   leftNickname: string;
   rightNickname: string;
 }

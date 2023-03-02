@@ -16,7 +16,6 @@
   border-radius: 1rem;
   box-shadow: 0.5rem 0.5rem var(--primary);
   color: var(--primary);
-  font-family: 'DungGeunMo';
   height: 80%;
   place-self: center;
   transition: 0.5s;
@@ -27,6 +26,43 @@
   background-color: var(--primary);
   box-shadow: 0.5rem 0.5rem var(--secondary);
   color: var(--secondary);
+}
+
+.gameQueueButtonClicked {
+  background-color: var(--primary);
+  border-radius: 1rem;
+  box-shadow: 0.5rem 0.5rem var(--secondary);
+  color: var(--secondary);
+  height: 80%;
+  place-self: center;
+  transition: 0.5s;
+  width: 84%;
+}
+
+.gameQueueButtonClicked p {
+  margin-bottom: 0.5rem;
+}
+
+.gameQueueButtonClicked span {
+  display: inline-block;
+  animation: wave 1.5s infinite ease-in-out;
+  animation-delay: calc(0.25s * var(--i));
+}
+
+@keyframes wave {
+  0%,
+  40%,
+  100% {
+    transform: translateY(0);
+  }
+  20% {
+    transform: translateY(-1rem);
+  }
+}
+
+.gameQueueButtonText {
+  animation: wave 1.5s infinite ease-in-out;
+  animation-delay: 0.5s;
 }
 
 /* SECTION : GamesList */
@@ -55,6 +91,11 @@
   display: grid;
   min-height: 25%;
   width: 100%;
+}
+
+.noGamesInProgress {
+  color: var(--secondary_dark);
+  margin: 10% 0;
 }
 
 /* SECTION : GamesInProgressButton */
