@@ -1,5 +1,6 @@
 import { Subject } from 'rxjs';
 import { GameMetaData, BallData, PaddlePositions } from './interfaces';
+import { socket } from '../../../util/Socket';
 
 export class GamePainter {
   intervalId: number = 0;
@@ -12,6 +13,7 @@ export class GamePainter {
   private downPressed = false;
 
   constructor(
+    private readonly gameId: string,
     private readonly isLeft: boolean,
     private readonly context: CanvasRenderingContext2D,
     private readonly dimension: { w: number; h: number },
@@ -89,7 +91,13 @@ export class GamePainter {
       this.ballData.dx = Math.random() < 0.5 ? -1 : 1 * initialSpeed;
       this.ballData.dy = Math.random() < 0.5 ? -1 : 1 * initialSpeed;
       if (this.scores[0] === 5 || this.scores[1] === 5) {
-        this.drawResult();
+        const myScore = this.isLeft ? this.scores[0] : this.scores[1];
+        myScore === 5 &&
+          socket.emit('gameComplete', {
+            id: this.gameId,
+            scores: this.scores,
+          });
+        this.drawResult(myScore);
       } else {
         this.intervalId = setInterval(() => this.subject.next(), 10);
       }
@@ -182,10 +190,9 @@ export class GamePainter {
     );
   }
 
-  private drawResult() {
+  private drawResult(myScore: number) {
     this.context.clearRect(0, 0, this.dimension.w, this.dimension.h);
     this.context.fillStyle = '#ccadac';
-    const myScore = this.isLeft ? this.scores[0] : this.scores[1];
     const resultString = myScore === 5 ? 'You won!' : 'You lost...';
     this.context.fillText(
       resultString,

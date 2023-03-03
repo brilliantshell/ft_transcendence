@@ -13,6 +13,7 @@ import '../style/GameRoom.css';
 
 export default function GameRoom() {
   const { gameId } = useParams();
+  if (gameId === undefined) return;
   const location = useLocation();
   const [isConnected, setIsConnected] = useState(socket.connected);
   const [isStarted, setIsStarted] = useState(false);
@@ -22,7 +23,7 @@ export default function GameRoom() {
   const { gameInfo, players } = useRequestGame(
     isConnected,
     isSpectator,
-    gameId ?? 'example',
+    gameId,
     setIsStarted,
   );
   useListenGameEvents(isConnected, isSpectator);
@@ -36,7 +37,11 @@ export default function GameRoom() {
             leftPlayer={players[0]}
             rightPlayer={players[1]}
           />
-          <GamePlay isLeft={gameInfo.isLeft} isStarted={isStarted} />
+          <GamePlay
+            gameId={gameId}
+            isLeft={gameInfo.isLeft}
+            isStarted={isStarted}
+          />
           <GameMenu
             isRank={gameInfo.isRank}
             isOwner={gameInfo.isLeft}

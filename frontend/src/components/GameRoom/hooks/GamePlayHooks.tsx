@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { GamePainter } from '../util/GamePainter';
 
 export function useGamePlay(
+  gameId: string,
   canvasRef: React.RefObject<HTMLCanvasElement>,
   isLeft: boolean,
   w: number,
@@ -13,7 +14,7 @@ export function useGamePlay(
     if (canvas) {
       const context = canvas.getContext('2d');
       if (context && w > 0) {
-        painter = new GamePainter(isLeft, context, { w, h });
+        painter = new GamePainter(gameId, isLeft, context, { w, h });
         document.addEventListener('keyup', painter.keyUpHandler.bind(painter));
         document.addEventListener(
           'keydown',
