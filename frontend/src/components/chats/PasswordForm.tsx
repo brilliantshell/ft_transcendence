@@ -68,10 +68,10 @@ function PasswordForm({ hidden, myId, channelId }: PasswordFormProps) {
         </label>
       </form>
       <div className="formModalButtons">
-        <button type="submit" form="joinChat">
+        <button className='formModalConfirm regular' type="submit" form="createChat" onClick={handleSubmit}>
           확인
         </button>
-        <button onClick={() => hidden()}>취소</button>
+        <button className='formModalCancel regular' onClick={hidden}>취소</button>
       </div>
     </>
   );

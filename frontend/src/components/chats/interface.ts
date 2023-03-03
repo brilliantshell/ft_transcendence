@@ -2,7 +2,7 @@ export interface ChannelInfo {
   channelId: number;
   channelName: string;
   memberCount: number;
-  accessMode: string;
+  accessMode: "public" | "protected" | "private";
   isDm?: boolean;
   unseenCount?: number;
 }

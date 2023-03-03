@@ -9,6 +9,7 @@ interface FormModalProps {
 
 function FormModal({ title, form, hidden }: FormModalProps) {
   const overlayRef = useRef<HTMLDivElement>(null);
+  
 
   const handleClickOutside = (e: MouseEvent) => {
     if (
@@ -45,7 +46,7 @@ function FormModal({ title, form, hidden }: FormModalProps) {
   return (
     <div className="formModal">
       <div className="formModalOverlay" ref={overlayRef} />
-      <div className="formModalContent">
+      <div className="formModalContent formModalAnimation">
         <h2 className="formModalTitle xlarge"> {title}</h2>
         {form}
       </div>

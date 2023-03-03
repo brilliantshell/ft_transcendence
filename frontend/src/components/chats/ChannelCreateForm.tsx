@@ -26,8 +26,6 @@ function ChannelCreateForm({ hidden }: ChannelCreateFormProps) {
   });
   const elemRef = useRef<HTMLFormElement>(null);
   const nav = useNavigate();
-  
-  ConfirmAlert('채널 생성', '채널을 생성하시겠습니까?');
 
   const handleName = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { value } = e.target;
@@ -75,7 +73,7 @@ function ChannelCreateForm({ hidden }: ChannelCreateFormProps) {
         ref={elemRef}
       >
         <label className="formModalField" htmlFor="channelName">
-          <div className="formModalFieldName"> 채널 이름</div>
+          <p className="formModalFieldName"> 채널 이름</p>
           <div className="formModalFieldValue">
             <input
               className="formModalFieldInput"
@@ -98,7 +96,7 @@ function ChannelCreateForm({ hidden }: ChannelCreateFormProps) {
           </div>
         </label>
         <label className="formModalField" htmlFor="accessMode">
-          <div className="formModalFieldName">공개 범위</div>
+          <p className="formModalFieldName">공개 범위</p>
           <div className="formModalFieldValue">
             <select
               className="formModalFieldInput"
@@ -113,7 +111,7 @@ function ChannelCreateForm({ hidden }: ChannelCreateFormProps) {
         </label>
         {accessMode === 'protected' && (
           <label className="formModalField" htmlFor="password">
-            <div className="formModalFieldName">비밀번호</div>
+            <p className="formModalFieldName">비밀번호</p>
             <div className="formModalFieldValue">
               <input
                 className="formModalFieldInput"

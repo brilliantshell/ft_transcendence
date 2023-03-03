@@ -10,8 +10,8 @@ function ChannelCreate() {
 
   return (
     <>
-      <button className="chatsNewButton" onClick={() => setShowModal(true)}>
-        Create!
+      <button className="chatsNewButton xxlarge textBold" onClick={() => setShowModal(true)}>
+        +
       </button>
       {showModal &&
         createPortal(
