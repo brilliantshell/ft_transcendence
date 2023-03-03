@@ -3,10 +3,18 @@ import { Channels } from '../components/chats/interface';
 import ChatsFrame from '../components/chats/ChatsFrame';
 import ChatsBody from '../components/chats/ChatsBody';
 import instance from '../util/Axios';
-import socket from '../util/Socket';
-import '../style/Chats.css';
-import { AxiosError } from 'axios';
 import { ErrorAlert } from '../util/Alert';
+import socket, { listenEvent } from '../util/Socket';
+import '../style/Chats.css';
+
+interface MemberChange {
+  channelId: number;
+  memberCountDiff: 1 | -1;
+}
+
+interface MessageArrived {
+  channelId: number;
+}
 
 function Chats() {
   const [joinedChannels, setJoinedChannels] = useState<
@@ -32,6 +40,60 @@ function Chats() {
       }
     })();
   }, []);
+
+  useEffect(() => {
+    listenEvent<MemberChange>('channelUpdated').then(
+      ({ channelId, memberCountDiff }) => {
+        console.log('channelUpdated', channelId, memberCountDiff);
+        let updated = false;
+        setJoinedChannels(prev =>
+          prev.map(channel => {
+            if (channel.channelId === channelId) {
+              updated = true;
+              return {
+                ...channel,
+                memberCount: channel.memberCount + memberCountDiff,
+              };
+            }
+            return channel;
+          }),
+        );
+        !updated &&
+          setOtherChannels(prev =>
+            prev.map(channel =>
+              channel.channelId === channelId
+                ? {
+                    ...channel,
+                    memberCount: channel.memberCount + memberCountDiff,
+                  }
+                : channel,
+            ),
+          );
+      },
+    );
+    return () => {
+      socket.off('channelUpdated');
+    };
+  }, [joinedChannels, otherChannels]);
+
+  useEffect(() => {
+    listenEvent<MessageArrived>('messageArrived').then(({ channelId }) => {
+      console.log('messageArrived', channelId);
+      setJoinedChannels(prev =>
+        prev.map(channel =>
+          channel.channelId === channelId
+            ? {
+                ...channel,
+                unseenCount: (channel.unseenCount as number) + 1,
+              }
+            : channel,
+        ),
+      );
+    });
+    return () => {
+      socket.off('messageArrived');
+    };
+  }, [joinedChannels]);
 
   return (
     <div className="chats">

@@ -130,6 +130,7 @@ export class ChatsService {
     password: string = null,
   ) {
     if (this.channelStorage.getUserRole(channelId, userId) !== null) {
+      this.channelStorage.updateUnseenCount(channelId, userId, true);
       return false;
     }
     const { accessMode } = this.channelStorage.getChannel(channelId);
