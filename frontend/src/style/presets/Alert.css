@@ -6,13 +6,13 @@
 }
 
 /* SECTION : SweetAlert custom css */
-.swal2-confirm-custom {
+.swal2ConfirmCustom {
   background-color: var(--secondary) !important;
   color: var(--primary_dark) !important;
 }
 
-.swal2-cancel-custom,
-.swal2-deny-custom {
-  background-color: var(--primary_dark) !important;
+.swal2CancelCustom,
+.swal2DenyCustom {
+  background-color: var(--primary) !important;
   color: var(--secondary_light) !important;
 }

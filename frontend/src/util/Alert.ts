@@ -4,9 +4,9 @@ import '../style/presets/Alert.css'
 
 export const ReactSwal = withReactContent(Swal).mixin({
   customClass: {
-    confirmButton: 'swal2-confirm-custom',
-    denyButton: 'swal2-deny-custom',
-    cancelButton: 'swal2-cancel-custom',
+    confirmButton: 'swal2ConfirmCustom',
+    denyButton: 'swal2DenyCustom',
+    cancelButton: 'swal2CancelCustom',
   },
 });
 

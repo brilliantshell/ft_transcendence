@@ -130,14 +130,6 @@ table {
 
 /* css reset by google.com */
 
-html,
-body,
-h1,
-input,
-select {
-  font-family: 'Apple SD Gothic Neo', arial, sans-serif;
-}
-
 button {
   margin: 0;
 }
