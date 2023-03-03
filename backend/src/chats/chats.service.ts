@@ -128,13 +128,10 @@ export class ChatsService {
     isInvited: boolean,
     password: string = null,
   ) {
-<<<<<<< HEAD
     if (this.channelStorage.getUserRole(channelId, userId) !== null) {
       this.channelStorage.updateUnseenCount(channelId, userId, true);
       return false;
     }
-=======
->>>>>>> f8e8dbb... 🐛 fix : Chats websocket 에 userId 와 channelId 가 반대로 전달 #195
     const { accessMode } = this.channelStorage.getChannel(channelId);
     if (accessMode === 'public' || isInvited) {
       await this.channelStorage.addUserToChannel(channelId, userId);
