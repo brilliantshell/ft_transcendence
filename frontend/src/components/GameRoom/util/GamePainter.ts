@@ -113,15 +113,16 @@ export class GamePainter {
     if (y + dy < boardEdges.top || y + dy > boardEdges.bottom) {
       this.ballData.dy = -dy;
     }
-    const isPaddleTouched = this.isLeft
-      ? x > paddleEnds.left &&
+    const [leftY, rightY] = this.isLeft ? [myY, opponentY] : [opponentY, myY];
+    const isPaddleTouched =
+      (x > paddleEnds.left &&
         x + dx < paddleEnds.left &&
-        y > myY &&
-        y < myY + paddleW
-      : x < paddleEnds.right &&
+        y > leftY &&
+        y < leftY + paddleW) ||
+      (x < paddleEnds.right &&
         x + dx > paddleEnds.right &&
-        y > opponentY &&
-        y < opponentY + paddleW;
+        y > rightY &&
+        y < rightY + paddleW);
     if (isPaddleTouched) {
       this.ballData.dx = -dx;
       this.accelerate();
