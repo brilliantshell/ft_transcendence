@@ -1,6 +1,6 @@
 import instance from '../util/Axios';
 import { ReactNode, useEffect, useState } from 'react';
-import socket from '../util/Socket';
+import { socket } from '../util/Socket';
 import { Link } from 'react-router-dom';
 
 interface Props {

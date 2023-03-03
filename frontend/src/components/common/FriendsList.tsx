@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import instance from '../../util/Axios';
 import User from '../User';
-import socket from '../../util/Socket';
+import { socket } from '../../util/Socket';
 // 친구 요청 component
 
 function FriendsList() {

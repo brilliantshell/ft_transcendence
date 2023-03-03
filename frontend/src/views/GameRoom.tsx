@@ -1,40 +1,28 @@
-import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
 import GameInfo from '../components/GameRoom/GameInfo';
 import GameMenu from '../components/GameRoom/GameMenu';
 import GamePlay from '../components/GameRoom/GamePlay';
+import { useState } from 'react';
+import { useParams } from 'react-router-dom';
+import { socket } from '../util/Socket';
+import { useCurrentUi } from '../components/hooks/EmitCurrentUi';
+import {
+  useListenGameEvents,
+  useRequestGame,
+} from '../components/GameRoom/hooks/GameDataHooks';
 import '../style/GameRoom.css';
-import instance from '../util/Axios';
 
 export default function GameRoom() {
   const { gameId } = useParams();
-  const [gameInfo, setGameInfo] = useState<GameInfo | null>({
-    isRank: false,
-    isLeft: true,
-    playerId: 0,
-    playerNickname: 'ghan',
-    opponentId: 0,
-    opponentNickname: 'yongjule',
-  });
-  const [players, setPlayers] = useState<[string, string] | null>([
-    'ghan',
-    'yongjule',
-  ]);
-  useEffect(() => {
-    instance;
-    // .get(`/game/${gameId}`)
-    // .then(({ data }) => {
-    //   setGameInfo(data);
-    //   setPlayers(
-    //     data.isLeft
-    //       ? [data.playerNickname, data.opponentNickname]
-    //       : [data.opponentNickname, data.playerNickname],
-    //   );
-    // })
-    // .catch(error => {
-    //   console.error(error); // FIXME : 추후 적절한 에러처리
-    // });
-  }, []);
+  const [isConnected, setIsConnected] = useState(socket.connected);
+  const [isStarted, setIsStarted] = useState(false);
+
+  useCurrentUi(isConnected, setIsConnected, `game-${gameId}`);
+  const { gameInfo, players } = useRequestGame(
+    isConnected,
+    gameId ?? 'example',
+    setIsStarted,
+  );
+  useListenGameEvents(isConnected);
 
   return (
     <div className="gameRoom">
@@ -45,25 +33,14 @@ export default function GameRoom() {
             leftPlayer={players[0]}
             rightPlayer={players[1]}
           />
-          <GamePlay isLeft={gameInfo.isLeft} />
-          <GameMenu isOwner={gameInfo.isLeft} />
+          <GamePlay isLeft={gameInfo.isLeft} isStarted={isStarted} />
+          <GameMenu
+            isRank={gameInfo.isRank}
+            isOwner={gameInfo.isLeft}
+            startGame={() => setIsStarted(true)}
+          />
         </>
       )}
     </div>
   );
-}
-
-// SECTION : Interfaces
-
-interface GameRoomProps {
-  gameId: string;
-}
-
-interface GameInfo {
-  isRank: boolean;
-  isLeft: boolean;
-  playerId: number;
-  playerNickname: string;
-  opponentId: number;
-  opponentNickname: string;
 }

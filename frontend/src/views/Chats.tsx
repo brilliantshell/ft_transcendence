@@ -3,7 +3,7 @@ import { Channels } from '../components/chats/interface';
 import ChatsFrame from '../components/chats/ChatsFrame';
 import ChatsBody from '../components/chats/ChatsBody';
 import instance from '../util/Axios';
-import socket from '../util/Socket';
+import { socket } from '../util/Socket';
 import '../style/Chats.css';
 import { AxiosError } from 'axios';
 import { ErrorAlert } from '../util/Alert';

@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 import { myIdState } from '../util/Recoils';
 import { Link } from 'react-router-dom';
-import socket from '../util/Socket';
+import { socket } from '../util/Socket';
 interface Props {
   userId: number;
 }
