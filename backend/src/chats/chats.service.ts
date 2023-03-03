@@ -101,7 +101,6 @@ export class ChatsService {
    * @description 채널의 멤버 목록 및 DM 차단 여부를 반환
    *
    * @param channelId 요청한 채널의 Id
-   * @param userId 요청한 유저의 Id
    * @returns 채널의 멤버 목록 및 DM 차단 여부
    */
   findChannelMembers(channelId: ChannelId) {
@@ -129,13 +128,10 @@ export class ChatsService {
     isInvited: boolean,
     password: string = null,
   ) {
-    if (this.channelStorage.getUserRole(channelId, userId) !== null) {
-      return false;
-    }
     const { accessMode } = this.channelStorage.getChannel(channelId);
     if (accessMode === 'public' || isInvited) {
       await this.channelStorage.addUserToChannel(channelId, userId);
-      this.chatsGateway.emitMemberJoin(userId, channelId);
+      this.chatsGateway.emitMemberJoin(channelId, userId);
       return true;
     }
     if (accessMode === 'protected') {
@@ -154,7 +150,7 @@ export class ChatsService {
         throw new ForbiddenException('Password is incorrect');
       }
       await this.channelStorage.addUserToChannel(channelId, userId);
-      this.chatsGateway.emitMemberJoin(userId, channelId);
+      this.chatsGateway.emitMemberJoin(channelId, userId);
       return true;
     }
     throw new ForbiddenException('Forbidden to join');
@@ -169,8 +165,8 @@ export class ChatsService {
   async leaveChannel(channelId: ChannelId, userId: UserId) {
     await this.channelStorage.deleteUserFromChannel(channelId, userId);
     return this.chatsGateway.emitMemberLeft(
-      userId,
       channelId,
+      userId,
       this.channelStorage.getUserRole(channelId, userId) === 'owner',
     );
   }
@@ -179,7 +175,6 @@ export class ChatsService {
    * @description 채널의 메시지를 최신순으로 offset 부터 limit만큼 반환
    *
    * @param channelId 요청한 채널의 Id
-   * @param userId 요청한 유저의 Id
    * @param offset 시작 인덱스
    * @param limit 반환할 메시지의 최대 개수
    * @returns 요청한 채널의 메시지 목록
@@ -239,7 +234,7 @@ export class ChatsService {
       this.logger.error(e);
       throw new InternalServerErrorException('Failed to create message');
     }
-    this.chatsGateway.emitNewMessage(senderId, channelId, contents, createdAt);
+    this.chatsGateway.emitNewMessage(channelId, senderId, contents, createdAt);
     this.channelStorage.getChannel(channelId).userRoleMap.forEach((v, id) => {
       const currentUi = this.activityManager.getActivity(id);
       if (currentUi !== null && currentUi !== `chatRooms-${channelId}`) {
@@ -279,7 +274,7 @@ export class ChatsService {
     } else {
       const minutes = now.plus({ minutes: Number(arg) });
       await this.channelStorage.banUser(channelId, targetId, minutes);
-      return this.chatsGateway.emitMemberLeft(targetId, channelId, false);
+      return this.chatsGateway.emitMemberLeft(channelId, targetId, false);
     }
   }
 
