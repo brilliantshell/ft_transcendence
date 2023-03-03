@@ -1,38 +1,28 @@
 import GameInfo from '../components/GameRoom/GameInfo';
 import GameMenu from '../components/GameRoom/GameMenu';
 import GamePlay from '../components/GameRoom/GamePlay';
-import instance from '../util/Axios';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { ErrorAlert } from '../util/Alert';
 import { socket } from '../util/Socket';
 import { useCurrentUi } from '../components/hooks/EmitCurrentUi';
+import {
+  useListenGameEvents,
+  useRequestGame,
+} from '../components/GameRoom/hooks/GameDataHooks';
 import '../style/GameRoom.css';
 
 export default function GameRoom() {
   const { gameId } = useParams();
   const [isConnected, setIsConnected] = useState(socket.connected);
-  const [gameInfo, setGameInfo] = useState<GameInfoData | null>(null);
-  const [players, setPlayers] = useState<[string, string] | null>(null);
+  const [isStarted, setIsStarted] = useState(false);
 
   useCurrentUi(isConnected, setIsConnected, `game-${gameId}`);
-
-  useEffect(() => {
-    isConnected &&
-      instance
-        .get(`/game/${gameId}`)
-        .then(({ data }: { data: GameInfoData }) => {
-          setGameInfo(data);
-          setPlayers(
-            data.isLeft
-              ? [data.playerNickname, data.opponentNickname]
-              : [data.opponentNickname, data.playerNickname],
-          );
-        })
-        .catch(() =>
-          ErrorAlert('게임 정보 요청', '게임 정보를 가져오는데 실패했습니다.'),
-        );
-  }, []);
+  const { gameInfo, players } = useRequestGame(
+    isConnected,
+    gameId ?? 'example',
+    setIsStarted,
+  );
+  useListenGameEvents(isConnected);
 
   return (
     <div className="gameRoom">
@@ -43,25 +33,14 @@ export default function GameRoom() {
             leftPlayer={players[0]}
             rightPlayer={players[1]}
           />
-          <GamePlay isLeft={gameInfo.isLeft} />
-          <GameMenu isOwner={gameInfo.isLeft} />
+          <GamePlay isLeft={gameInfo.isLeft} isStarted={isStarted} />
+          <GameMenu
+            isRank={gameInfo.isRank}
+            isOwner={gameInfo.isLeft}
+            startGame={() => setIsStarted(true)}
+          />
         </>
       )}
     </div>
   );
-}
-
-// SECTION : Interfaces
-
-interface GameRoomProps {
-  gameId: string;
-}
-
-interface GameInfoData {
-  isRank: boolean;
-  isLeft: boolean;
-  playerId: number;
-  playerNickname: string;
-  opponentId: number;
-  opponentNickname: string;
 }
