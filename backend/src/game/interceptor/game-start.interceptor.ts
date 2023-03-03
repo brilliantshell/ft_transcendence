@@ -15,7 +15,7 @@ import { GameService } from '../game.service';
 import { GameStorage } from '../game.storage';
 
 const START_QUEUE_TIMEOUT =
-  process.env.NODE_ENV !== 'production' ? 1000 : 10000;
+  process.env.NODE_ENV !== 'production' ? 2000 : 10000;
 
 @Injectable()
 export class GameStartInterceptor implements NestInterceptor {
@@ -78,19 +78,23 @@ export class GameStartInterceptor implements NestInterceptor {
     gameInfo: GameInfo,
   ) {
     const queue = new ReplaySubject<UserId>(2);
-    queue.pipe(timeout(START_QUEUE_TIMEOUT), bufferCount(2)).subscribe({
-      next: (players: [UserId, UserId]) => {
-        players.forEach((userId) => this.waitingPlayers.delete(userId));
-        this.gameService.startGame(gameId, gameInfo);
-        this.gameSubjectMap.delete(gameId);
-      },
-      error: () => {
-        this.gameService.deleteCancelledGame(gameId);
-        this.gameSubjectMap.delete(gameId);
-        this.waitingPlayers.delete(gameInfo.leftId);
-        this.waitingPlayers.delete(gameInfo.rightId);
-      },
-    });
+    const subscription = queue
+      .pipe(timeout(START_QUEUE_TIMEOUT), bufferCount(2))
+      .subscribe({
+        next: (players: [UserId, UserId]) => {
+          players.forEach((userId) => this.waitingPlayers.delete(userId));
+          this.gameService.startGame(gameId, gameInfo);
+          subscription.unsubscribe();
+          this.gameSubjectMap.delete(gameId);
+        },
+        error: () => {
+          this.gameService.deleteCancelledGame(gameId);
+          subscription.unsubscribe();
+          this.gameSubjectMap.delete(gameId);
+          this.waitingPlayers.delete(gameInfo.leftId);
+          this.waitingPlayers.delete(gameInfo.rightId);
+        },
+      });
     this.gameSubjectMap.set(gameId, queue);
     queue.next(requesterId);
   }
