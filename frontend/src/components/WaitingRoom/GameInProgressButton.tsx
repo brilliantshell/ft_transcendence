@@ -1,11 +1,13 @@
 import { MouseEvent, useState } from 'react';
 import { HoverBox } from '../common/HoverBox';
+import { useNavigate } from 'react-router-dom';
 
 export default function GameInProgressButton({
   gameId,
   leftNickname,
   rightNickname,
 }: GameInProgressButtonProps) {
+  const nav = useNavigate();
   const [isHovered, setIsHovered] = useState(false);
   const [hoverInfoCoords, setHoverInfoCoords] = useState<{
     x: number;
@@ -22,6 +24,9 @@ export default function GameInProgressButton({
   const handleMouseMove = (e: MouseEvent) =>
     setHoverInfoCoords({ x: e.clientX + 8, y: e.clientY + 20 });
 
+  const handleClick = () =>
+    nav(`/game/${gameId}`, { state: { isSpectator: true } });
+
   return (
     <>
       <button
@@ -29,6 +34,7 @@ export default function GameInProgressButton({
         onMouseEnter={handleMouseEnter}
         onMouseMove={handleMouseMove}
         onMouseLeave={handleMouseLeave}
+        onClick={handleClick}
       >
         <div>{leftNickname}</div>
         {isHovered ? (

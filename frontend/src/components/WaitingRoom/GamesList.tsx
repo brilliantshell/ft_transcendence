@@ -16,13 +16,11 @@ export default function GamesList() {
     setGames(games.filter(({ id }) => id !== endedId));
 
   useEffect(() => {
+    socket.on('gameStarted', gameStartedListener);
+    socket.on('gameEnded', gameEndedListener);
     instance
       .get('/game/list')
-      .then(({ data }) => {
-        setGames(data.games);
-        socket.on('gameStarted', gameStartedListener);
-        socket.on('gameEnded', gameEndedListener);
-      })
+      .then(({ data }) => setGames(data.games))
       .catch(() => {
         ErrorAlert(
           '진행 중인 게임 목록',
@@ -30,8 +28,8 @@ export default function GamesList() {
         );
       });
     return () => {
-      socket.off('gameStarted', gameStartedListener);
-      socket.off('gameEnded', gameEndedListener);
+      socket.off('gameStarted');
+      socket.off('gameEnded');
     };
   }, []);
 
