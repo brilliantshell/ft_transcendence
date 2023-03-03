@@ -4,11 +4,14 @@ import { RecoilRoot } from 'recoil';
 import Header from './components/common/Header';
 import Main from './components/common/Main';
 import Navigation from './components/common/Navigation';
+import UserIdInput from './UserIdInput.test';
 import './style/App.css';
 
 function App() {
   return (
     <RecoilRoot>
+      {import.meta.env.DEV === true &&
+        sessionStorage.getItem('x-user-id') === null && <UserIdInput />}
       <BrowserRouter>
         <Header />
         <Navigation />
