@@ -16,6 +16,12 @@ interface MessageArrived {
   channelId: number;
 }
 
+interface ChannelCreated {
+  channelId: number;
+  name: string;
+  accessMode: 'public' | 'protected' | 'private';
+}
+
 function Chats() {
   const [joinedChannels, setJoinedChannels] = useState<
     Channels['joinedChannels']
@@ -42,9 +48,47 @@ function Chats() {
   }, []);
 
   useEffect(() => {
+    listenEvent<ChannelCreated>('channelCreated').then(
+      ({ channelId, name, accessMode }) => {
+        setOtherChannels(prev => {
+          const idx = prev.findIndex(
+            channel =>
+              Intl.Collator('ko').compare(name, channel.channelName) === -1,
+          );
+          return idx === -1
+            ? prev.concat({
+                channelId,
+                channelName: name,
+                accessMode,
+                memberCount: 1,
+              })
+            : [
+                ...prev.slice(0, idx),
+                { channelId, channelName: name, accessMode, memberCount: 1 },
+                ...prev.slice(idx + 1),
+              ];
+        });
+      },
+    );
+    return () => {
+      socket.off('channelCreated');
+    };
+  }, [otherChannels]);
+
+  useEffect(() => {
+    listenEvent<{ channelId: number }>('channelDeleted').then(({ channelId }) =>
+      setOtherChannels(prev =>
+        prev.filter(channel => channel.channelId !== channelId),
+      ),
+    );
+    return () => {
+      socket.off('channelDeleted');
+    };
+  }, [otherChannels]);
+
+  useEffect(() => {
     listenEvent<MemberChange>('channelUpdated').then(
       ({ channelId, memberCountDiff }) => {
-        console.log('channelUpdated', channelId, memberCountDiff);
         let updated = false;
         setJoinedChannels(prev =>
           prev.map(channel => {
@@ -78,17 +122,20 @@ function Chats() {
 
   useEffect(() => {
     listenEvent<MessageArrived>('messageArrived').then(({ channelId }) => {
-      console.log('messageArrived', channelId);
-      setJoinedChannels(prev =>
-        prev.map(channel =>
-          channel.channelId === channelId
-            ? {
-                ...channel,
-                unseenCount: (channel.unseenCount as number) + 1,
-              }
-            : channel,
-        ),
-      );
+      setJoinedChannels(prev => {
+        // find channel and shift to top
+        const channelIdx = prev.findIndex(
+          channel => channel.channelId === channelId,
+        );
+        const ArrivedChannel = prev.splice(channelIdx, 1)[0];
+        return [
+          {
+            ...ArrivedChannel,
+            unseenCount: (ArrivedChannel.unseenCount as number) + 1,
+          },
+          ...prev,
+        ];
+      });
     });
     return () => {
       socket.off('messageArrived');
