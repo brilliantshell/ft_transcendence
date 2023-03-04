@@ -94,7 +94,14 @@ describe('UserService', () => {
           undefined,
       })
       .overrideProvider(ActivityGateway)
-      .useValue({ emitUserActivity: (targetId: UserId) => undefined })
+      .useValue({
+        emitUserActivity: (targetId: UserId) => undefined,
+        joinActivityRoom: (
+          socketId: SocketId,
+          requesterId: UserId,
+          targetId: UserId,
+        ) => undefined,
+      })
       .compile();
 
     await module.init();
@@ -142,11 +149,13 @@ describe('UserService', () => {
       const spies = [
         jest.spyOn(userGateway, 'emitUserRelationship'),
         jest.spyOn(activityGateway, 'emitUserActivity'),
+        jest.spyOn(activityGateway, 'joinActivityRoom'),
       ];
       const [requesterId, targetId] = userIds;
       await service.findProfile(requesterId, targetId);
       expect(spies[0]).toHaveBeenCalled();
       expect(spies[1]).toHaveBeenCalled();
+      expect(spies[2]).toHaveBeenCalled();
     });
   });
 

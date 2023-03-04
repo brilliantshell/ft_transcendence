@@ -1,6 +1,6 @@
 import Swal from 'sweetalert2';
 import withReactContent from 'sweetalert2-react-content';
-import '../style/presets/Alert.css'
+import '../style/presets/Alert.css';
 
 export const ReactSwal = withReactContent(Swal).mixin({
   customClass: {
@@ -16,15 +16,15 @@ export const SuccessAlert = (title: string, text: string) => {
     title,
     text,
   });
-}
+};
 
 export const ErrorAlert = (title: string, text: string) => {
   return ReactSwal.fire({
     icon: 'error',
     title,
-    text,
+    html: `<p>${text}</p>`,
   });
-}
+};
 
 export const ConfirmAlert = (title: string, text: string) => {
   return ReactSwal.fire({
@@ -35,4 +35,4 @@ export const ConfirmAlert = (title: string, text: string) => {
     confirmButtonText: '확인',
     cancelButtonText: '취소',
   });
-}
+};
