@@ -191,7 +191,7 @@ export class GameGateway {
    * @param id 게임 id
    */
   private emitGameEnded(id: GameId) {
-    this.gameStorage.getGame(id).isRank &&
+    this.gameStorage.getGame(id)?.isRank &&
       this.server.to('waitingRoom').emit('gameEnded', { id });
   }
 }
