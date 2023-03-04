@@ -9,7 +9,6 @@ interface ChatsJoinedProps {
   isJoined: boolean;
 }
 
-
 function ChatsBody({ channels, isJoined }: ChatsJoinedProps) {
   return (
     <div className="chatsBody">
