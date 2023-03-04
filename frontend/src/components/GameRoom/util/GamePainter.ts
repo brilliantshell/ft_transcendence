@@ -20,13 +20,8 @@ export class GamePainter {
   ) {
     this.context.font = '4rem DungGeunMo';
     this.metaData = new GameMetaData(dimension);
-    const { midX, midY, initialSpeed, paddleW } = this.metaData;
-    this.ballData = {
-      x: midX,
-      y: midY,
-      dx: Math.random() < 0.5 ? -1 : 1 * initialSpeed,
-      dy: Math.random() < 0.5 ? -1 : 1 * initialSpeed,
-    };
+    const { paddleW } = this.metaData;
+    this.resetBallData();
     this.paddlePositions = {
       myY: (dimension.h - paddleW) / 2,
       opponentY: (dimension.h - paddleW) / 2,
@@ -83,21 +78,11 @@ export class GamePainter {
   private updateScore() {
     const { midX, midY } = this.metaData;
     this.scores[this.ballData.x > midX ? 0 : 1] += 1;
-    this.ballData.x = midX;
-    this.ballData.y = midY;
+    this.resetBallData();
     clearInterval(this.intervalId);
-    const { initialSpeed } = this.metaData;
     setTimeout(() => {
-      this.ballData.dx = Math.random() < 0.5 ? -1 : 1 * initialSpeed;
-      this.ballData.dy = Math.random() < 0.5 ? -1 : 1 * initialSpeed;
       if (this.scores[0] === 5 || this.scores[1] === 5) {
-        const myScore = this.isLeft ? this.scores[0] : this.scores[1];
-        myScore === 5 &&
-          socket.emit('gameComplete', {
-            id: this.gameId,
-            scores: this.scores,
-          });
-        this.drawResult(myScore);
+        this.finishGame();
       } else {
         this.intervalId = setInterval(() => this.subject.next(), 10);
       }
@@ -137,6 +122,16 @@ export class GamePainter {
     }
     this.ballData.x += this.ballData.dx;
     this.ballData.y += this.ballData.dy;
+  }
+
+  private finishGame() {
+    const myScore = this.isLeft ? this.scores[0] : this.scores[1];
+    myScore === 5 &&
+      socket.emit('gameComplete', {
+        id: this.gameId,
+        scores: this.scores,
+      });
+    this.drawResult(myScore);
   }
 
   private drawLine() {
@@ -210,5 +205,14 @@ export class GamePainter {
     if (dy < maxSpeed) {
       this.ballData.dy += dy > 0 ? acceleration : -acceleration;
     }
+  }
+
+  private resetBallData() {
+    this.ballData = {
+      x: this.metaData.midX,
+      y: this.metaData.midY,
+      dx: (Math.random() < 0.5 ? -1 : 1) * this.metaData.initialSpeed,
+      dy: (Math.random() < 0.5 ? -1 : 1) * this.metaData.initialSpeed,
+    };
   }
 }
