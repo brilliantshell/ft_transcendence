@@ -11,3 +11,10 @@ export const myIdState = atom<number>({
     },
   }),
 });
+
+export const gamesInProgressState = atom<
+  { id: string; left: string; right: string }[]
+>({
+  key: 'gamesInProgressState',
+  default: [],
+});
