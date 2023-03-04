@@ -21,7 +21,7 @@ export class GamePainter {
     this.context.font = '4rem DungGeunMo';
     this.metaData = new GameMetaData(dimension);
     const { paddleW } = this.metaData;
-    this.resetBallData();
+    this.ballData = this.resetBallData();
     this.paddlePositions = {
       myY: (dimension.h - paddleW) / 2,
       opponentY: (dimension.h - paddleW) / 2,
@@ -76,9 +76,9 @@ export class GamePainter {
    ****************************************************************************/
 
   private updateScore() {
-    const { midX, midY } = this.metaData;
+    const { midX } = this.metaData;
     this.scores[this.ballData.x > midX ? 0 : 1] += 1;
-    this.resetBallData();
+    this.ballData = this.resetBallData();
     clearInterval(this.intervalId);
     setTimeout(() => {
       if (this.scores[0] === 5 || this.scores[1] === 5) {
@@ -208,7 +208,7 @@ export class GamePainter {
   }
 
   private resetBallData() {
-    this.ballData = {
+    return {
       x: this.metaData.midX,
       y: this.metaData.midY,
       dx: (Math.random() < 0.5 ? -1 : 1) * this.metaData.initialSpeed,
