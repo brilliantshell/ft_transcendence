@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import instance from '../../util/Axios';
 import User from '../User/User';
 import { useSocketOn } from '../hooks/SocketOnHooks';
-import socket from '../../util/Socket';
+import { socket } from '../../util/Socket';
 import { useRecoilValue } from 'recoil';
 import { userActivity, userRelationship } from '../../util/Recoils';
 

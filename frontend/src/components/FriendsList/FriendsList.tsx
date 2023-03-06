@@ -6,6 +6,7 @@ import Content from './Content';
 function FriendsList() {
   const [isClicked, setIsClicked] = useState<boolean>(false);
   const btnOnClick = () => {
+    console.log(isClicked);
     setIsClicked(!isClicked);
   };
 

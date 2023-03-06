@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import socket from '../../util/Socket';
+import { socket } from '../../util/Socket';
 import { userActivity, userRelationship } from '../../util/Recoils';
 import { useSetRecoilState } from 'recoil';
 
