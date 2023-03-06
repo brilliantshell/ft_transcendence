@@ -126,7 +126,7 @@ export class UserService {
    * @returns 친구 목록
    */
   findFriends(userId: UserId): FriendListDto {
-    return { friends: this.userRelationshipStorage.getFriends(userId) };
+    return this.userRelationshipStorage.getFriends(userId);
   }
 
   /**

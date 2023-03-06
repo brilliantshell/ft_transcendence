@@ -10,13 +10,13 @@ function ChannelCreate() {
 
   return (
     <>
-      <button className="chatsNewButton" onClick={() => setShowModal(true)}>
-        Create!
+      <button className="chatsNewButton xxlarge textBold" onClick={() => setShowModal(true)}>
+        +
       </button>
       {showModal &&
         createPortal(
           <FormModal
-            title={'방을 만들어 보아요~'}
+            title={'채팅방 생성'}
             form={<ChannelCreateForm hidden={() => setShowModal(false)} />}
             hidden={() => setShowModal(false)}
           />,

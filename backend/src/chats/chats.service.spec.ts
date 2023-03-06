@@ -367,7 +367,7 @@ describe('ChatsService', () => {
       expect(
         channelStorage.getUser(anotherUserId).has(newChannelId),
       ).toBeTruthy();
-      expect(memberJoinSpy).toBeCalledWith(anotherUserId, newChannelId);
+      expect(memberJoinSpy).toBeCalledWith(newChannelId, anotherUserId);
 
       expect(channelStorage.getUserRole(newChannelId, anotherUserId)).toBe(
         'member',
@@ -390,7 +390,7 @@ describe('ChatsService', () => {
       expect(
         channelStorage.getUser(anotherUserId).has(newChannelId),
       ).toBeTruthy();
-      expect(memberJoinSpy).toBeCalledWith(anotherUserId, newChannelId);
+      expect(memberJoinSpy).toBeCalledWith(newChannelId, anotherUserId);
 
       expect(channelStorage.getUserRole(newChannelId, anotherUserId)).toBe(
         'member',
@@ -433,7 +433,7 @@ describe('ChatsService', () => {
       expect(
         channelStorage.getUser(anotherUserId).has(newChannelId),
       ).toBeTruthy();
-      expect(memberJoinSpy).toBeCalledWith(anotherUserId, newChannelId);
+      expect(memberJoinSpy).toBeCalledWith(newChannelId, anotherUserId);
 
       expect(channelStorage.getUserRole(newChannelId, anotherUserId)).toBe(
         'member',
@@ -471,7 +471,7 @@ describe('ChatsService', () => {
       expect(
         channelStorage.getUser(anotherUserId).has(newChannelId),
       ).toBeTruthy();
-      expect(memberJoinSpy).toBeCalledWith(anotherUserId, newChannelId);
+      expect(memberJoinSpy).toBeCalledWith(newChannelId, anotherUserId);
 
       expect(channelStorage.getUserRole(newChannelId, anotherUserId)).toBe(
         'member',
@@ -513,7 +513,7 @@ describe('ChatsService', () => {
       expect(
         channelStorage.getUser(anotherUserId).has(newChannelId),
       ).toBeFalsy();
-      expect(memberLeftSpy).toBeCalledWith(anotherUserId, newChannelId, false);
+      expect(memberLeftSpy).toBeCalledWith(newChannelId, anotherUserId, false);
 
       expect(
         channelStorage.getUserRole(newChannelId, anotherUserId),
@@ -644,7 +644,7 @@ describe('ChatsService', () => {
     beforeEach(() => {
       newMessageSpy = jest
         .spyOn(chatsGateway, 'emitNewMessage')
-        .mockImplementation((userId, channelId) => {
+        .mockImplementation((channelId, userId) => {
           // NOTE : Access Private Method
           (chatsGateway as any).emitMessageArrived(channelId);
         });
@@ -692,8 +692,8 @@ describe('ChatsService', () => {
       const msg = { message: 'hello message!' };
       await service.createMessage(newChannelId, userId, msg.message);
       expect(newMessageSpy).toBeCalledWith(
-        userId,
         newChannelId,
+        userId,
         msg.message,
         expect.any(DateTime),
       );
@@ -1006,7 +1006,7 @@ describe('ChatsService', () => {
         ),
       ).toBe(-5);
 
-      expect(memberLeftSpy).toBeCalledWith(memberId, newChannelId, false);
+      expect(memberLeftSpy).toBeCalledWith(newChannelId, memberId, false);
     });
   });
 });

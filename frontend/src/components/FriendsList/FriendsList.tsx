@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import socket from '../../util/Socket';
+import { socket } from '../../util/Socket';
 import Content from './Content';
 // TODO :친구 요청 component 만들기
 

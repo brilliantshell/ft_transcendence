@@ -571,11 +571,11 @@ describe('UserModule - /user (e2e)', () => {
         .get(`/user/friends`)
         .set('x-user-id', userIds[0].toString())
         .expect(200)
-        .expect({ friends: [] });
+        .expect({ friends: [], pendingSenders: [], pendingReceivers: [] });
     });
 
     it('some friends', async () => {
-      const newUsersEntities = generateUsers(10).filter(
+      const newUsersEntities = generateUsers(100).filter(
         ({ userId }) => !allUserIds.includes(userId),
       );
       await dataSource.manager.save(Users, newUsersEntities);
@@ -596,7 +596,41 @@ describe('UserModule - /user (e2e)', () => {
         .set('x-user-id', userIds[0].toString())
         .expect(200);
       expect(new Set(response.body.friends)).toEqual(
-        new Set(newUsersEntities.map(({ userId }) => userId)),
+        new Set(
+          newUsersEntities
+            .filter(({ userId }) => {
+              const friend = friendsEntities.find(
+                ({ senderId, receiverId }) =>
+                  userId === senderId || userId === receiverId,
+              );
+              return friend && friend.isAccepted;
+            })
+            .map(({ userId }) => userId),
+        ),
+      );
+      expect(new Set(response.body.pendingSenders)).toEqual(
+        new Set(
+          newUsersEntities
+            .filter(({ userId }) => {
+              const friend = friendsEntities.find(
+                ({ receiverId }) => userId === receiverId,
+              );
+              return friend && !friend.isAccepted;
+            })
+            .map(({ userId }) => userId),
+        ),
+      );
+      expect(new Set(response.body.pendingReceivers)).toEqual(
+        new Set(
+          newUsersEntities
+            .filter(({ userId }) => {
+              const friend = friendsEntities.find(
+                ({ senderId }) => userId === senderId,
+              );
+              return friend && !friend.isAccepted;
+            })
+            .map(({ userId }) => userId),
+        ),
       );
       await dataSource.manager.remove(Friends, friendsEntities);
       await dataSource.manager.remove(Users, newUsersEntities);

@@ -3,8 +3,10 @@ import { Channels } from '../components/chats/interface';
 import ChatsFrame from '../components/chats/ChatsFrame';
 import ChatsBody from '../components/chats/ChatsBody';
 import instance from '../util/Axios';
-import socket from '../util/Socket';
+import { socket } from '../util/Socket';
 import '../style/Chats.css';
+import { AxiosError } from 'axios';
+import { ErrorAlert } from '../util/Alert';
 
 function Chats() {
   const [joinedChannels, setJoinedChannels] = useState<
@@ -13,7 +15,6 @@ function Chats() {
   const [otherChannels, setOtherChannels] = useState<Channels['otherChannels']>(
     [],
   );
-  // const [error, setError] = useState<string>('');
 
   useEffect(() => {
     (async () => {
@@ -26,13 +27,12 @@ function Chats() {
         ).data;
         setJoinedChannels(joinedChannels);
         setOtherChannels(otherChannels);
-      } catch (err: any) {
-        console.log(err);
-        // TODO:  error handling 및 채널이 없을 시 적절한 메시지 렌더링
+      } catch (err) {
+        ErrorAlert('채널 목록 로딩 실패', '오류가 발생했습니다.');
       }
     })();
   }, []);
-  // TODO : 누군가 채널 생성시 socket event 로 추가하기
+
   return (
     <div className="chats">
       <ChatsFrame purpose={'chatsJoined'}>

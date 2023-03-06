@@ -7,6 +7,8 @@ export interface UserProfileDto {
 
 export interface FriendListDto {
   friends: UserId[];
+  pendingSenders: UserId[];
+  pendingReceivers: UserId[];
 }
 
 export interface UserIdDto {

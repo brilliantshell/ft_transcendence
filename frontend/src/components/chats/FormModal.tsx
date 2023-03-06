@@ -1,14 +1,15 @@
 import { ReactNode, useEffect, useRef } from 'react';
 import '../../style/FormModal.css';
 
-interface Props {
+interface FormModalProps {
   title: string;
   form: ReactNode;
   hidden: () => void;
 }
 
-function FormModal({ title, form, hidden }: Props) {
+function FormModal({ title, form, hidden }: FormModalProps) {
   const overlayRef = useRef<HTMLDivElement>(null);
+  
 
   const handleClickOutside = (e: MouseEvent) => {
     if (
@@ -45,8 +46,8 @@ function FormModal({ title, form, hidden }: Props) {
   return (
     <div className="formModal">
       <div className="formModalOverlay" ref={overlayRef} />
-      <div className="formModalContent">
-        <h2 className="formModalTitle large"> {title}</h2>
+      <div className="formModalContent formModalAnimation">
+        <h2 className="formModalTitle xlarge"> {title}</h2>
         {form}
       </div>
     </div>
