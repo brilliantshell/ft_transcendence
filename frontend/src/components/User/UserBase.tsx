@@ -1,7 +1,6 @@
 import instance from '../../util/Axios';
-import { ReactNode, useEffect, useState } from 'react';
+import { memo, ReactNode, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useSocketOn } from '../hooks/SocketOnHooks';
 
 interface Props {
   userId: number;
@@ -34,7 +33,7 @@ function UserBase(props: Props) {
       .catch(reason => {
         console.error(reason);
       });
-  }, []);
+  }, [props.userId]);
 
   // TODO : user?.isDefault 체크하는 걸로 수정
 
@@ -65,4 +64,4 @@ function UserBase(props: Props) {
   );
 }
 
-export default UserBase;
+export default memo(UserBase);

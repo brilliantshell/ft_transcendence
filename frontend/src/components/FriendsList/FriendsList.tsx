@@ -1,19 +1,21 @@
 import { useEffect, useState } from 'react';
-import User from '../User/User';
 import socket from '../../util/Socket';
 import Content from './Content';
 // TODO :친구 요청 component 만들기
-
-// useSocketOn()
 
 function FriendsList() {
   const [isClicked, setIsClicked] = useState<boolean>(false);
   const btnOnClick = () => {
     setIsClicked(!isClicked);
   };
-  //   TODO :isClicked === false면 socket.on('friendRequestDiff')
 
-  useEffect(() => {}, []);
+  useEffect(() => {
+    socket.emit(isClicked ? 'friendListOpened' : 'friendListClosed');
+
+    if (!isClicked) {
+      //   TODO :isClicked === false면 socket.on('friendRequestDiff')
+    }
+  }, [isClicked]);
   return (
     <div className="friendsList">
       <button className="friendsListBtn" onClick={btnOnClick}>

@@ -17,14 +17,13 @@ div.friendsList {
 .friendsListContent {
   display: block;
   position: absolute;
-  background-color: #f1f1f1;
-  min-width: 160px;
+  background-color: var(--secondary);
+  right: 1rem;
   bottom: 50px;
-  z-index: 1;
+  width: auto;
 }
 
 .friendsListContent div {
   color: black;
-  padding: 0.5rem;
-  display: block;
+  /* padding: 0.5rem; */
 }

@@ -28,11 +28,7 @@ function ChatRoom() {
       <User
         userId={25136}
         activity={activityMap.get(25136)}
-        relationship={
-          relationshipMap.get(25136) === undefined
-            ? { userId: 25136, relationship: 'normal' }
-            : relationshipMap.get(25136)
-        }
+        relationship={relationshipMap.get(25136)}
       ></User>
       {/* <User
         userId={72786}

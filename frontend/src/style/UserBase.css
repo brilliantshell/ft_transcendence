@@ -1,5 +1,5 @@
 div.userBase {
-  display: inline-grid;
+  display: grid;
   outline: solid 5px red;
   width: 10rem;
   height: auto;
