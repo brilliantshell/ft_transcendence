@@ -4,6 +4,7 @@ import Profile from '../../views/Profile';
 import Ranks from '../../views/Ranks';
 import Chats from '../../views/Chats';
 import WaitingRoom from '../../views/WaitingRoom';
+import ChatRoom from '../../views/ChatRoom';
 
 function Routers() {
   return (
@@ -14,6 +15,7 @@ function Routers() {
       <Route path="/chats" element={<Chats />} />
       <Route path="/game/:gameId" element={<GameRoom />} />
       <Route path="/waiting-room" element={<WaitingRoom />} />
+      <Route path="/chats/:id" element={<ChatRoom />} />
     </Routes>
   );
 }
