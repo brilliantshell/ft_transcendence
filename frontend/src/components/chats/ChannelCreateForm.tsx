@@ -30,7 +30,9 @@ function ChannelCreateForm({ hideModal }: ChannelCreateFormProps) {
 
   const handleName = (e: React.ChangeEvent<HTMLInputElement>) => {
     e.preventDefault();
-    if (isEnded) return;
+    if (isEnded) {
+      return;
+    }
     const { value } = e.target;
     setChannelName(value);
     value.length > 0 && value.length < 129
