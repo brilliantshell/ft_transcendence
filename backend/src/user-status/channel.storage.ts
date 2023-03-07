@@ -333,9 +333,22 @@ export class ChannelStorage implements OnModuleInit {
    * @param userId 유저 id
    * @param modifiedAt 변경된 시간
    */
-  async updateChannelModifiedAt(channelId: ChannelId, modifiedAt: DateTime) {
+  async updateChannelMessage(
+    channelId: ChannelId,
+    senderId: UserId,
+    contents: string,
+    modifiedAt: DateTime,
+  ) {
     try {
-      await this.channelsRepository.update(channelId, { modifiedAt });
+      await this.dataSource.manager.transaction(async (manager) => {
+        await manager.update(Channels, channelId, { modifiedAt });
+        await manager.insert(Messages, {
+          senderId,
+          channelId,
+          contents,
+          createdAt: modifiedAt,
+        });
+      });
     } catch (e) {
       this.logger.error(e);
       throw new InternalServerErrorException(
