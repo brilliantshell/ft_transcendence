@@ -9,10 +9,10 @@ export default function GameInProgressButton({
 }: GameInProgressButtonProps) {
   const nav = useNavigate();
   const [isHovered, setIsHovered] = useState(false);
-  const [hoverInfoCoords, setHoverInfoCoords] = useState<{
-    x: number;
-    y: number;
-  }>({ x: 0, y: 0 });
+  const [hoverInfoCoords, setHoverInfoCoords] = useState<Coordinates>({
+    x: 0,
+    y: 0,
+  });
 
   const handleMouseEnter = () => setIsHovered(true);
 
@@ -24,8 +24,7 @@ export default function GameInProgressButton({
   const handleMouseMove = (e: MouseEvent) =>
     setHoverInfoCoords({ x: e.clientX + 8, y: e.clientY + 20 });
 
-  const handleClick = () =>
-    nav(`/game/${gameId}`, { state: { isSpectator: true } });
+  const handleClick = () => nav(`/game/${gameId}`);
 
   return (
     <>
@@ -61,4 +60,9 @@ interface GameInProgressButtonProps {
   gameId: string;
   leftNickname: string;
   rightNickname: string;
+}
+
+interface Coordinates {
+  x: number;
+  y: number;
 }

@@ -14,5 +14,5 @@ export function useCanvasResize(parentRef: React.RefObject<HTMLDivElement>) {
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
-  return { width, height };
+  return { w: width, h: height };
 }
