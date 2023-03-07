@@ -1,15 +1,25 @@
-import instance from '../util/Axios';
-import User from './User';
+import instance from '../../util/Axios';
+import User from '../User/User';
 import { useEffect, useState, useMemo } from 'react';
+import socket from '../../util/Socket';
+import { useSocketOn } from '../hooks/SocketOnHooks';
+import { useRecoilValue } from 'recoil';
+import { userActivity, userRelationship } from '../../util/Recoils';
+
 // TODO : 우선 TOP50으로 하고 이후에 수정할 지 고민
 // TODO : websocket 순위 변동 적용 예정
 
 function RankList() {
   const columns = ['Rank', 'User', 'Level'];
+  const activityMap = useRecoilValue(userActivity);
+  const relationshipMap = useRecoilValue(userRelationship);
 
   const [data, setData] = useState<
     Array<{ id: number; ladder: number; rank: number }>
   >([]);
+
+  useSocketOn();
+
   useEffect(() => {
     instance
       .get('/ranks?range=0,50')
@@ -38,7 +48,11 @@ function RankList() {
           <tr key={id}>
             <td>{rank}</td>
             <td>
-              <User userId={id} />
+              <User
+                userId={id}
+                activity={activityMap.get(id)}
+                relationship={relationshipMap.get(id)}
+              />
             </td>
             <td>{ladder}</td>
           </tr>

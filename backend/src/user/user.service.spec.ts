@@ -94,7 +94,14 @@ describe('UserService', () => {
           undefined,
       })
       .overrideProvider(ActivityGateway)
-      .useValue({ emitUserActivity: (targetId: UserId) => undefined })
+      .useValue({
+        emitUserActivity: (targetId: UserId) => undefined,
+        joinActivityRoom: (
+          socketId: SocketId,
+          requesterId: UserId,
+          targetId: UserId,
+        ) => undefined,
+      })
       .compile();
 
     await module.init();
@@ -142,11 +149,13 @@ describe('UserService', () => {
       const spies = [
         jest.spyOn(userGateway, 'emitUserRelationship'),
         jest.spyOn(activityGateway, 'emitUserActivity'),
+        jest.spyOn(activityGateway, 'joinActivityRoom'),
       ];
       const [requesterId, targetId] = userIds;
       await service.findProfile(requesterId, targetId);
       expect(spies[0]).toHaveBeenCalled();
       expect(spies[1]).toHaveBeenCalled();
+      expect(spies[2]).toHaveBeenCalled();
     });
   });
 
@@ -503,9 +512,9 @@ describe('UserService', () => {
     });
 
     it("should return a list of friends's ids", async () => {
-      const friends = generateUsers(10);
+      const friends = generateUsers(31);
       await usersRepository.save(friends);
-      const { userId } = friends[9];
+      const { userId } = friends[30];
       for (const friend of friends) {
         const socketId = nanoid();
         userSocketStorage.clients.set(friend.userId, socketId);
@@ -515,15 +524,34 @@ describe('UserService', () => {
         activityManager.setActivity(friend.userId, 'profile');
       }
       friends.pop();
+      const pendingSenderIds = [];
+      const pendingReceiverIds = [];
       const friendIds = [];
       await Promise.all(
-        friends.map((friend) => {
-          friendIds.push(friend.userId);
-          return service.createFriendRequest(userId, friend.userId);
-        }),
+        [
+          friends.slice(0, 10).map(async (friend) => {
+            pendingSenderIds.push(friend.userId);
+            return service.createFriendRequest(userId, friend.userId);
+          }),
+          friends.slice(10, 20).map(async (friend) => {
+            pendingReceiverIds.push(friend.userId);
+            return service.createFriendRequest(friend.userId, userId);
+          }),
+          friends.slice(20, 30).map(async (friend) => {
+            friendIds.push(friend.userId);
+            return service
+              .createFriendRequest(userId, friend.userId)
+              .then(() => service.acceptFriendRequest(friend.userId, userId));
+          }),
+        ].flat(),
       );
-      expect(new Set(service.findFriends(userId).friends)).toEqual(
-        new Set(friendIds),
+      const friendships = service.findFriends(userId);
+      expect(new Set(friendships.friends)).toEqual(new Set(friendIds));
+      expect(new Set(friendships.pendingSenders)).toEqual(
+        new Set(pendingSenderIds),
+      );
+      expect(new Set(friendships.pendingReceivers)).toEqual(
+        new Set(pendingReceiverIds),
       );
     });
   });

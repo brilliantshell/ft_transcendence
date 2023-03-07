@@ -5,6 +5,7 @@ const instance = axios.create({
 });
 
 // FIXME : x-user-id 보내기
-instance.defaults.headers.common['x-user-id'] = window.sessionStorage.getItem('user_id') ||  import.meta.env.VITE_X_USER_ID;
+instance.defaults.headers.common['x-user-id'] =
+  sessionStorage.getItem('x-user-id') ?? import.meta.env.VITE_X_USER_ID;
 
 export default instance;

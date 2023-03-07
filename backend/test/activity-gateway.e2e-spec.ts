@@ -87,7 +87,11 @@ describe('UserStatusModule (e2e)', () => {
    *                                                                           *
    ****************************************************************************/
 
-  describe('userActivity (WS)', () => {
+  /** NOTE : userActivity 가 GET /user/:userId/info 를 보낸 유저들에게만 보내지는 것으로
+   * 수정되면서 아래 테스트가 무의미해졌고, 해당 기능은 UserModule 테스트에서 충분히 커버된다고 생각하여
+   * skip 처리
+   */
+  describe.skip('userActivity (WS)', () => {
     let clientSockets: Socket[];
     beforeEach(async () => {
       clientSockets = [
@@ -109,9 +113,7 @@ describe('UserStatusModule (e2e)', () => {
       });
     });
 
-    afterEach(async () => {
-      clientSockets.forEach((socket) => socket.close());
-    });
+    afterEach(async () => clientSockets.forEach((socket) => socket.close()));
 
     it('should emit userActivity when a user is connected', async () => {
       const [userActivityOne, userActivityTwo] = await Promise.all([
