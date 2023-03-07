@@ -116,7 +116,7 @@ describe('ChatsService', () => {
         .map((channelMember) =>
           channelsEntities.find((v) => v.channelId == channelMember.channelId),
         )
-        .sort((a, b) => a.modifiedAt.valueOf() - b.modifiedAt.valueOf())
+        .sort((a, b) => b.modifiedAt.valueOf() - a.modifiedAt.valueOf())
         .map((channel) => {
           return {
             channelId: channel.channelId,
