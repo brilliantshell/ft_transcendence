@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Channels } from '../components/chats/interface';
 import ChatsFrame from '../components/chats/ChatsFrame';
 import ChatsBody from '../components/chats/ChatsBody';
@@ -44,16 +44,13 @@ function Chats() {
   );
   useMessageArrivedEvent({ joinedChannels, setJoinedChannels });
 
-  const joinedMemo = useMemo(() => joinedChannels, [joinedChannels]);
-  const otherMemo = useMemo(() => otherChannels, [otherChannels]);
-
   return (
     <div className="chats">
       <ChatsFrame purpose={'chatsJoined'}>
-        <ChatsBody channels={joinedMemo} isJoined={true} />
+        <ChatsBody channels={joinedChannels} isJoined={true} />
       </ChatsFrame>
       <ChatsFrame purpose={'chatsAll'}>
-        <ChatsBody channels={otherMemo} isJoined={false} />
+        <ChatsBody channels={otherChannels} isJoined={false} />
       </ChatsFrame>
     </div>
   );

@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import instance from '../../util/Axios';
-import { ConfirmAlert, ErrorAlert, SuccessAlert } from '../../util/Alert';
+import { ErrorAlert, SuccessAlert } from '../../util/Alert';
 
 const NAME_ERR = '채널은 1~128자로 입력해주세요';
 const PWD_ERR = '비밀번호는 8~16자로 입력해주세요';
@@ -13,10 +13,10 @@ interface InputErrorInfo {
 }
 
 interface ChannelCreateFormProps {
-  hidden: () => void;
+  hideModal: () => void;
 }
 
-function ChannelCreateForm({ hidden }: ChannelCreateFormProps) {
+function ChannelCreateForm({ hideModal }: ChannelCreateFormProps) {
   const [channelName, setChannelName] = useState<string>('');
   const [accessMode, setAccessMode] = useState<string>('public');
   const [password, setPassword] = useState<string | undefined>(undefined);
@@ -58,7 +58,7 @@ function ChannelCreateForm({ hidden }: ChannelCreateFormProps) {
           })
           .then(res => {
             SuccessAlert('채널 생성 성공', '채널로 이동합니다.').then(() => {
-              hidden();
+              hideModal();
               nav(res.headers.location);
             });
           })
@@ -104,6 +104,7 @@ function ChannelCreateForm({ hidden }: ChannelCreateFormProps) {
             <select
               className="formModalFieldInput"
               name="accessMode"
+              value={accessMode}
               onChange={e => setAccessMode(e.target.value)}
             >
               <option value="public">공개</option>
@@ -139,7 +140,7 @@ function ChannelCreateForm({ hidden }: ChannelCreateFormProps) {
         >
           확인
         </button>
-        <button className="formModalCancel regular" onClick={hidden}>
+        <button className="formModalCancel regular" onClick={hideModal}>
           취소
         </button>
       </div>

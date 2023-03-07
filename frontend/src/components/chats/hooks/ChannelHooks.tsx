@@ -130,7 +130,9 @@ export function useMessageArrivedEvent({
         const arrivedChannelIdx = prev.findIndex(
           channel => channel.channelId === channelId,
         );
-        // const arrivedChannel = prev.splice(arrivedChannelIdx, 1)[0];
+        if (arrivedChannelIdx === -1) {
+          return prev;
+        }
         const arrivedChannel = prev[arrivedChannelIdx];
         return [
           {

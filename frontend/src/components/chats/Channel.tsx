@@ -1,4 +1,4 @@
-import { ReactNode, useEffect, useState } from 'react';
+import { ReactNode, useCallback, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { useRecoilValue } from 'recoil';
@@ -35,6 +35,7 @@ function Channel({ channel, isJoined }: ChannelProps) {
     channel;
   const nav = useNavigate();
   const icon: ReactNode = icons[isDm ? 'dm' : accessMode];
+  const hideModal = useCallback(() => setShowModal(false), []);
 
   const handleClick = () => {
     accessMode === 'protected' && isJoined !== true
@@ -79,12 +80,12 @@ function Channel({ channel, isJoined }: ChannelProps) {
             title={'비밀번호를 입력해주세요'}
             form={
               <PasswordForm
-                hidden={() => setShowModal(false)}
+                hideModal={hideModal}
                 channelId={channelId}
                 myId={myId}
               />
             }
-            hidden={() => setShowModal(false)}
+            hideModal={hideModal}
           />,
           document.body,
         )}
