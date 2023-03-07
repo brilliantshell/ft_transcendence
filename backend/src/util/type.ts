@@ -58,7 +58,7 @@ export class GameInfo {
     this.rightId = rightId;
     this.map = map;
     this.isRank = isRank;
-    this.scores = null;
+    this.isStarted = false;
   }
 
   isRank: boolean;
@@ -67,7 +67,7 @@ export class GameInfo {
   rightId: UserId;
   rightNickname?: string;
   map: 1 | 2 | 3;
-  scores: [Score, Score] | null;
+  isStarted: boolean;
 }
 
 export interface LoginUserInfo {

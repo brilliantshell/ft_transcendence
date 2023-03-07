@@ -1,18 +1,31 @@
 import {
+  ConnectedSocket,
   MessageBody,
   SubscribeMessage,
   WebSocketGateway,
   WebSocketServer,
 } from '@nestjs/websockets';
 import { Server } from 'socket.io';
-import { UsePipes, ValidationPipe } from '@nestjs/common';
+import { UseInterceptors, UsePipes, ValidationPipe } from '@nestjs/common';
 
-import { GameCompleteDto, GameStartedDto } from './dto/game-gateway.dto';
-import { GameId, SocketId, UserId } from '../util/type';
+import {
+  BallDataDto,
+  GameCompleteDto,
+  GameDataDto,
+  GamePlayerYDto,
+  GameResetBallDto,
+  GameStartedDto,
+  PaddlePositionsDto,
+} from './dto/game-gateway.dto';
+import { GameId, Score, SocketId, UserId } from '../util/type';
+import { GameResetBallInterceptor } from './interceptor/game-reset-ball.interceptor';
 import { GameStorage } from './game.storage';
 import { RanksGateway } from '../ranks/ranks.gateway';
+import { UserSocketStorage } from '../user-status/user-socket.storage';
+import { VerifiedSocket } from '../util/type';
 import { WEBSOCKET_CONFIG } from '../config/constant/constant-config';
 
+@UsePipes(new ValidationPipe({ forbidNonWhitelisted: true, whitelist: true }))
 @WebSocketGateway(WEBSOCKET_CONFIG)
 export class GameGateway {
   @WebSocketServer()
@@ -21,6 +34,7 @@ export class GameGateway {
   constructor(
     private readonly gameStorage: GameStorage,
     private readonly ranksGateway: RanksGateway,
+    private readonly userSocketStorage: UserSocketStorage,
   ) {}
 
   /*****************************************************************************
@@ -109,11 +123,75 @@ export class GameGateway {
     this.server.to('waitingRoom').emit('gameStarted', gameStartedDto);
   }
 
-  // TODO : gameStatus listener
-  // TODO : gameStatus emitter
-  // FIXME : 메시지 추가
-  emitGameStatus(gameId: GameId) {
-    this.server.to(`game-${gameId}`).emit('gameStatus');
+  /**
+   * @description 게임 시작 / 점수 변경 시, 두 플레이어가 보내는 공 위치 초기화 요청 handle
+   *
+   * @param gameId 게임 id
+   * @returns gameId
+   */
+  @UseInterceptors(GameResetBallInterceptor)
+  @SubscribeMessage('gameResetBall')
+  handleResetBall(
+    @MessageBody()
+    { gameId }: GameResetBallDto,
+  ) {
+    return gameId;
+  }
+
+  /**
+   * @description 게임 시작 / 점수 변경 시, 게임 플레이어들에게 초기화된 공 위치 전송
+   *
+   * @param players 게임 플레이어들의 유저 id
+   */
+  emitGameBallDirections(players: [UserId, UserId]) {
+    const directions = {
+      xDirection: Math.random() > 0.5 ? 1 : -1,
+      yDirection: Math.random() > 0.5 ? 1 : -1,
+    };
+    this.server
+      .to(players.map((player) => this.userSocketStorage.clients.get(player)))
+      .emit('gameBallDirections', directions);
+  }
+
+  /**
+   * @description 게임 플레이어가 보내는 게임 정보 관전자에게 전송
+   *
+   * @param {gameId, ballData, paddlePositions, scores} 게임 id, 공 위치, 패들 위치, 점수
+   */
+  @SubscribeMessage('gameData')
+  async handleGameData(
+    @MessageBody()
+    { gameId, ballData, paddlePositions, scores }: GameDataDto,
+  ) {
+    this.emitGameSpectate(gameId, scores, ballData, paddlePositions);
+  }
+
+  /**
+   * @description paddle 위치가 변경된 유저의 새로운 위치를 받아
+   *              상대 플레이어에게 변경된 paddle 위치 전송
+   *
+   * @param clientSocket socket
+   * @param {gameId, y} 게임 id, 플레이어 y 좌표
+   */
+  @SubscribeMessage('gamePlayerY')
+  handleGameMyY(
+    @ConnectedSocket() clientSocket: VerifiedSocket,
+    @MessageBody()
+    { gameId, y }: GamePlayerYDto,
+  ) {
+    const userId =
+      process.env.NODE_ENV === 'development'
+        ? Math.floor(Number(clientSocket.handshake.headers['x-user-id']))
+        : clientSocket.request.user.userId;
+    const gameInfo = this.gameStorage.getGame(gameId);
+    if (gameInfo === undefined) {
+      return;
+    }
+    const { leftId, rightId } = gameInfo;
+    this.emitGameOpponentY(
+      this.userSocketStorage.clients.get(userId === leftId ? rightId : leftId),
+      y,
+    );
   }
 
   /**
@@ -142,10 +220,10 @@ export class GameGateway {
    *
    * @param result 게임 결과
    */
-  @UsePipes(new ValidationPipe({ forbidNonWhitelisted: true, whitelist: true }))
   @SubscribeMessage('gameComplete')
   async handleGameComplete(@MessageBody() result: GameCompleteDto) {
     const { id, scores } = result;
+    this.emitGameSpectate(id, scores);
     this.emitGameEnded(id);
     this.server.socketsLeave(`game-${id}`);
     const ladderUpdateDto = await this.gameStorage.updateResult(id, scores);
@@ -193,5 +271,42 @@ export class GameGateway {
   private emitGameEnded(id: GameId) {
     this.gameStorage.getGame(id)?.isRank &&
       this.server.to('waitingRoom').emit('gameEnded', { id });
+  }
+
+  /**
+   * @description 게임 플레이어가 보내는 게임 정보 관전자에게 전송
+   *
+   * @param gameId 게임 id
+   * @param scores 점수
+   * @param ballData 공 위치
+   * @param paddlePositions 패들 위치
+   */
+  private emitGameSpectate(
+    gameId: GameId,
+    scores: [Score, Score],
+    ballData: BallDataDto = null,
+    paddlePositions: PaddlePositionsDto = null,
+  ) {
+    const gameInfo = this.gameStorage.getGame(gameId);
+    if (gameInfo === undefined) {
+      return;
+    }
+    const { leftId, rightId } = gameInfo;
+    const leftSocketId = this.userSocketStorage.clients.get(leftId);
+    const rightSocketId = this.userSocketStorage.clients.get(rightId);
+    this.server
+      .to(`game-${gameId}`)
+      .except([leftSocketId, rightSocketId])
+      .emit('gameSpectate', { ballData, paddlePositions, scores });
+  }
+
+  /**
+   * @description 상대 플레이어에게 변경된 paddle 위치 전송
+   *
+   * @param opponentSocketId 상대 플레이어 socket id
+   * @param y 상대 플레이어 y 좌표
+   */
+  private emitGameOpponentY(opponentSocketId: SocketId, y: number) {
+    this.server.to(opponentSocketId).emit('gameOpponentY', { y });
   }
 }
