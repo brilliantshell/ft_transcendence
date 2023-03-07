@@ -65,20 +65,31 @@ export function useChannelCreatedEvent({
   }, [otherChannels]);
 }
 
-export function useChannelDeletedEvent({
-  otherChannels,
-  setOtherChannels,
-}: OtherChannelsState) {
+export function useChannelDeletedEvent(
+  { joinedChannels, setJoinedChannels }: JoinedChannelsState,
+  { otherChannels, setOtherChannels }: OtherChannelsState,
+) {
   useEffect(() => {
-    listenEvent<ChannelId>('channelDeleted').then(({ channelId }) =>
-      setOtherChannels(prev =>
-        prev.filter(channel => channel.channelId !== channelId),
-      ),
-    );
+    listenEvent<ChannelId>('channelDeleted').then(({ channelId }) => {
+      let updated = false;
+      setJoinedChannels(prev =>
+        prev.filter(channel => {
+          if (channel.channelId === channelId) {
+            updated = true;
+            return false;
+          }
+          return true;
+        }),
+      );
+      !updated &&
+        setOtherChannels(prev =>
+          prev.filter(channel => channel.channelId !== channelId),
+        );
+    });
     return () => {
       socket.off('channelDeleted');
     };
-  }, [otherChannels]);
+  }, [joinedChannels, otherChannels]);
 }
 
 export function useChannelUpdatedEvent(

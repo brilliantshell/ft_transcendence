@@ -168,12 +168,10 @@ export class ChatsService {
    * @param userId 나갈 유저의 Id
    */
   async leaveChannel(channelId: ChannelId, userId: UserId) {
+    const isOwner =
+      this.channelStorage.getUserRole(channelId, userId) === 'owner';
     await this.channelStorage.deleteUserFromChannel(channelId, userId);
-    return this.chatsGateway.emitMemberLeft(
-      channelId,
-      userId,
-      this.channelStorage.getUserRole(channelId, userId) === 'owner',
-    );
+    return this.chatsGateway.emitMemberLeft(channelId, userId, isOwner);
   }
 
   /**

@@ -37,7 +37,10 @@ function Chats() {
   }, [isConnected]);
 
   useChannelCreatedEvent({ otherChannels, setOtherChannels });
-  useChannelDeletedEvent({ otherChannels, setOtherChannels });
+  useChannelDeletedEvent(
+    { joinedChannels, setJoinedChannels },
+    { otherChannels, setOtherChannels },
+  );
   useChannelUpdatedEvent(
     { joinedChannels, setJoinedChannels },
     { otherChannels, setOtherChannels },
