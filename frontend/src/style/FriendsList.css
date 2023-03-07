@@ -1,9 +1,11 @@
-div.dropup {
-  position: relative;
+div.friendsList {
   display: inline-block;
+  position: absolute;
+  right: 5%;
+  bottom: 5%;
 }
 
-.dropup-btn {
+.friendsListBtn {
   background-color: #3498db;
   color: white;
   cursor: pointer;
@@ -12,18 +14,16 @@ div.dropup {
   border: none;
 }
 
-.dropup-content {
-  display: none;
+.friendsListContent {
+  display: block;
   position: absolute;
-  background-color: #f1f1f1;
-  min-width: 160px;
+  background-color: var(--secondary);
+  right: 1rem;
   bottom: 50px;
-  z-index: 1;
+  width: auto;
 }
 
-.dropup-content div {
+.friendsListContent div {
   color: black;
-  padding: 12px 16px;
-  text-decoration: none;
-  display: block;
+  /* padding: 0.5rem; */
 }

@@ -1,5 +1,9 @@
-import { atom, selector } from 'recoil';
+import { atom, atomFamily, selector } from 'recoil';
 import instance from './Axios';
+import {
+  activityData,
+  relationshipData,
+} from '../components/hooks/SocketOnHooks';
 
 export const myIdState = atom<number>({
   key: 'myIdState',
@@ -17,4 +21,22 @@ export const gamesInProgressState = atom<
 >({
   key: 'gamesInProgressState',
   default: [],
+});
+
+export const userActivity = atom<Map<number, activityData>>({
+  key: 'userActivity',
+  default: new Map<number, activityData>(),
+});
+
+export const userRelationship = atom<Map<number, relationshipData>>({
+  key: 'userRelationship',
+  default: new Map<number, relationshipData>(),
+});
+
+export const relationshipState = atomFamily<relationshipData, number>({
+  key: 'relationshipState',
+  default: id => ({
+    userId: id,
+    relationship: 'normal',
+  }),
 });

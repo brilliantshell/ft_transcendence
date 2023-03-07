@@ -1,8 +1,8 @@
-import instance from '../util/Axios';
+import instance from '../../util/Axios';
 import { useEffect, useState } from 'react';
-import UserBase from './UserBase';
+import UserBase from '../User/UserBase';
 import { useRecoilValue } from 'recoil';
-import { myIdState } from '../util/Recoils';
+import { myIdState } from '../../util/Recoils';
 
 // TODO : 글씨 크기
 function MyRank() {

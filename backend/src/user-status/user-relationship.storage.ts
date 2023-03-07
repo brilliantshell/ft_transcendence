@@ -239,13 +239,23 @@ export class UserRelationshipStorage implements OnModuleInit {
    */
   getFriends(userId: UserId) {
     const friends: UserId[] = [];
-    this.users
-      .get(userId)
-      .forEach(
-        (status, counterpartId) =>
-          FRIENDSHIP_TYPES.includes(status) && friends.push(counterpartId),
-      );
-    return friends;
+    const pendingSenders: UserId[] = [];
+    const pendingReceivers: UserId[] = [];
+    this.users.get(userId).forEach((status, counterpartId) => {
+      switch (status) {
+        case 'friend':
+          friends.push(counterpartId);
+          break;
+        case 'pendingSender':
+          pendingSenders.push(counterpartId);
+          break;
+        case 'pendingReceiver':
+          pendingReceivers.push(counterpartId);
+          break;
+        default:
+      }
+    });
+    return { friends, pendingSenders, pendingReceivers };
   }
 
   /**
