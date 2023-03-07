@@ -26,8 +26,11 @@ function ChannelCreateForm({ hidden }: ChannelCreateFormProps) {
   });
   const elemRef = useRef<HTMLFormElement>(null);
   const nav = useNavigate();
+  const [isEnded, setIsEnded] = useState<boolean>(false);
 
   const handleName = (e: React.ChangeEvent<HTMLInputElement>) => {
+    e.preventDefault();
+    if (isEnded) return;
     const { value } = e.target;
     setChannelName(value);
     value.length > 0 && value.length < 129
@@ -59,9 +62,7 @@ function ChannelCreateForm({ hidden }: ChannelCreateFormProps) {
               nav(res.headers.location);
             });
           })
-          .catch(err => {
-            ErrorAlert('채널 생성 실패', '오류가 발생했습니다.'); //FIXME : 에러 메시지 변경
-          });
+          .catch(() => ErrorAlert('채널 생성 실패', '오류가 발생했습니다.'));
   };
 
   return (
@@ -83,9 +84,11 @@ function ChannelCreateForm({ hidden }: ChannelCreateFormProps) {
               autoComplete="off"
               value={channelName}
               onChange={handleName}
+              onFocus={() => setIsEnded(false)}
               onKeyDown={e => {
                 if (e.key === 'Enter') {
                   e.preventDefault();
+                  setIsEnded(true);
                   elemRef.current?.children[1].querySelector('select')?.focus();
                 }
               }}
@@ -129,10 +132,16 @@ function ChannelCreateForm({ hidden }: ChannelCreateFormProps) {
         )}
       </form>
       <div className="formModalButtons">
-        <button className='formModalConfirm regular' type="submit" form="createChat">
+        <button
+          className="formModalConfirm regular"
+          type="submit"
+          form="createChat"
+        >
           확인
         </button>
-        <button className='formModalCancel regular' onClick={hidden}>취소</button>
+        <button className="formModalCancel regular" onClick={hidden}>
+          취소
+        </button>
       </div>
     </>
   );
