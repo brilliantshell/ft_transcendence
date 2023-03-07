@@ -460,12 +460,6 @@ describe('ChannelStorage', () => {
   it("should update a channel's 'modified_at' time when a message is sent to a chat room", async () => {
     const { channelId, ownerId } = channelEntities[39];
     const messageCreatedAt = DateTime.now();
-    // await messagesRepository.insert({
-    //   channelId,
-    //   senderId: ownerId,
-    //   contents: 'test',
-    //   createdAt: messageCreatedAt,
-    // });
     await storage.updateChannelMessage(
       channelId,
       ownerId,
