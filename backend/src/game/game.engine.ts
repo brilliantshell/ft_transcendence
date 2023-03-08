@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Subscription, of, repeat } from 'rxjs';
 
-import { BallData, GameData, GameId } from '../util/type';
+import { BallVelocity, GameData, GameId } from '../util/type';
 import { GameGateway } from './game.gateway';
 import { GameStorage } from './game.storage';
 
@@ -20,15 +20,19 @@ export class GameEngine {
   ) {}
 
   startGame(gameId: GameId, gameData: GameData) {
-    const { ballData } = gameData;
     const subscription = of(null)
       .pipe(repeat({ delay: 10 }))
       .subscribe(() => {
-        const { x, vx } = ballData;
-        x + vx < 0 || x + vx > 1
+        const { ballCoords, ballVelocity } = gameData;
+        const nextX = ballCoords.x + ballVelocity.vx;
+        nextX < 0 || nextX > 1
           ? this.updateScore(subscription, gameId, gameData)
           : this.updateBallData(gameData);
-        this.gameGateway.emitGameData(gameId, gameData);
+        this.gameGateway.emitGameData(gameId, {
+          scores: gameData.scores,
+          ballCoords: gameData.ballCoords,
+          paddlePositions: gameData.paddlePositions,
+        });
       });
   }
 
@@ -37,31 +41,30 @@ export class GameEngine {
     gameId: GameId,
     gameData: GameData,
   ) {
-    const { scores, ballData } = gameData;
-    scores[ballData.x > 0.5 ? 0 : 1] += 1;
+    const { scores, ballCoords, ballVelocity } = gameData;
+    scores[ballCoords.x > 0.5 ? 0 : 1] += 1;
     setTimeout(() => {
       if (scores[0] === 5 || scores[1] === 5) {
         subscription.unsubscribe();
         this.gameGateway.emitGameComplete(gameId, gameData);
       } else {
-        gameData.ballData = {
-          x: 0.5,
-          y: 0.5,
-          vx: Math.random() > 0.5 ? INITIAL_SPEED : -INITIAL_SPEED,
-          vy: Math.random() > 0.5 ? INITIAL_SPEED : -INITIAL_SPEED,
-        };
+        ballCoords.x = 0.5 - PADDLE_WIDTH / 2;
+        ballCoords.y = 0.5 - PADDLE_WIDTH / 2;
+        ballVelocity.vx = Math.random() > 0.5 ? INITIAL_SPEED : -INITIAL_SPEED;
+        ballVelocity.vy = Math.random() > 0.5 ? INITIAL_SPEED : -INITIAL_SPEED;
       }
     }, 250);
   }
 
   private updateBallData(gameData: GameData) {
-    const { ballData } = gameData;
-    const { x, y, vx, vy } = ballData;
+    const { ballCoords, ballVelocity } = gameData;
+    const { x, y } = ballCoords;
+    const { vx, vy } = ballVelocity;
     const { leftY, rightY } = gameData.paddlePositions;
     const nextX = x + vx;
     const nextY = y + vy;
     if (nextY < 0 || nextY > 1) {
-      ballData.vy = -vy;
+      ballVelocity.vy = -vy;
     }
     const isPaddleTouched =
       (x > PADDLE_LEFT_END &&
@@ -73,20 +76,20 @@ export class GameEngine {
         nextY > rightY &&
         nextY < rightY + PADDLE_WIDTH);
     if (isPaddleTouched) {
-      ballData.vx = -vx;
-      this.accelerate(ballData);
+      ballVelocity.vx = -vx;
+      this.accelerate(ballVelocity);
     }
-    ballData.x += ballData.vx;
-    ballData.y += ballData.vy;
+    ballCoords.x += ballVelocity.vx;
+    ballCoords.y += ballVelocity.vy;
   }
 
-  private accelerate(ballData: BallData) {
-    const { vx, vy } = ballData;
+  private accelerate(ballVelocity: BallVelocity) {
+    const { vx, vy } = ballVelocity;
     if (vx < MAX_SPEED) {
-      ballData.vx += vx > 0 ? ACCELERATION : -ACCELERATION;
+      ballVelocity.vx += vx > 0 ? ACCELERATION : -ACCELERATION;
     }
     if (vy < MAX_SPEED) {
-      ballData.vy += vy > 0 ? ACCELERATION : -ACCELERATION;
+      ballVelocity.vy += vy > 0 ? ACCELERATION : -ACCELERATION;
     }
   }
 }

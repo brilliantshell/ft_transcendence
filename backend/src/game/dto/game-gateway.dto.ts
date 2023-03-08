@@ -1,5 +1,11 @@
 import { IsBoolean, IsString, Matches } from 'class-validator';
-import { BallData, GameId, PaddlePositions, Score } from '../../util/type';
+
+import {
+  BallCoordinates,
+  GameId,
+  PaddlePositions,
+  Score,
+} from '../../util/type';
 
 export interface NewGameDto {
   gameId: GameId;
@@ -25,9 +31,8 @@ export class GameCompleteDto {
 }
 
 export interface GameDataDto {
-  gameId: GameId;
   scores: [Score, Score];
-  ballData: BallData;
+  ballCoords: BallCoordinates;
   paddlePositions: PaddlePositions;
 }
 

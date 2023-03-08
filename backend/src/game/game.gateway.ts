@@ -7,7 +7,11 @@ import {
 import { Server } from 'socket.io';
 import { UsePipes, ValidationPipe } from '@nestjs/common';
 
-import { GamePlayerYDto, GameStartedDto } from './dto/game-gateway.dto';
+import {
+  GameDataDto,
+  GamePlayerYDto,
+  GameStartedDto,
+} from './dto/game-gateway.dto';
 import { GameData, GameId, SocketId, UserId } from '../util/type';
 import { GameStorage } from './game.storage';
 import { RanksGateway } from '../ranks/ranks.gateway';
@@ -168,7 +172,7 @@ export class GameGateway {
    * @param gameId 게임 id
    * @param gameData 게임 정보
    */
-  emitGameData(gameId: GameId, gameData: GameData) {
+  emitGameData(gameId: GameId, gameData: GameDataDto) {
     this.server.to(`game-${gameId}`).emit('gameData', gameData);
   }
 

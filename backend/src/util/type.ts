@@ -49,22 +49,28 @@ export type Activity = 'online' | 'offline' | 'inGame';
 
 export type Score = 0 | 1 | 2 | 3 | 4 | 5;
 
-export class BallData {
-  constructor(x = 0.5, y = 0.5, vx = 0.005, vy = 0.005) {
+export class BallCoordinates {
+  constructor(x = 0.5, y = 0.5) {
     this.x = x;
     this.y = y;
-    this.vx = vx;
-    this.vy = vy;
   }
 
   x: number;
   y: number;
+}
+
+export class BallVelocity {
+  constructor(vx = 0.005, vy = 0.005) {
+    this.vx = vx;
+    this.vy = vy;
+  }
+
   vx: number;
   vy: number;
 }
 
 export class PaddlePositions {
-  constructor(leftY = 0.5, rightY = 0.5) {
+  constructor(leftY = 0.5 - 0.08333, rightY = 0.5 - 0.08333) {
     this.leftY = leftY;
     this.rightY = rightY;
   }
@@ -74,7 +80,8 @@ export class PaddlePositions {
 }
 
 export class GameData {
-  ballData: BallData;
+  ballCoords: BallCoordinates;
+  ballVelocity: BallVelocity;
   paddlePositions: PaddlePositions;
   scores: [Score, Score];
 }
