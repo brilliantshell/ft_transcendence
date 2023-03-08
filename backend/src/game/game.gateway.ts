@@ -167,7 +167,7 @@ export class GameGateway {
   }
 
   /**
-   * @description 현재 게임 게임방 보고 있는 유저들에게 전송
+   * @description 현재 게임 데이터 게임방 보고 있는 유저들에게 전송
    *
    * @param gameId 게임 id
    * @param gameData 게임 정보
@@ -177,7 +177,7 @@ export class GameGateway {
   }
 
   /**
-   * @description 게임이 정상적으로 종료되었다고 알림
+   * @description 게임이 정상적으로 종료되었다고 플레이어들과 관전자들에게 알림
    *
    * @param gameId 게임 id
    * @param gameData 게임 정보
