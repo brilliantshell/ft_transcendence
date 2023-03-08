@@ -1,30 +1,34 @@
+import {
+  BallData,
+  ControllerType,
+  GameInfo,
+  GameMetaData,
+  KeyPressed,
+  PaddlePositions,
+} from './interfaces';
 import { Subject } from 'rxjs';
-import { GameMetaData, BallData, PaddlePositions } from './interfaces';
+import { listenEvent } from '../../../util/Socket';
+import { socket } from '../../../util/Socket';
 
 export class GamePainter {
   intervalId: number = 0;
-  private readonly scores: [number, number] = [0, 0];
-  private readonly subject: Subject<void> = new Subject();
-  private metaData: GameMetaData;
   private ballData: BallData;
+  private metaData: GameMetaData;
+  private readonly keyPressed: KeyPressed = { up: false, down: false };
   private paddlePositions: PaddlePositions;
-  private upPressed = false;
-  private downPressed = false;
+  private scores: [number, number] = [0, 0];
+  private readonly subject: Subject<void> = new Subject();
 
   constructor(
-    private readonly isLeft: boolean,
     private readonly context: CanvasRenderingContext2D,
+    private readonly gameInfo: GameInfo,
+    private readonly controllerType: ControllerType,
     private readonly dimension: { w: number; h: number },
   ) {
     this.context.font = '4rem DungGeunMo';
     this.metaData = new GameMetaData(dimension);
-    const { midX, midY, initialSpeed, paddleW } = this.metaData;
-    this.ballData = {
-      x: midX,
-      y: midY,
-      dx: Math.random() < 0.5 ? -1 : 1 * initialSpeed,
-      dy: Math.random() < 0.5 ? -1 : 1 * initialSpeed,
-    };
+    const { paddleW } = this.metaData;
+    this.ballData = this.resetBallData({ xDirection: 1, yDirection: 1 });
     this.paddlePositions = {
       myY: (dimension.h - paddleW) / 2,
       opponentY: (dimension.h - paddleW) / 2,
@@ -37,8 +41,43 @@ export class GamePainter {
    *                                                                           *
    ****************************************************************************/
 
-  startGame() {
+  spectateGame() {
+    socket.on('gameSpectate', ({ ballData, paddlePositions, scores }) => {
+      if (ballData === null) {
+        this.drawResult();
+        socket.off('gameSpectate');
+        return;
+      }
+      this.ballData = ballData;
+      this.paddlePositions = paddlePositions;
+      this.scores = scores;
+      this.context.clearRect(0, 0, this.dimension.w, this.dimension.h);
+      this.drawLine();
+      this.drawBall();
+      this.drawPaddles();
+      this.drawScores();
+    });
+  }
+
+  async startGame() {
+    const [directions] = await Promise.all([
+      listenEvent<{
+        xDirection: 1 | -1;
+        yDirection: 1 | -1;
+      }>('gameBallDirections'),
+      socket.emit('gameResetBall', { gameId: this.gameInfo.id }),
+    ]);
+    this.ballData = this.resetBallData(directions);
+    socket.off('gameBallDirections');
     this.subject.subscribe(() => {
+      if (this.controllerType.isLeft) {
+        socket.emit('gameData', {
+          gameId: this.gameInfo.id,
+          ballData: this.ballData,
+          paddlePositions: this.paddlePositions,
+          scores: this.scores,
+        });
+      }
       this.context.clearRect(0, 0, this.dimension.w, this.dimension.h);
       this.drawLine();
       this.drawBall();
@@ -53,22 +92,29 @@ export class GamePainter {
         this.updatePaddlePosition();
       }
     });
+    socket.on('gameOpponentY', ({ y }: { isLeft: boolean; y: number }) => {
+      this.paddlePositions.opponentY = y;
+    });
     this.intervalId = setInterval(() => this.subject.next(), 10);
   }
 
   keyDownHandler(e: KeyboardEvent) {
     if (e.key === 'Up' || e.key === 'ArrowUp') {
-      this.upPressed = true;
+      e.preventDefault();
+      this.keyPressed.up = true;
     } else if (e.key === 'Down' || e.key === 'ArrowDown') {
-      this.downPressed = true;
+      e.preventDefault();
+      this.keyPressed.down = true;
     }
   }
 
   keyUpHandler(e: KeyboardEvent) {
     if (e.key === 'Up' || e.key === 'ArrowUp') {
-      this.upPressed = false;
+      e.preventDefault();
+      this.keyPressed.up = false;
     } else if (e.key === 'Down' || e.key === 'ArrowDown') {
-      this.downPressed = false;
+      e.preventDefault();
+      this.keyPressed.down = false;
     }
   }
 
@@ -79,19 +125,23 @@ export class GamePainter {
    ****************************************************************************/
 
   private updateScore() {
-    const { midX, midY } = this.metaData;
+    const { midX } = this.metaData;
     this.scores[this.ballData.x > midX ? 0 : 1] += 1;
-    this.ballData.x = midX;
-    this.ballData.y = midY;
     clearInterval(this.intervalId);
-    const { initialSpeed } = this.metaData;
     setTimeout(() => {
-      this.ballData.dx = Math.random() < 0.5 ? -1 : 1 * initialSpeed;
-      this.ballData.dy = Math.random() < 0.5 ? -1 : 1 * initialSpeed;
       if (this.scores[0] === 5 || this.scores[1] === 5) {
-        this.drawResult();
+        this.finishGame();
       } else {
-        this.intervalId = setInterval(() => this.subject.next(), 10);
+        Promise.all([
+          listenEvent<{ xDirection: 1 | -1; yDirection: 1 | -1 }>(
+            'gameBallDirections',
+          ).then(directions => {
+            socket.off('gameBallDirections');
+            this.ballData = this.resetBallData(directions);
+            this.intervalId = setInterval(() => this.subject.next(), 10);
+          }),
+          socket.emit('gameResetBall', { gameId: this.gameInfo.id }),
+        ]);
       }
     }, 250);
   }
@@ -99,10 +149,18 @@ export class GamePainter {
   private updatePaddlePosition() {
     const { myY } = this.paddlePositions;
     const { paddleW } = this.metaData;
-    if (this.upPressed && myY > 0) {
+    if (this.keyPressed.up && myY > 0) {
       this.paddlePositions.myY = Math.max(myY - 8, 0);
-    } else if (this.downPressed && myY < this.dimension.h - paddleW) {
+      socket.emit('gamePlayerY', {
+        gameId: this.gameInfo.id,
+        y: this.paddlePositions.myY,
+      });
+    } else if (this.keyPressed.down && myY < this.dimension.h - paddleW) {
       this.paddlePositions.myY = Math.min(myY + 8, this.dimension.h - paddleW);
+      socket.emit('gamePlayerY', {
+        gameId: this.gameInfo.id,
+        y: this.paddlePositions.myY,
+      });
     }
   }
 
@@ -110,24 +168,41 @@ export class GamePainter {
     let { x, y, dx, dy } = this.ballData;
     const { boardEdges, paddleEnds, paddleW } = this.metaData;
     const { myY, opponentY } = this.paddlePositions;
-    if (y + dy < boardEdges.top || y + dy > boardEdges.bottom) {
+    const { isPlayer, isLeft } = this.controllerType;
+    const nextX = x + dx;
+    const nextY = y + dy;
+    if (nextY < boardEdges.top || nextY > boardEdges.bottom) {
       this.ballData.dy = -dy;
     }
-    const isPaddleTouched = this.isLeft
-      ? x > paddleEnds.left &&
-        x + dx < paddleEnds.left &&
-        y > myY &&
-        y < myY + paddleW
-      : x < paddleEnds.right &&
-        x + dx > paddleEnds.right &&
-        y > opponentY &&
-        y < opponentY + paddleW;
+    const [leftY, rightY] =
+      !isPlayer || isLeft ? [myY, opponentY] : [opponentY, myY];
+    const isPaddleTouched =
+      (x > paddleEnds.left &&
+        nextX < paddleEnds.left &&
+        nextY > leftY &&
+        nextY < leftY + paddleW) ||
+      (x < paddleEnds.right &&
+        nextX > paddleEnds.right &&
+        nextY > rightY &&
+        nextY < rightY + paddleW);
     if (isPaddleTouched) {
       this.ballData.dx = -dx;
       this.accelerate();
     }
     this.ballData.x += this.ballData.dx;
     this.ballData.y += this.ballData.dy;
+  }
+
+  private finishGame() {
+    socket.off('gameOpponentY');
+    const { isPlayer, isLeft } = this.controllerType;
+    if (isPlayer && (isLeft ? this.scores[0] : this.scores[1]) === 5) {
+      socket.emit('gameComplete', {
+        id: this.gameInfo.id,
+        scores: this.scores,
+      });
+    }
+    this.drawResult();
   }
 
   private drawLine() {
@@ -151,17 +226,19 @@ export class GamePainter {
   private drawPaddles() {
     const { paddleW, paddleH, radius } = this.metaData;
     const { myY, opponentY } = this.paddlePositions;
+    const { isPlayer, isLeft } = this.controllerType;
+    const yCoords = !isPlayer || isLeft ? [myY, opponentY] : [opponentY, myY];
     this.context.beginPath();
     this.context.roundRect(
       radius * 2,
-      this.isLeft ? myY : opponentY,
+      yCoords[0],
       paddleH,
       paddleW,
       paddleH / 2,
     );
     this.context.roundRect(
       this.dimension.w - paddleH - radius * 2,
-      this.isLeft ? opponentY : myY,
+      yCoords[1],
       paddleH,
       paddleW,
       paddleH / 2,
@@ -182,10 +259,17 @@ export class GamePainter {
   }
 
   private drawResult() {
+    const { isPlayer, isLeft } = this.controllerType;
     this.context.clearRect(0, 0, this.dimension.w, this.dimension.h);
     this.context.fillStyle = '#ccadac';
-    const myScore = this.isLeft ? this.scores[0] : this.scores[1];
-    const resultString = myScore === 5 ? 'You won!' : 'You lost...';
+    let resultString;
+    resultString = isPlayer
+      ? this.scores[isLeft ? 0 : 1] === 5
+        ? 'You won!'
+        : 'You lost...'
+      : `${
+          this.gameInfo.players[this.scores[0] > this.scores[1] ? 0 : 1]
+        } won!`;
     this.context.fillText(
       resultString,
       this.metaData.midX - this.context.measureText(resultString).width / 2,
@@ -202,5 +286,20 @@ export class GamePainter {
     if (dy < maxSpeed) {
       this.ballData.dy += dy > 0 ? acceleration : -acceleration;
     }
+  }
+
+  private resetBallData({
+    xDirection,
+    yDirection,
+  }: {
+    xDirection: 1 | -1;
+    yDirection: 1 | -1;
+  }) {
+    return {
+      x: this.metaData.midX,
+      y: this.metaData.midY,
+      dx: xDirection * this.metaData.initialSpeed,
+      dy: yDirection * this.metaData.initialSpeed,
+    };
   }
 }

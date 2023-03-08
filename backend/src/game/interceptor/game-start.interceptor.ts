@@ -59,13 +59,13 @@ export class GameStartInterceptor implements NestInterceptor {
     if (gameInfo === undefined) {
       throw new NotFoundException(`The game(${gameId}) does not exist`);
     }
-    const { leftId, rightId, scores } = gameInfo;
+    const { leftId, rightId, isStarted } = gameInfo;
     if (leftId !== requesterId && rightId !== requesterId) {
       throw new ForbiddenException(
         `The user(${requesterId}) is not a player of the game(${gameId})`,
       );
     }
-    if (scores !== null) {
+    if (isStarted) {
       throw new BadRequestException(
         `The game(${gameId}) has already been started`,
       );

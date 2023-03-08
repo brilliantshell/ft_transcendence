@@ -7,7 +7,7 @@ import {
   Logger,
 } from '@nestjs/common';
 
-import { GameId, GameInfo, UserId } from '../util/type';
+import { GameId, GameInfo, Score, UserId } from '../util/type';
 import { MatchHistory } from '../entity/match-history.entity';
 import { Users } from '../entity/users.entity';
 
@@ -83,7 +83,7 @@ export class GameStorage {
    * @param scores 스코어
    * @param isRank ladder ? true : false
    */
-  async updateResult(gameId: GameId, scores: [number, number]) {
+  async updateResult(gameId: GameId, scores: [Score, Score]) {
     const { leftId, rightId, isRank } = this.getGame(gameId);
     this.deleteGame(gameId);
     const [winnerId, loserId] =
@@ -134,7 +134,7 @@ export class GameStorage {
   async calculateNewLadder(
     winnerId: UserId,
     loserId: UserId,
-    scores: [number, number],
+    scores: [Score, Score],
   ) {
     let beforeGame: Users[];
     try {

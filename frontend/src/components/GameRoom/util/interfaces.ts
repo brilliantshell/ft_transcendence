@@ -1,3 +1,23 @@
+export interface Dimensions {
+  w: number;
+  h: number;
+}
+
+export interface GameInfo {
+  id: string;
+  players: [string, string];
+}
+
+export interface ControllerType {
+  isPlayer: boolean;
+  isLeft: boolean;
+}
+
+export interface KeyPressed {
+  up: boolean;
+  down: boolean;
+}
+
 export class GameMetaData {
   radius: number;
   initialSpeed: number;
@@ -20,7 +40,7 @@ export class GameMetaData {
 
   constructor({ w, h }: { w: number; h: number }) {
     this.radius = w / 120;
-    this.initialSpeed = w / 400;
+    this.initialSpeed = w / 360;
     this.midX = w / 2;
     this.midY = h / 2;
     this.paddleW = h / 6;

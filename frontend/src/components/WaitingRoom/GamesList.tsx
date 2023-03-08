@@ -2,25 +2,30 @@ import { ErrorAlert } from '../../util/Alert';
 import GameInProgressButton from './GameInProgressButton';
 import instance from '../../util/Axios';
 import { socket } from '../../util/Socket';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
+import { useRecoilState } from 'recoil';
+import { gamesInProgressState } from '../../util/Recoils';
 
 export default function GamesList() {
-  const [games, setGames] = useState<
-    { id: string; left: string; right: string }[]
-  >([]);
+  const [games, setGamesInProgress] = useRecoilState(gamesInProgressState);
 
   const gameStartedListener = ({ id, left, right }: GameStartedMessage) =>
-    setGames([{ id, left, right }, ...games]);
+    setGamesInProgress(gamesInProgress => [
+      { id, left, right },
+      ...gamesInProgress,
+    ]);
 
   const gameEndedListener = ({ id: endedId }: GameEndedMessage) =>
-    setGames(games.filter(({ id }) => id !== endedId));
+    setGamesInProgress(gamesInProgress =>
+      gamesInProgress.filter(({ id }) => id !== endedId),
+    );
 
   useEffect(() => {
     socket.on('gameStarted', gameStartedListener);
     socket.on('gameEnded', gameEndedListener);
     instance
       .get('/game/list')
-      .then(({ data }) => setGames(data.games))
+      .then(({ data }) => setGamesInProgress(data.games))
       .catch(() => {
         ErrorAlert(
           '진행 중인 게임 목록',
