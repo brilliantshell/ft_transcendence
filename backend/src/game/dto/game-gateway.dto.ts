@@ -1,16 +1,5 @@
-import {
-  ArrayUnique,
-  IsInt,
-  IsNumber,
-  IsOptional,
-  IsString,
-  Matches,
-  Max,
-  Min,
-  ValidateNested,
-} from 'class-validator';
-import { GameId, Score } from '../../util/type';
-import { Type } from 'class-transformer';
+import { IsBoolean, IsString, Matches } from 'class-validator';
+import { BallData, GameId, PaddlePositions, Score } from '../../util/type';
 
 export interface NewGameDto {
   gameId: GameId;
@@ -32,65 +21,14 @@ export interface GameAbortedDto {
 }
 
 export class GameCompleteDto {
-  @IsString()
-  @Matches(/^[0-9A-Za-z_-]{21}$/)
-  id: GameId;
-
-  @ArrayUnique()
-  @IsInt({ each: true })
-  @Min(0, { each: true })
-  @Max(5, { each: true })
-  scores: [Score, Score];
+  winnerSide: 'left' | 'right';
 }
 
-export class GameResetBallDto {
-  @IsString()
-  @Matches(/^[0-9A-Za-z_-]{21}$/)
+export interface GameDataDto {
   gameId: GameId;
-}
-
-export class BallDataDto {
-  @IsNumber()
-  x: number;
-
-  @IsNumber()
-  y: number;
-
-  @IsNumber()
-  dx: number;
-
-  @IsNumber()
-  dy: number;
-}
-
-export class PaddlePositionsDto {
-  @IsNumber()
-  myY: number;
-
-  @IsNumber()
-  opponentY: number;
-}
-
-export class GameDataDto {
-  @IsString()
-  @Matches(/^[0-9A-Za-z_-]{21}$/)
-  gameId: GameId;
-
-  @ArrayUnique()
-  @IsInt({ each: true })
-  @Min(0, { each: true })
-  @Max(5, { each: true })
   scores: [Score, Score];
-
-  @IsOptional()
-  @ValidateNested()
-  @Type(() => BallDataDto)
-  ballData: BallDataDto | null;
-
-  @IsOptional()
-  @ValidateNested()
-  @Type(() => PaddlePositionsDto)
-  paddlePositions: PaddlePositionsDto | null;
+  ballData: BallData;
+  paddlePositions: PaddlePositions;
 }
 
 export class GamePlayerYDto {
@@ -98,6 +36,9 @@ export class GamePlayerYDto {
   @Matches(/^[0-9A-Za-z_-]{21}$/)
   gameId: GameId;
 
-  @IsNumber()
-  y: number;
+  @IsBoolean()
+  isLeft: boolean;
+
+  @IsBoolean()
+  isUp: boolean;
 }

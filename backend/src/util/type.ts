@@ -45,7 +45,39 @@ export type CurrentUi =
 
 export type Activity = 'online' | 'offline' | 'inGame';
 
+// SECTION : Game
+
 export type Score = 0 | 1 | 2 | 3 | 4 | 5;
+
+export class BallData {
+  constructor(x = 0.5, y = 0.5, vx = 0.005, vy = 0.005) {
+    this.x = x;
+    this.y = y;
+    this.vx = vx;
+    this.vy = vy;
+  }
+
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+}
+
+export class PaddlePositions {
+  constructor(leftY = 0.5, rightY = 0.5) {
+    this.leftY = leftY;
+    this.rightY = rightY;
+  }
+
+  leftY: number;
+  rightY: number;
+}
+
+export class GameData {
+  ballData: BallData;
+  paddlePositions: PaddlePositions;
+  scores: [Score, Score];
+}
 
 export class GameInfo {
   constructor(
@@ -68,7 +100,10 @@ export class GameInfo {
   rightNickname?: string;
   map: 1 | 2 | 3;
   isStarted: boolean;
+  gameData: GameData;
 }
+
+// SECTION : User verification
 
 export interface LoginUserInfo {
   userId: UserId;
