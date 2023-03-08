@@ -60,7 +60,7 @@ export class BallCoordinates {
 }
 
 export class BallVelocity {
-  constructor(vx = 0.005, vy = 0.005) {
+  constructor(vx = 0.004, vy = 0.004) {
     this.vx = vx;
     this.vy = vy;
   }
@@ -80,6 +80,12 @@ export class PaddlePositions {
 }
 
 export class GameData {
+  constructor() {
+    this.ballCoords = new BallCoordinates();
+    this.ballVelocity = new BallVelocity();
+    this.paddlePositions = new PaddlePositions();
+    this.scores = [0, 0];
+  }
   ballCoords: BallCoordinates;
   ballVelocity: BallVelocity;
   paddlePositions: PaddlePositions;
@@ -98,6 +104,7 @@ export class GameInfo {
     this.map = map;
     this.isRank = isRank;
     this.isStarted = false;
+    this.gameData = new GameData();
   }
 
   isRank: boolean;

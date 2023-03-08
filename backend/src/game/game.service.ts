@@ -201,14 +201,16 @@ export class GameService {
    * @param gameInfo 게임 정보
    */
   startGame(gameId: GameId, gameInfo: GameInfo) {
-    gameInfo.isStarted = true;
     const { gameData, leftNickname, rightNickname } = gameInfo;
+    if (!gameInfo.isStarted) {
+      this.gameEngine.startGame(gameId, gameData);
+    }
+    gameInfo.isStarted = true;
     this.gameGateway.emitGameStarted({
       id: gameId,
       left: leftNickname,
       right: rightNickname,
     });
-    this.gameEngine.startGame(gameId, gameData);
   }
 
   /**

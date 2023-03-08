@@ -1,16 +1,16 @@
 import { Injectable } from '@nestjs/common';
-import { Subscription, of, repeat } from 'rxjs';
+import { ReplaySubject, Subscription } from 'rxjs';
 
 import { BallVelocity, GameData, GameId } from '../util/type';
 import { GameGateway } from './game.gateway';
 import { GameStorage } from './game.storage';
 
-const INITIAL_SPEED = 0.005;
+const INITIAL_SPEED = 0.004;
 const MAX_SPEED = 0.01;
-const ACCELERATION = 0.0005;
+const ACCELERATION = 0.0004;
 const PADDLE_WIDTH = 0.16667;
-const PADDLE_LEFT_END = 0.04583;
-const PADDLE_RIGHT_END = 0.95417;
+const PADDLE_LEFT_END = 0.03333;
+const PADDLE_RIGHT_END = 0.96667;
 
 @Injectable()
 export class GameEngine {
@@ -20,40 +20,50 @@ export class GameEngine {
   ) {}
 
   startGame(gameId: GameId, gameData: GameData) {
-    const subscription = of(null)
-      .pipe(repeat({ delay: 10 }))
-      .subscribe(() => {
-        const { ballCoords, ballVelocity } = gameData;
-        const nextX = ballCoords.x + ballVelocity.vx;
-        nextX < 0 || nextX > 1
-          ? this.updateScore(subscription, gameId, gameData)
-          : this.updateBallData(gameData);
-        this.gameGateway.emitGameData(gameId, {
-          scores: gameData.scores,
-          ballCoords: gameData.ballCoords,
-          paddlePositions: gameData.paddlePositions,
-        });
+    const drawSubject = new ReplaySubject<void>(1);
+    const interval = { intervalId: setInterval(() => drawSubject.next(), 10) };
+    const drawSubscription = drawSubject.subscribe(() => {
+      const { ballCoords, ballVelocity } = gameData;
+      const nextX = ballCoords.x + ballVelocity.vx;
+      nextX < 0 || nextX > 1
+        ? this.updateScore(
+            interval,
+            drawSubject,
+            drawSubscription,
+            gameId,
+            gameData,
+          )
+        : this.updateBallData(gameData);
+      this.gameGateway.emitGameData(gameId, {
+        scores: gameData.scores,
+        ballCoords: gameData.ballCoords,
+        paddlePositions: gameData.paddlePositions,
       });
+    });
   }
 
   private updateScore(
-    subscription: Subscription,
+    interval: { intervalId: NodeJS.Timer },
+    drawSubject: ReplaySubject<void>,
+    drawSubscription: Subscription,
     gameId: GameId,
     gameData: GameData,
   ) {
     const { scores, ballCoords, ballVelocity } = gameData;
     scores[ballCoords.x > 0.5 ? 0 : 1] += 1;
+    clearInterval(interval.intervalId);
     setTimeout(() => {
       if (scores[0] === 5 || scores[1] === 5) {
-        subscription.unsubscribe();
+        drawSubscription.unsubscribe();
         this.gameGateway.emitGameComplete(gameId, gameData);
       } else {
-        ballCoords.x = 0.5 - PADDLE_WIDTH / 2;
-        ballCoords.y = 0.5 - PADDLE_WIDTH / 2;
+        ballCoords.x = 0.5;
+        ballCoords.y = 0.5;
         ballVelocity.vx = Math.random() > 0.5 ? INITIAL_SPEED : -INITIAL_SPEED;
         ballVelocity.vy = Math.random() > 0.5 ? INITIAL_SPEED : -INITIAL_SPEED;
+        interval.intervalId = setInterval(() => drawSubject.next(), 10);
       }
-    }, 250);
+    }, 500);
   }
 
   private updateBallData(gameData: GameData) {

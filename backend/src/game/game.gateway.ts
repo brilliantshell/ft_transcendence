@@ -121,8 +121,8 @@ export class GameGateway {
    *
    * @param {gameId, isLeft, y} 게임 id, 어느쪽 플레이어인지 여부, 플레이어 y 좌표
    */
-  @SubscribeMessage('gamePlayerYChange')
-  handleGameMyY(
+  @SubscribeMessage('gamePlayerY')
+  handleGamePlayerY(
     @MessageBody()
     { gameId, isLeft, isUp }: GamePlayerYDto,
   ) {
@@ -136,12 +136,12 @@ export class GameGateway {
     const { leftY, rightY } = paddlePositions;
     if (isLeft) {
       paddlePositions.leftY = isUp
-        ? Math.max(0, leftY - 0.016667)
-        : Math.min(1, leftY + 0.016667);
+        ? Math.max(0, leftY - 0.048)
+        : Math.min(0.83333, leftY + 0.048);
     } else {
       paddlePositions.rightY = isUp
-        ? Math.max(0, rightY - 0.016667)
-        : Math.min(1, rightY + 0.016667);
+        ? Math.max(0, rightY - 0.048)
+        : Math.min(0.83333, rightY + 0.048);
     }
   }
 
