@@ -55,7 +55,7 @@ export class GamePainter {
    ****************************************************************************/
 
   private drawLine() {
-    const midX = this.dimension.w / 2;
+    const { midX } = this.metaData;
     this.context.beginPath();
     this.context.moveTo(midX, 0);
     this.context.setLineDash([10, 15]);
@@ -67,7 +67,7 @@ export class GamePainter {
     const { x, y } = ballCoords;
     const { w, h } = this.dimension;
     this.context.beginPath();
-    this.context.arc(x * w, y * h, w / 120, 0, Math.PI * 2);
+    this.context.arc(x * w, y * h, this.metaData.radius, 0, Math.PI * 2);
     this.context.fillStyle = '#ccadac';
     this.context.fill();
     this.context.closePath();
