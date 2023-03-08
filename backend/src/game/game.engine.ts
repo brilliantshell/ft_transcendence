@@ -3,7 +3,6 @@ import { ReplaySubject, Subscription } from 'rxjs';
 
 import { BallVelocity, GameData, GameId } from '../util/type';
 import { GameGateway } from './game.gateway';
-import { GameStorage } from './game.storage';
 
 const INITIAL_SPEED = 0.004;
 const MAX_SPEED = 0.01;
@@ -14,10 +13,7 @@ const PADDLE_RIGHT_END = 0.96667;
 
 @Injectable()
 export class GameEngine {
-  constructor(
-    private readonly gameGateway: GameGateway,
-    private readonly gameStorage: GameStorage,
-  ) {}
+  constructor(private readonly gameGateway: GameGateway) {}
 
   startGame(gameId: GameId, gameData: GameData) {
     const drawSubject = new ReplaySubject<void>(1);
