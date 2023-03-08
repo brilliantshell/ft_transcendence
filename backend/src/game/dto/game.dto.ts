@@ -1,6 +1,6 @@
 import { IsIn, IsString, Matches } from 'class-validator';
 
-import { GameId, Score, UserId } from '../../util/type';
+import { GameId, UserId } from '../../util/type';
 
 export class GameIdParamDto {
   @IsString()
@@ -22,7 +22,6 @@ export interface GameInfoDto {
   leftPlayer: string;
   rightPlayer: string;
   map: number;
-  scores: [Score, Score] | null;
 }
 
 export interface PlayersDto {
