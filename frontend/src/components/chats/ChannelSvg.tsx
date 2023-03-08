@@ -1,3 +1,5 @@
+import '../../style/Chats.css';
+
 interface SvgProps {
   width?: string; // SVG width
   height?: string; // SVG height
@@ -5,7 +7,6 @@ interface SvgProps {
   stroke?: string; // SVG Stroke color (line)
   strokeWidth?: number; // SVG Stroke width (line width)
 }
-import '../../style/Chats.css';
 
 export function UsersIcon({ width, height, stroke, strokeWidth }: SvgProps) {
   return (

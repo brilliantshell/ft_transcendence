@@ -15,7 +15,7 @@ interface MemberChange extends ChannelId {
   memberCountDiff: 1 | -1;
 }
 
-function AddToOtherChannels(
+function addToOtherChannels(
   prevOtherChannels: ChannelInfo[],
   { channelId, channelName, accessMode }: ChannelCreated,
 ) {
@@ -44,7 +44,7 @@ export function useChannelCreatedEvent(
   setOtherChannels: React.Dispatch<React.SetStateAction<ChannelInfo[]>>,
 ) {
   const handleChannelCreated = (newChannel: ChannelCreated) => {
-    setOtherChannels(prev => AddToOtherChannels(prev, newChannel));
+    setOtherChannels(prev => addToOtherChannels(prev, newChannel));
   };
   useEffect(() => {
     socket.on('channelCreated', handleChannelCreated);
@@ -172,7 +172,7 @@ export function useBannedEvent(
         .slice(0, bannedChannelIdx)
         .concat(prev.slice(bannedChannelIdx + 1));
     });
-    setOtherChannels(prev => AddToOtherChannels(prev, newChannel));
+    setOtherChannels(prev => addToOtherChannels(prev, newChannel));
   };
   useEffect(() => {
     socket.on('banned', handleBanned);

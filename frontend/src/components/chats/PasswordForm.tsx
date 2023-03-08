@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import instance from '../../util/Axios';
 import { ErrorAlert, SuccessAlert } from '../../util/Alert';
-import { AxiosError } from 'axios';
 
 const PWD_REGEX = /^[a-zA-Z0-9]{8,16}$/;
 const PWD_ERR = '비밀번호는 8~16자로 입력해주세요';
