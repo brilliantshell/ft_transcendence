@@ -6,8 +6,8 @@ import '../../style/FormModal.css';
 
 function ChannelCreate() {
   const [showModal, setShowModal] = useState<boolean>(false);
-  const hideModal = useCallback(() => setShowModal(false), []);
 
+  const hideModal = () => setShowModal(false);
   return (
     <>
       <button className="chatsNewButton xxlarge textBold" onClick={() => setShowModal(true)}>

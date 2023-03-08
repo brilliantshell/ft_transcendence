@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { socket } from '../../../util/Socket';
-import { ChannelInfo, Channels } from '../interface';
+import { ChannelInfo } from '../interface';
 
 interface ChannelId {
   channelId: number;
@@ -16,7 +16,7 @@ interface MemberChange extends ChannelId {
 }
 
 function AddToOtherChannels(
-  prevOtherChannels: Channels['otherChannels'],
+  prevOtherChannels: ChannelInfo[],
   { channelId, channelName, accessMode }: ChannelCreated,
 ) {
   const newChannelPos = prevOtherChannels.findIndex(
