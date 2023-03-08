@@ -1,59 +1,69 @@
+import { useEffect, useState } from 'react';
 import instance from '../../util/Axios';
-import { Suspense, useEffect, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 import { myIdState } from '../../util/Recoils';
 import { ErrorAlert } from '../../util/Alert';
 
+interface RankData {
+  myRank: number;
+  total: number;
+}
+
+interface UserData {
+  nickname: string;
+  imageSrc: string;
+}
+
 function MyRank() {
-  const [rankData, setRankData] = useState<{ myRank: number; total: number }>({
+  const [rankData, setRankData] = useState<RankData>({
     myRank: 0,
     total: 0,
   });
-  const [userData, setUserData] = useState<{
-    nickname: string;
-    imageSrc: string;
-  }>({ nickname: '', imageSrc: '' });
+  const [userData, setUserData] = useState<UserData>({
+    nickname: '',
+    imageSrc: '',
+  });
   const myId = useRecoilValue(myIdState);
 
   useEffect(() => {
     Promise.all([
       instance
         .get('/ranks/my-rank')
-        .then(result => {
-          setRankData(result.data);
-        })
-        .catch(() => ErrorAlert('랭킹에서 ', '암튼 에러가 났답니다~')),
+        .then(({ data }) => setRankData(data))
+        .catch(() =>
+          ErrorAlert(
+            '본인의 랭킹을 불러오는데 실패했습니다.',
+            '오류가 발생했습니다.',
+          ),
+        ),
       instance
         .get(`/user/${myId}/info`)
-        .then(result => {
-          const data = result.data;
+        .then(({ data }) =>
           setUserData({
             nickname: data.nickname,
             imageSrc: '/assets/defaultProfile.svg',
             // FIXME: imageSrc: data.isDefaultImage
             //   ? '/assets/defaultProfile.svg'
             //   : `http://localhost:3000/asset/profile-image/${myId}`,
-          });
-        })
-        .catch(err =>
+          }),
+        )
+        .catch(() =>
           ErrorAlert(
-            '당신의 정보를 불러오는데 실패했습니다.',
-            '당신의 정보 불러오기 실패' + err.response.data.message,
+            '본인의 정보를 불러오는데 실패했습니다.',
+            '오류가 발생했습니다.',
           ),
         ),
     ]);
   }, []);
 
-  useEffect(() => {}, []);
-
   return (
     <div className="myRank">
       <img
-        className="myRankProfileImg"
+        className="myRankProfileImg selectNone"
         src={userData.imageSrc}
         alt="profile image"
       />
-      <p className="myRankNickname xxlarge">{userData.nickname}</p>
+      <p className="myRankNickname xxlarge selectNone">{userData.nickname}</p>
       <p className="myRankDetail">
         당신은 {rankData.total} 명 중에 {rankData.myRank} 등 입니다.
       </p>

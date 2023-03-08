@@ -8,6 +8,33 @@
   width: 50%;
 }
 
+.ranksSpin {
+  animation: rotation 1s linear infinite;
+  border-radius: 50%;
+  border-right: 3px solid transparent;
+  border-top: 3px solid var(--secondary);
+  margin: auto;
+}
+
+.spinSmall {
+  height: 1rem;
+  width: 1rem;
+}
+
+.spinBig {
+  height: 2rem;
+  width: 2rem;
+}
+
+@keyframes rotation {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
 /* SECTION : MyRank */
 
 .myRank {
@@ -15,7 +42,6 @@
   color: var(--secondary_light);
   display: flex;
   flex-direction: column;
-  justify-content: center;
   min-height: 200px;
 }
 
@@ -33,6 +59,8 @@
 
 .ranksList {
   align-items: center;
+  border-radius: 10px;
+  box-shadow: 3px 3px 3px rgba(0, 0, 0, 0.25);
   display: flex;
   flex-direction: column;
   height: 100%;
@@ -75,6 +103,7 @@
 .ranksItem {
   background: var(--primary);
   border-radius: 10px;
+  box-shadow: 3px 3px 2px rgba(0, 0, 0, 0.25);
   margin: 0.625rem 1rem;
   text-decoration: none;
   transition: 0.8s;
@@ -83,24 +112,18 @@
 
 .ranksItem:hover {
   background: var(--secondary);
-  color: var(--primary);
+  color: var(--primary_dark);
 }
 
 /* SECTION : UserComponents In Ranks */
 
-.myRank > .userBase {
-  margin: inherit;
-  outline: none;
-}
-
-.ranksItem > .userBase > .userNickname,
-.myRank > .userBase > .userNickname {
+.ranksItem .userBase .userNickname {
   color: var(--secondary_light);
   font-size: 1rem;
   text-decoration: none;
 }
 
-.ranksItem > .userBase {
+.ranksItem .userBase {
   margin: inherit;
   outline: none;
 }
@@ -115,9 +138,9 @@
 }
 
 .ranksItem:hover .userBase .userNickname {
-  color: var(--primary);
+  color: var(--primary_dark);
 }
 
 .ranksItem:hover .userBase .dropdownImage {
-  filter: invert(0.5);
+  filter: invert(0.4);
 }
