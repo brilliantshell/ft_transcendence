@@ -1,4 +1,4 @@
-import { ReactNode, useCallback, useState } from 'react';
+import { ReactNode, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { useRecoilValue } from 'recoil';
@@ -35,7 +35,8 @@ function Channel({ channel, isJoined }: ChannelProps) {
     channel;
   const nav = useNavigate();
   const icon: ReactNode = icons[isDm ? 'dm' : accessMode];
-  const hideModal = useCallback(() => setShowModal(false), []);
+
+  const hideModal = () => setShowModal(false);
 
   const handleClick = () => {
     accessMode === 'protected' && isJoined !== true
@@ -48,9 +49,14 @@ function Channel({ channel, isJoined }: ChannelProps) {
             instance
               .put(`/chats/${channelId}/user/${myId}`)
               .then(() => nav(`/chats/${channelId}`))
-              .catch(() =>
-                ErrorAlert('채널 입장 실패', '오류가 발생했습니다.'),
-              );
+              .catch(err => {
+                err.response?.status === 403
+                  ? ErrorAlert(
+                      '채널 입장 실패',
+                      '해당 채널에 입장할 수 없습니다.',
+                    )
+                  : ErrorAlert('채널 입장 실패', '오류가 발생했습니다.');
+              });
         });
   };
 

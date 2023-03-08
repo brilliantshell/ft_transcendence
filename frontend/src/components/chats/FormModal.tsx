@@ -9,7 +9,6 @@ interface FormModalProps {
 
 function FormModal({ title, form, hideModal }: FormModalProps) {
   const overlayRef = useRef<HTMLDivElement>(null);
-  
 
   const handleClickOutside = (e: MouseEvent) => {
     if (

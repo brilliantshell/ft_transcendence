@@ -128,7 +128,7 @@ export class ChannelStorage implements OnModuleInit {
           this.messagesRepository
             .countBy({ channelId, createdAt: MoreThan(viewedAt) })
             .then((unseenCount) =>
-              this.getUser(userId).set(channelId, { unseenCount, muteEndAt }),
+              this.getUser(userId)?.set(channelId, { unseenCount, muteEndAt }),
             ),
         ),
       );
@@ -500,7 +500,7 @@ export class ChannelStorage implements OnModuleInit {
   async banUser(channelId: ChannelId, memberId: UserId, banEndAt: DateTime) {
     try {
       await this.dataSource.manager.transaction(async (manager) => {
-        await manager.insert(BannedMembers, {
+        await manager.save(BannedMembers, {
           channelId,
           memberId,
           endAt: banEndAt,

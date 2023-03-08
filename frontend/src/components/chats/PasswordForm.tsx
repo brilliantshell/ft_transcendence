@@ -38,12 +38,13 @@ function PasswordForm({ hideModal, myId, channelId }: PasswordFormProps) {
             });
           })
           .catch(err => {
-            ErrorAlert(
-              '채널 입장 실패',
-              err.response?.status === 403
+            const message =
+              err.response?.status !== 403
+                ? '오류가 발생했습니다.'
+                : err.response.data.message === 'Password is incorrect'
                 ? '비밀번호가 틀렸습니다.'
-                : '오류가 발생했습니다.',
-            );
+                : '해당 채널에 입장할 수 없습니다.';
+            ErrorAlert('채널 입장 실패', message);
           });
   };
 

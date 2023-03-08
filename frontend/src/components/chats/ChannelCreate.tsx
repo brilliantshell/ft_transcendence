@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import FormModal from './FormModal';
 import ChannelCreateForm from './ChannelCreateForm';
@@ -6,11 +6,15 @@ import '../../style/FormModal.css';
 
 function ChannelCreate() {
   const [showModal, setShowModal] = useState<boolean>(false);
-  const hideModal = useCallback(() => setShowModal(false), []);
+
+  const hideModal = () => setShowModal(false);
 
   return (
     <>
-      <button className="chatsNewButton xxlarge textBold" onClick={() => setShowModal(true)}>
+      <button
+        className="chatsNewButton xxlarge textBold"
+        onClick={() => setShowModal(true)}
+      >
         +
       </button>
       {showModal &&

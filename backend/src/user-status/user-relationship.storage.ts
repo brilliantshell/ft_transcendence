@@ -321,10 +321,12 @@ export class UserRelationshipStorage implements OnModuleInit {
    * @returns 받은 친구 요청 개수
    */
   countPendingRequests(userId: UserId) {
+    const relationships = this.users.get(userId);
+    if (relationships === undefined) {
+      return -1;
+    }
     let count = 0;
-    this.users
-      .get(userId)
-      .forEach((status) => status === 'pendingReceiver' && count++);
+    relationships.forEach((status) => status === 'pendingReceiver' && count++);
     return count;
   }
 

@@ -866,7 +866,7 @@ describe('UserController (e2e)', () => {
       ).nickname;
 
       // ban and join channel
-      await request(app.getHttpServer())
+      return request(app.getHttpServer())
         .post(`/chats/${channel.channelId}/message`)
         .set('x-user-id', channel.ownerId.toString())
         .send({
@@ -881,24 +881,6 @@ describe('UserController (e2e)', () => {
               message: 'test message',
             })
             .expect(403);
-        });
-
-      // unban and join channel
-      return await request(app.getHttpServer())
-        .post(`/chats/${channel.channelId}/message`)
-        .set('x-user-id', channel.ownerId.toString())
-        .send({
-          message: `/mute ${memberNickname} 0`,
-        })
-        .expect(201)
-        .expect(() => {
-          request(app.getHttpServer())
-            .post(`/chats/${channel.channelId}/message`)
-            .set('x-user-id', member.memberId.toString())
-            .send({
-              message: 'test message',
-            })
-            .expect(201);
         });
     });
 

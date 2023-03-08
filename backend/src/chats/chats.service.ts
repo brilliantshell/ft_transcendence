@@ -277,7 +277,8 @@ export class ChatsService {
     } else {
       const minutes = now.plus({ minutes: Number(arg) });
       await this.channelStorage.banUser(channelId, targetId, minutes);
-      return this.chatsGateway.emitMemberLeft(channelId, targetId, false);
+      this.chatsGateway.emitMemberLeft(channelId, targetId, false);
+      return this.chatsGateway.emitBanned(channelId, targetId);
     }
   }
 
