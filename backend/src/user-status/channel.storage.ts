@@ -500,7 +500,7 @@ export class ChannelStorage implements OnModuleInit {
   async banUser(channelId: ChannelId, memberId: UserId, banEndAt: DateTime) {
     try {
       await this.dataSource.manager.transaction(async (manager) => {
-        await manager.insert(BannedMembers, {
+        await manager.save(BannedMembers, {
           channelId,
           memberId,
           endAt: banEndAt,
