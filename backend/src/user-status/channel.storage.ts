@@ -128,7 +128,7 @@ export class ChannelStorage implements OnModuleInit {
           this.messagesRepository
             .countBy({ channelId, createdAt: MoreThan(viewedAt) })
             .then((unseenCount) =>
-              this.getUser(userId).set(channelId, { unseenCount, muteEndAt }),
+              this.getUser(userId)?.set(channelId, { unseenCount, muteEndAt }),
             ),
         ),
       );
