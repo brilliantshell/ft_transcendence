@@ -164,7 +164,6 @@ describe('GameService', () => {
         leftPlayer: playerOne.nickname,
         rightPlayer: playerTwo.nickname,
         map: 1,
-        scores: null,
       });
     });
 
@@ -173,13 +172,11 @@ describe('GameService', () => {
         gameId,
         new GameInfo(playerOne.userId, playerTwo.userId, 1, true),
       );
-      gameStorage.getGame(gameId).scores = [1, 2];
       expect(service.findGameInfo(spectatorOne.userId, gameId)).toEqual({
         isRank: true,
         leftPlayer: playerOne.nickname,
         rightPlayer: playerTwo.nickname,
         map: 1,
-        scores: [1, 2],
       });
     });
 
@@ -375,15 +372,13 @@ describe('GameService', () => {
   });
 
   describe('START GAME', () => {
-    it('should set the scores to [0, 0], send gameStatus to players & spectators and gameStarted to waitingRoom', async () => {
+    it('should send to players & spectators and gameStarted to waitingRoom', async () => {
       await gameStorage.createGame(
         gameId,
         new GameInfo(playerOne.userId, playerTwo.userId, 1, false),
       );
       const gameInfo = gameStorage.getGame(gameId);
       service.startGame(gameId, gameInfo);
-      expect(gameStorage.getGame(gameId).scores).toEqual([0, 0]);
-      expect(gameGateway.emitGameStatus).toHaveBeenCalled();
       expect(gameGateway.emitGameStarted).toHaveBeenCalledWith({
         id: gameId,
         left: gameInfo.leftNickname,

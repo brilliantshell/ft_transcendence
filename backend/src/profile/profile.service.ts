@@ -72,7 +72,6 @@ export class ProfileService {
       };
     } catch (e) {
       this.logger.error(e);
-      console.log(e);
       throw new InternalServerErrorException('Failed to find user profile');
     }
   }
