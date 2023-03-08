@@ -23,6 +23,7 @@ import { UserRelationshipStorage } from '../user-status/user-relationship.storag
 @Injectable()
 export class ChatsService {
   private readonly logger = new Logger(ChatsService.name);
+
   constructor(
     private readonly activityManager: ActivityManager,
     private readonly channelStorage: ChannelStorage,
@@ -128,6 +129,10 @@ export class ChatsService {
     isInvited: boolean,
     password: string = null,
   ) {
+    if (this.channelStorage.getUserRole(channelId, userId) !== null) {
+      this.channelStorage.updateUnseenCount(channelId, userId, true);
+      return false;
+    }
     const { accessMode } = this.channelStorage.getChannel(channelId);
     if (accessMode === 'public' || isInvited) {
       await this.channelStorage.addUserToChannel(channelId, userId);
@@ -163,12 +168,10 @@ export class ChatsService {
    * @param userId 나갈 유저의 Id
    */
   async leaveChannel(channelId: ChannelId, userId: UserId) {
+    const isOwner =
+      this.channelStorage.getUserRole(channelId, userId) === 'owner';
     await this.channelStorage.deleteUserFromChannel(channelId, userId);
-    return this.chatsGateway.emitMemberLeft(
-      channelId,
-      userId,
-      this.channelStorage.getUserRole(channelId, userId) === 'owner',
-    );
+    return this.chatsGateway.emitMemberLeft(channelId, userId, isOwner);
   }
 
   /**
@@ -224,12 +227,12 @@ export class ChatsService {
   ) {
     const createdAt = DateTime.now();
     try {
-      await this.messagesRepository.insert({
-        senderId,
+      await this.channelStorage.updateChannelMessage(
         channelId,
+        senderId,
         contents,
         createdAt,
-      });
+      );
     } catch (e) {
       this.logger.error(e);
       throw new InternalServerErrorException('Failed to create message');
@@ -304,8 +307,8 @@ export class ChatsService {
       Array.from(userChannelMap)
         .sort(
           (a, b) =>
-            this.channelStorage.getChannel(a[0]).modifiedAt.valueOf() -
-            this.channelStorage.getChannel(b[0]).modifiedAt.valueOf(),
+            this.channelStorage.getChannel(b[0]).modifiedAt.valueOf() -
+            this.channelStorage.getChannel(a[0]).modifiedAt.valueOf(),
         )
         .map(async (channel) => {
           const channelId = channel[0];

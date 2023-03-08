@@ -3,10 +3,16 @@ import { Channels } from '../components/chats/interface';
 import ChatsFrame from '../components/chats/ChatsFrame';
 import ChatsBody from '../components/chats/ChatsBody';
 import instance from '../util/Axios';
-import { socket } from '../util/Socket';
-import '../style/Chats.css';
-import { AxiosError } from 'axios';
 import { ErrorAlert } from '../util/Alert';
+import { socket } from '../util/Socket';
+import {
+  useChannelCreatedEvent,
+  useChannelDeletedEvent,
+  useChannelUpdatedEvent,
+  useMessageArrivedEvent,
+} from '../components/chats/hooks/ChannelHooks';
+import { useCurrentUi } from '../components/hooks/EmitCurrentUi';
+import '../style/Chats.css';
 
 function Chats() {
   const [joinedChannels, setJoinedChannels] = useState<
@@ -15,23 +21,31 @@ function Chats() {
   const [otherChannels, setOtherChannels] = useState<Channels['otherChannels']>(
     [],
   );
+  const [isConnected, setIsConnected] = useState(socket.connected);
+
+  useCurrentUi(isConnected, setIsConnected, 'chats');
 
   useEffect(() => {
-    (async () => {
-      socket.disconnected &&
-        (await new Promise((resolve: any) => socket.on('connect', resolve)));
-      socket.emit('currentUi', { ui: 'chats' });
-      try {
-        const { joinedChannels, otherChannels } = (
-          await instance.get<Channels>('/chats')
-        ).data;
-        setJoinedChannels(joinedChannels);
-        setOtherChannels(otherChannels);
-      } catch (err) {
-        ErrorAlert('채널 목록 로딩 실패', '오류가 발생했습니다.');
-      }
-    })();
-  }, []);
+    isConnected &&
+      instance
+        .get<Channels>('/chats')
+        .then(({ data: { joinedChannels, otherChannels } }) => {
+          setJoinedChannels(joinedChannels);
+          setOtherChannels(otherChannels);
+        })
+        .catch(() => ErrorAlert('채널 목록 로딩 실패', '오류가 발생했습니다.'));
+  }, [isConnected]);
+
+  useChannelCreatedEvent({ otherChannels, setOtherChannels });
+  useChannelDeletedEvent(
+    { joinedChannels, setJoinedChannels },
+    { otherChannels, setOtherChannels },
+  );
+  useChannelUpdatedEvent(
+    { joinedChannels, setJoinedChannels },
+    { otherChannels, setOtherChannels },
+  );
+  useMessageArrivedEvent({ joinedChannels, setJoinedChannels });
 
   return (
     <div className="chats">

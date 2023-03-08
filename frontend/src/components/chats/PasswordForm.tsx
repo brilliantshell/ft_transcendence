@@ -7,12 +7,12 @@ const PWD_REGEX = /^[a-zA-Z0-9]{8,16}$/;
 const PWD_ERR = '비밀번호는 8~16자로 입력해주세요';
 
 interface PasswordFormProps {
-  hidden: () => void;
+  hideModal: () => void;
   myId: number;
   channelId: number;
 }
 
-function PasswordForm({ hidden, myId, channelId }: PasswordFormProps) {
+function PasswordForm({ hideModal, myId, channelId }: PasswordFormProps) {
   const [password, setPassword] = useState<string | undefined>(undefined);
   const [error, setError] = useState<boolean>(false);
   const nav = useNavigate();
@@ -33,7 +33,7 @@ function PasswordForm({ hidden, myId, channelId }: PasswordFormProps) {
           })
           .then(() => {
             SuccessAlert('채널 입장 성공', '채널로 이동합니다.').then(() => {
-              hidden();
+              hideModal();
               nav(`/chats/${channelId}`);
             });
           })
@@ -68,10 +68,17 @@ function PasswordForm({ hidden, myId, channelId }: PasswordFormProps) {
         </label>
       </form>
       <div className="formModalButtons">
-        <button className='formModalConfirm regular' type="submit" form="createChat" onClick={handleSubmit}>
+        <button
+          className="formModalConfirm regular"
+          type="submit"
+          form="createChat"
+          onClick={handleSubmit}
+        >
           확인
         </button>
-        <button className='formModalCancel regular' onClick={hidden}>취소</button>
+        <button className="formModalCancel regular" onClick={hideModal}>
+          취소
+        </button>
       </div>
     </>
   );

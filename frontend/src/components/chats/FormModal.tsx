@@ -4,10 +4,10 @@ import '../../style/FormModal.css';
 interface FormModalProps {
   title: string;
   form: ReactNode;
-  hidden: () => void;
+  hideModal: () => void;
 }
 
-function FormModal({ title, form, hidden }: FormModalProps) {
+function FormModal({ title, form, hideModal }: FormModalProps) {
   const overlayRef = useRef<HTMLDivElement>(null);
   
 
@@ -16,13 +16,13 @@ function FormModal({ title, form, hidden }: FormModalProps) {
       overlayRef.current &&
       overlayRef.current === (e.target as HTMLElement)
     ) {
-      hidden();
+      hideModal();
     }
   };
 
   const handleEscKeyDown = (e: KeyboardEvent) => {
     if (e.key === 'Escape') {
-      hidden();
+      hideModal();
     }
   };
 
