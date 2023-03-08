@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import instance from '../../util/Axios';
 import { ErrorAlert, SuccessAlert } from '../../util/Alert';
+import { AxiosError } from 'axios';
 
 const PWD_REGEX = /^[a-zA-Z0-9]{8,16}$/;
 const PWD_ERR = '비밀번호는 8~16자로 입력해주세요';
@@ -38,12 +39,13 @@ function PasswordForm({ hideModal, myId, channelId }: PasswordFormProps) {
             });
           })
           .catch(err => {
-            ErrorAlert(
-              '채널 입장 실패',
-              err.response?.status === 403
+            const message =
+              err.response?.status !== 403
+                ? '오류가 발생했습니다.'
+                : err.response.data.message === 'Password is incorrect'
                 ? '비밀번호가 틀렸습니다.'
-                : '오류가 발생했습니다.',
-            );
+                : '해당 채널에 입장할 수 없습니다.';
+            ErrorAlert('채널 입장 실패', message);
           });
   };
 
