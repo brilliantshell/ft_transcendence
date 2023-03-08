@@ -177,7 +177,7 @@ export class GameGateway {
   }
 
   /**
-   * @description 게임이 종료되었다고 알림
+   * @description 게임이 정상적으로 종료되었다고 알림
    *
    * @param gameId 게임 id
    * @param gameData 게임 정보
