@@ -232,7 +232,7 @@ export class UserService {
     } catch (e) {
       this.logger.error(e);
       throw new InternalServerErrorException(
-        `Failed to find info of a user(${requesterId})`,
+        `Failed to find info of a user(${targetId})`,
       );
     }
     const requesterSocketId = this.userSocketStorage.clients.get(requesterId);
