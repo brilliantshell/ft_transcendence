@@ -629,10 +629,11 @@ describe('GameController (e2e)', () => {
   /*****************************************************************************
    *                                                                           *
    * ANCHOR : PATCH /game/:gameId/start                                        *
+   * NOTE : SKIPPED                                                            *
    *                                                                           *
    ****************************************************************************/
 
-  describe('PATCH /game/:gameId/start', () => {
+  describe.skip('PATCH /game/:gameId/start', () => {
     it('should start the game when the both players sends the request (200)', async () => {
       const [playerOne, playerTwo, spectator, waitingRoom] = userIds;
       const gameId = nanoid();

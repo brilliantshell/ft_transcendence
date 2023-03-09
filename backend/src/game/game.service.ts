@@ -8,6 +8,7 @@ import {
 } from '@nestjs/common';
 import { nanoid } from 'nanoid';
 
+import { GameEngine } from './game.engine';
 import { GameGateway } from './game.gateway';
 import { GameId, GameInfo, UserId } from '../util/type';
 import { GameStorage } from './game.storage';
@@ -17,6 +18,7 @@ import { UserSocketStorage } from '../user-status/user-socket.storage';
 @Injectable()
 export class GameService {
   constructor(
+    private readonly gameEngine: GameEngine,
     @Inject(forwardRef(() => GameGateway))
     private readonly gameGateway: GameGateway,
     private readonly gameStorage: GameStorage,
@@ -199,26 +201,16 @@ export class GameService {
    * @param gameInfo 게임 정보
    */
   startGame(gameId: GameId, gameInfo: GameInfo) {
+    const { gameData, leftNickname, rightNickname } = gameInfo;
+    if (!gameInfo.isStarted) {
+      this.gameEngine.startGame(gameId, gameData);
+    }
     gameInfo.isStarted = true;
     this.gameGateway.emitGameStarted({
       id: gameId,
-      left: gameInfo.leftNickname,
-      right: gameInfo.rightNickname,
+      left: leftNickname,
+      right: rightNickname,
     });
-  }
-
-  /**
-   * @description 공 위치 초기화
-   *
-   * @param gameId 게임 id
-   */
-  resetBall(gameId: GameId) {
-    const gameInfo = this.gameStorage.getGame(gameId);
-    if (gameInfo === undefined) {
-      return;
-    }
-    const { leftId, rightId } = gameInfo;
-    this.gameGateway.emitGameBallDirections([leftId, rightId]);
   }
 
   /**
