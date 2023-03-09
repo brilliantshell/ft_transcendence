@@ -3,33 +3,35 @@ import instance from '../../util/Axios';
 import { useRecoilValue } from 'recoil';
 import { myIdState } from '../../util/Recoils';
 import { ErrorAlert } from '../../util/Alert';
-
-interface RankData {
-  myRank: number;
-  total: number;
-}
+import { MyRankInfo } from './interface';
 
 interface UserData {
   nickname: string;
   imageSrc: string;
 }
 
-function MyRank() {
-  const [rankData, setRankData] = useState<RankData>({
-    myRank: 0,
-    total: 0,
-  });
+interface MyRankProps {
+  myRankInfo: MyRankInfo;
+  setMyRankInfo: React.Dispatch<React.SetStateAction<MyRankInfo>>;
+}
+
+function MyRank({ myRankInfo, setMyRankInfo }: MyRankProps) {
+  const [rankTotal, setRankTotal] = useState<number>(0);
   const [userData, setUserData] = useState<UserData>({
     nickname: '',
     imageSrc: '',
   });
   const myId = useRecoilValue(myIdState);
+  const { myRank, limit } = myRankInfo;
 
   useEffect(() => {
     Promise.all([
       instance
         .get('/ranks/my-rank')
-        .then(({ data }) => setRankData(data))
+        .then(({ data }) => {
+          setRankTotal(data.total);
+          setMyRankInfo({ myRank: data.myRank, limit: limit });
+        })
         .catch(() =>
           ErrorAlert(
             '본인의 랭킹을 불러오는데 실패했습니다.',
@@ -65,7 +67,10 @@ function MyRank() {
       />
       <p className="myRankNickname xxlarge selectNone">{userData.nickname}</p>
       <p className="myRankDetail">
-        당신은 {rankData.total} 명 중에 {rankData.myRank} 등 입니다.
+        당신은 {rankTotal} 명 중
+        {myRank < limit
+          ? `에 ${myRank} 등 입니다.`
+          : ` ${limit} 위 안에 들지 못했습니다!`}
       </p>
     </div>
   );

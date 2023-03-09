@@ -9,11 +9,11 @@ interface RanksItemProps {
 
 function RanksItem({ id, rank, ladder, children }: RanksItemProps) {
   return (
-    <div /* to={`/profile/${id}`} */ className="ranksItem selectNone">
+    <Link to={`/profile/${id}`} className="ranksItem selectNone">
       <p>{rank} 등</p>
       {children}
       <p>{ladder}</p>
-    </div>
+    </Link>
   );
 }
 

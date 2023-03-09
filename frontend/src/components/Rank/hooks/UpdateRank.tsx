@@ -1,11 +1,6 @@
 import { useEffect } from 'react';
 import { socket } from '../../../util/Socket';
-
-interface RankData {
-  id: number;
-  ladder: number;
-  rank: number;
-}
+import { MyRankInfo, RankData } from '../interface';
 
 interface LadderUpdate {
   winnerId: number;
@@ -21,6 +16,7 @@ interface RankUpdateInfo {
 
 const EMPTY_RANK: RankData = { id: 0, ladder: 0, rank: 0 };
 const EMPTY_POS = -1;
+const OUT_OF_RANK = 4242;
 
 export function useUpdateRank(
   setRankData: React.Dispatch<React.SetStateAction<RankData[]>>,
@@ -30,20 +26,21 @@ export function useUpdateRank(
     let upperBound = EMPTY_RANK;
     let prevPos = EMPTY_POS;
     let newPos = EMPTY_POS;
+
     for (let i = 0; i < prev.length; i++) {
       if (prevPos !== EMPTY_POS && upperBound !== EMPTY_RANK) {
         break;
       }
       if (prev[i].id === winnerId) {
         prevPos = i;
-      } else if (lowerBound === EMPTY_RANK && prev[i].ladder === ladder) {
-        lowerBound = prev[i];
       } else if (upperBound === EMPTY_RANK && prev[i].ladder < ladder) {
         newPos = prev[i].rank - 1;
         upperBound = prev[i];
         if (lowerBound === EMPTY_RANK) {
           lowerBound = upperBound;
         }
+      } else if (lowerBound === EMPTY_RANK && prev[i].ladder === ladder) {
+        lowerBound = prev[i];
       }
     }
     if (prevPos !== EMPTY_POS && prevPos < newPos) {
@@ -86,7 +83,6 @@ export function useUpdateRank(
     { winnerId, ladder }: LadderUpdate,
     { prevPos, lowerBound, upperBound }: RankUpdateInfo,
   ) => {
-    console.log('same');
     return prev.slice(0, prevPos).concat(
       {
         id: winnerId,
@@ -102,7 +98,6 @@ export function useUpdateRank(
     { winnerId, ladder }: LadderUpdate,
     { newPos, prevPos, upperBound, lowerBound }: RankUpdateInfo,
   ) => {
-    console.log('higher');
     return prev.slice(0, newPos).concat(
       {
         id: winnerId,
@@ -123,15 +118,6 @@ export function useUpdateRank(
     { winnerId, ladder }: LadderUpdate,
     { newPos, prevPos, upperBound, lowerBound }: RankUpdateInfo,
   ) => {
-    // to lower
-    console.log('lower');
-    console.log(
-      'prev , newPos, prevPos',
-      prev.slice(prevPos - 1, newPos + 1),
-      newPos,
-      prevPos,
-      prev.slice(prevPos + 1, newPos + 1),
-    );
     return prev.slice(0, prevPos).concat(
       prev.slice(prevPos + 1, newPos + 1).map(({ id, ladder, rank }) => ({
         id,
@@ -153,34 +139,27 @@ export function useUpdateRank(
 
   const handleLadderUpdate = (ladderUpdate: LadderUpdate) => {
     setRankData(prev => {
-      console.log('####start! length : ', prev.length);
       const { winnerId, ladder } = ladderUpdate;
       if (prev.length === 0) {
         return [{ id: winnerId, ladder, rank: 1 }];
       }
-      const rankUpdateInfo: RankUpdateInfo = findRankInfo(
-        prev,
-        winnerId,
-        ladder,
-      );
-      console.table(rankUpdateInfo);
 
+      const rankUpdateInfo = findRankInfo(prev, winnerId, ladder);
       const { newPos, prevPos } = rankUpdateInfo;
+
       if (newPos === EMPTY_POS) {
-        console.log('remove');
         return prevPos === EMPTY_POS ? prev : removeFromRank(prev, prevPos);
       }
       if (prevPos === EMPTY_POS) {
-        console.log('add');
         return addToRank(prev, ladderUpdate, rankUpdateInfo);
       }
-      if (prevPos === newPos) {
-        return updateRankInSamePos(prev, ladderUpdate, rankUpdateInfo);
-      }
+
       if (prevPos > newPos) {
         return updateRankToHigher(prev, ladderUpdate, rankUpdateInfo);
-      } else {
+      } else if (prevPos < newPos) {
         return updateRankToLower(prev, ladderUpdate, rankUpdateInfo);
+      } else {
+        return updateRankInSamePos(prev, ladderUpdate, rankUpdateInfo);
       }
     });
   };
@@ -191,4 +170,21 @@ export function useUpdateRank(
       socket.off('ladderUpdate', handleLadderUpdate);
     };
   }, []);
+}
+
+export function useUpdateMyRank(
+  setMyRankInfo: React.Dispatch<React.SetStateAction<MyRankInfo>>,
+  myId: number,
+  rankData: RankData[],
+) {
+  useEffect(() => {
+    if (rankData.length === 0) {
+      return;
+    }
+    const data = rankData.find(({ id }) => id == myId);
+    const limit = rankData[rankData.length - 1].rank;
+    data
+      ? setMyRankInfo({ myRank: data.rank, limit })
+      : setMyRankInfo({ myRank: OUT_OF_RANK, limit });
+  }, [rankData]);
 }
