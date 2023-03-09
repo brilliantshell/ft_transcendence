@@ -70,7 +70,7 @@ export function useUpdateRank(
         ladder,
         rank: lowerBound.rank,
       },
-      prev.slice(newPos, 50 - 1).map(({ id, ladder, rank }) => ({
+      prev.slice(newPos, 49).map(({ id, ladder, rank }) => ({
         id,
         ladder,
         rank: rank + 1,

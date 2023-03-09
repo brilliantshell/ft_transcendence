@@ -16,7 +16,6 @@ interface MyRankProps {
 }
 
 function MyRank({ myRankInfo, setMyRankInfo }: MyRankProps) {
-  const [rankTotal, setRankTotal] = useState<number>(0);
   const [userData, setUserData] = useState<UserData>({
     nickname: '',
     imageSrc: '',
@@ -29,8 +28,7 @@ function MyRank({ myRankInfo, setMyRankInfo }: MyRankProps) {
       instance
         .get('/ranks/my-rank')
         .then(({ data }) => {
-          setRankTotal(data.total);
-          setMyRankInfo({ myRank: data.myRank, limit: limit });
+          setMyRankInfo({ myRank: data.myRank, limit });
         })
         .catch(() =>
           ErrorAlert(
@@ -67,9 +65,9 @@ function MyRank({ myRankInfo, setMyRankInfo }: MyRankProps) {
       />
       <p className="myRankNickname xxlarge selectNone">{userData.nickname}</p>
       <p className="myRankDetail">
-        당신은 {rankTotal} 명 중
+        당신은
         {myRank < limit
-          ? `에 ${myRank} 등 입니다.`
+          ? ` ${myRank} 등 입니다.`
           : ` ${limit} 위 안에 들지 못했습니다!`}
       </p>
     </div>
