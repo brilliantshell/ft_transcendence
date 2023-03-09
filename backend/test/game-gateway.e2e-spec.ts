@@ -457,11 +457,13 @@ describe('GameGateway (e2e)', () => {
    *                                                                           *
    ****************************************************************************/
   /**
+   * NOTE : 게임 엔진이 백엔드로 이동하면서 이 테스트는 더이상 유효하지 않습니다
+   *
    * 게임이 정상적으로 종료되었을 때, 승자가 이벤트로 서버에 승리를 알리고, 서버는 결과를 저장하고,
    * 게임방을 삭제한다.
    */
 
-  describe('gameComplete', () => {
+  describe.skip('gameComplete', () => {
     it('should throw error when the client sends invalid message', async () => {
       const [playerOne] = clientSockets;
       gateway.joinRoom(
@@ -893,7 +895,7 @@ describe('GameGateway (e2e)', () => {
       ]);
     });
 
-    it('should notify the users in waiting-room when the ladder game is ended', async () => {
+    it.skip('should notify the users in waiting-room when the ladder game is ended', async () => {
       const [playerOne, playerTwo, waitingOne, waitingTwo] = clientSockets;
       await gameStorage.createGame(
         gameId,
@@ -975,7 +977,7 @@ describe('GameGateway (e2e)', () => {
       expect(wsTwo.value).toEqual({ id: gameId });
     });
 
-    it('should not notify the users in waiting-room when the non-ladder game is ended', async () => {
+    it.skip('should not notify the users in waiting-room when the non-ladder game is ended', async () => {
       const [playerOne, playerTwo, waitingOne, waitingTwo] = clientSockets;
       await gameStorage.createGame(
         gameId,

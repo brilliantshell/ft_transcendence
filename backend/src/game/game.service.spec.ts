@@ -13,8 +13,9 @@ import waitForExpect from 'wait-for-expect';
 import { BlockedUsers } from '../entity/blocked-users.entity';
 import { Channels } from '../entity/channels.entity';
 import { Friends } from '../entity/friends.entity';
+import { GameEngine } from './game.engine';
 import { GameGateway } from './game.gateway';
-import { GameId, GameInfo, SocketId } from '../util/type';
+import { GameData, GameId, GameInfo, SocketId } from '../util/type';
 import { GameService } from './game.service';
 import { GameStartedDto } from './dto/game-gateway.dto';
 import { GameStorage } from './game.storage';
@@ -68,6 +69,7 @@ describe('GameService', () => {
         TypeOrmModule.forFeature([BlockedUsers, Channels, Friends, Users]),
       ],
       providers: [
+        GameEngine,
         GameGateway,
         GameService,
         GameStorage,
@@ -88,6 +90,10 @@ describe('GameService', () => {
         emitGameStarted: jest.fn((gameStarted: GameStartedDto) => undefined),
         emitGameStatus: jest.fn((gameId: GameId) => undefined),
         emitGameCancelled: jest.fn((gameId: GameId) => undefined),
+      })
+      .overrideProvider(GameEngine)
+      .useValue({
+        startGame: jest.fn((gameId: GameId, gameData: GameData) => undefined),
       })
       .compile();
     service = module.get<GameService>(GameService);
