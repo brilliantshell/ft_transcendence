@@ -45,7 +45,7 @@ function SearchModalBody({ searchResult, hideModal }: SearchModalBodyProps) {
       {searchResult.map((user, index) => {
         return (
           <Link
-            key={index}
+            key={`search-${index}`}
             className={`searchResult ${
               index === cursor ? 'searchResultActive' : ''
             }`}

@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link } from 'react-router-dom';
 
 interface RanksItemProps {
   id: number;
@@ -9,11 +9,11 @@ interface RanksItemProps {
 
 function RanksItem({ id, rank, ladder, children }: RanksItemProps) {
   return (
-    <Link to={`/profile/${id}`} className="ranksItem selectNone" key={`rank-${id}`}>
+    <div /* to={`/profile/${id}`} */ className="ranksItem selectNone">
       <p>{rank} 등</p>
       {children}
       <p>{ladder}</p>
-    </Link>
+    </div>
   );
 }
 
