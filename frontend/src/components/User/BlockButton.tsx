@@ -1,28 +1,32 @@
 import { useRecoilState } from 'recoil';
+import { ErrorAlert } from '../../util/Alert';
 import instance from '../../util/Axios';
-import { relationshipState } from '../../util/Recoils';
+import { userRelationship } from '../../util/Recoils';
 
 interface Props {
   userId: number;
 }
 
 function BlockButton(props: Props) {
-  const [relationship, setRelationship] = useRecoilState(
-    relationshipState(props.userId),
-  );
-
+  const [relationshipMap, setRelationshipMap] =
+    useRecoilState(userRelationship);
   const blockPut = () => {
     instance
       .put(`/user/${props.userId}/block`)
       .then(() => {
-        setRelationship({
-          userId: props.userId,
-          relationship: 'blocker',
+        setRelationshipMap(prev => {
+          const copy = new Map(prev);
+          copy.set(props.userId, {
+            userId: props.userId,
+            relationship: 'blocker',
+          });
+          return copy;
         });
       })
-      .catch(reason => {
-        // 403
-        console.error(reason);
+      .catch(err => {
+        if (err.response.status === 403) {
+          ErrorAlert('차단된 유저입니다.', '넌 아무것도 못해');
+        }
       });
   };
 
@@ -30,20 +34,25 @@ function BlockButton(props: Props) {
     instance
       .delete(`/user/${props.userId}/block`)
       .then(() => {
-        setRelationship({
-          userId: props.userId,
-          relationship: 'normal',
+        setRelationshipMap(prev => {
+          const copy = new Map(prev);
+          copy.set(props.userId, {
+            userId: props.userId,
+            relationship: 'normal',
+          });
+          return copy;
         });
       })
-      .catch(reason => {
-        // 403
-        console.error(reason);
+      .catch(err => {
+        if (err.response.status === 403) {
+          ErrorAlert('차단된 유저입니다.', '차단을 해제할 수 없습니다.');
+        }
       });
   };
 
-  if (relationship.relationship === 'blocker') {
+  if (relationshipMap.get(props.userId)?.relationship === 'blocker') {
     return <button onClick={blockDelete}>차단 해제</button>;
-  } else if (relationship.relationship === 'blocked') {
+  } else if (relationshipMap.get(props.userId)?.relationship === 'blocked') {
     return <></>;
   }
   return <button onClick={blockPut}>차단</button>;

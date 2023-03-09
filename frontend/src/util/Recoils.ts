@@ -25,11 +25,3 @@ export const userRelationship = atom<Map<number, relationshipData>>({
   key: 'userRelationship',
   default: new Map<number, relationshipData>(),
 });
-
-export const relationshipState = atomFamily<relationshipData, number>({
-  key: 'relationshipState',
-  default: id => ({
-    userId: id,
-    relationship: 'normal',
-  }),
-});

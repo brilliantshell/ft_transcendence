@@ -1,8 +1,7 @@
 div.friendsList {
-  display: inline-block;
-  position: absolute;
-  right: 5%;
+  position: sticky;
   bottom: 5%;
+  left: 90%;
 }
 
 .friendsListBtn {
@@ -15,15 +14,26 @@ div.friendsList {
 }
 
 .friendsListContent {
-  display: block;
+  display: flex;
+  flex-direction: column;
   position: absolute;
   background-color: var(--secondary);
-  right: 1rem;
+  right: 0;
   bottom: 50px;
-  width: auto;
+  width: 10rem;
+  border-radius: 0.5rem;
 }
 
-.friendsListContent div {
-  color: black;
-  /* padding: 0.5rem; */
+.friendCategory {
+  padding-top: 0.1rem;
+  padding-bottom: 0.1rem;
+  background-color: var(--secondary_dark);
 }
+
+.friendListMap {
+  max-height: 10rem;
+  padding-bottom: 50px;
+  overflow-y: scroll;
+}
+
+/* FIXME : 윗부분 css가 둥글게 안되는...ㅠㅠㅠ */

@@ -1,33 +1,26 @@
 import instance from '../../util/Axios';
 import UserBase from './UserBase';
-import { memo, useEffect } from 'react';
-import { useRecoilValue, useSetRecoilState } from 'recoil';
-import { myIdState, relationshipState } from '../../util/Recoils';
+import { memo, ReactNode } from 'react';
+import { useRecoilValue } from 'recoil';
+import { myIdState } from '../../util/Recoils';
 import { useNavigate } from 'react-router-dom';
 import { activityData, relationshipData } from '../hooks/SocketOnHooks';
 import BlockButton from './BlockButton';
 import FriendButton from './FriendButton';
 import GameButton from './GameButton';
-
-/**
-- 친구 요청이 왔는지에 대한 소켓이 off
-
-친구 리스트 닫았을 때
-- off
-- 친구 요청이 왔는지에 대한 소켓이 on
-* 
-*/
+import { ErrorAlert } from '../../util/Alert';
 
 interface Props {
   userId: number;
+  session?: boolean;
   activity?: activityData;
   relationship?: relationshipData;
+  downChild?: ReactNode;
 }
 
 function User(props: Props) {
   const myId = useRecoilValue(myIdState);
   const navigate = useNavigate();
-  const setRelationship = useSetRecoilState(relationshipState(props.userId));
 
   const dmOnclick = () => {
     instance
@@ -35,37 +28,39 @@ function User(props: Props) {
       .then(result => {
         navigate(result.headers.location);
       })
-      .catch(reason => {
-        // 400
-        console.error(reason);
+      .catch(err => {
+        if (err.response.status === 400) {
+          ErrorAlert('DM을 보낼 수 없습니다.', err.response.data.message);
+        }
       });
   };
 
   const onlineFunc = () => {
-    if (!props.activity || props.activity.activity === 'offline') {
-      return false;
-    }
-    return true;
+    if (!props.activity) return false;
+    return props.activity.activity !== 'offline';
   };
 
-  useEffect(() => {
-    if (props.relationship) {
-      setRelationship(props.relationship);
-    }
-  }, [props.relationship]);
-
   if (!props.activity || !props.relationship) {
-    return <UserBase userId={props.userId} online={false}></UserBase>;
+    return (
+      <UserBase
+        userId={props.userId}
+        online={false}
+        downChild={props.downChild}
+        session={props.session}
+      ></UserBase>
+    );
   }
 
   return (
     <UserBase
       userId={props.userId}
       online={onlineFunc()}
+      downChild={props.downChild}
+      session={props.session}
       rightChild={
         <div className="dropdown">
           <img className="dropdownImage" src="/assets/dropdown.svg" />
-          <div className="dropdown-content">
+          <div className="dropdown-content" onClick={e => e.stopPropagation()}>
             {props.userId === myId ? (
               <div> 본인입니다!!!! </div>
             ) : (

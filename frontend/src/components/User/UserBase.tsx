@@ -1,10 +1,12 @@
 import instance from '../../util/Axios';
 import { memo, ReactNode, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { ErrorAlert } from '../../util/Alert';
 
 interface Props {
   userId: number;
   online: boolean;
+  session?: boolean;
   rightChild?: ReactNode;
   downChild?: ReactNode;
 }
@@ -29,9 +31,15 @@ function UserBase(props: Props) {
       .get(`/user/${props.userId}/info`)
       .then(result => {
         setUser(result.data);
+        if (props.session === true) {
+          sessionStorage.setItem(
+            props.userId.toString(),
+            JSON.stringify(result.data),
+          );
+        }
       })
-      .catch(reason => {
-        console.error(reason);
+      .catch(() => {
+        ErrorAlert('오류가 발생', '오류가 발생했습니다!');
       });
   }, [props.userId]);
 
@@ -41,9 +49,9 @@ function UserBase(props: Props) {
     <div className="userBase">
       <div className="profileDiv">
         {props.online ? (
-          <div style={{ background: 'Lime' }} />
+          <div style={{ background: 'var(--online)' }} />
         ) : (
-          <div style={{ background: 'DarkSlateGray' }} />
+          <div style={{ background: 'var(--offline)' }} />
         )}
         {/* <img
           className="profileImage"

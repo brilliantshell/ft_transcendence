@@ -1,16 +1,18 @@
 import { useRecoilState } from 'recoil';
-import { ErrorAlert } from '../../util/Alert';
 import instance from '../../util/Axios';
 import { userRelationship } from '../../util/Recoils';
+import { activityData, relationshipData } from '../hooks/SocketOnHooks';
+import User from '../User/User';
 
 interface Props {
   userId: number;
+  activity?: activityData;
+  relationship?: relationshipData;
 }
 
-function FriendButton(props: Props) {
+function UserPendingReceivers(props: Props) {
   const [relationshipMap, setRelationshipMap] =
     useRecoilState(userRelationship);
-
   const friendPut = () => {
     instance
       .put(`/user/${props.userId}/friend`)
@@ -24,13 +26,8 @@ function FriendButton(props: Props) {
           return copy;
         });
       })
-      .catch(err => {
-        // TODO :400 | 403(차단된 사용자 접근)
-        if (err.response.status === 400) {
-          ErrorAlert('', '');
-        } else if (err.response.status === 403) {
-          ErrorAlert('', '');
-        }
+      .catch(() => {
+        // 400 | 403(차단된 사용자 접근)
       });
   };
 
@@ -48,19 +45,18 @@ function FriendButton(props: Props) {
   };
 
   return (
-    <>
-      {
-        {
-          friend: <button onClick={friendDelete}>친구 삭제</button>,
-          blocked: <></>,
-          blocker: <></>,
-          normal: <button onClick={friendPut}>친구 추가</button>,
-          pendingSender: <button onClick={friendDelete}>요청 취소</button>,
-          pendingReceiver: <button>친구 대기</button>,
-        }[relationshipMap.get(props.userId)?.relationship ?? 'normal']
+    <User
+      userId={props.userId}
+      activity={props.activity}
+      relationship={props.relationship}
+      downChild={
+        <>
+          <button>수락</button>
+          <button>거절</button>
+        </>
       }
-    </>
+    ></User>
   );
 }
 
-export default FriendButton;
+export default UserPendingReceivers;
