@@ -83,17 +83,17 @@ export class ChatsGateway {
    * @description 새로운 채널이 생성됐을 떄, chats-UI 를 보고 있는 유저에게 알림
    *
    * @param channelId
-   * @param name
+   * @param channelName
    * @param accessMode
    */
   emitChannelCreated(
     channelId: ChannelId,
-    name: string,
+    channelName: string,
     accessMode: 'public' | 'protected',
   ) {
     this.server.in('chats').emit('channelCreated', {
       channelId,
-      name,
+      channelName,
       accessMode,
     });
   }
@@ -198,6 +198,19 @@ export class ChatsGateway {
         channelId,
         muteEndAt,
       });
+    }
+  }
+
+  /**
+   * @description 멤버가 채팅방에서 ban 되었을 때, 해당 유저에게 알림
+   *
+   * @param channelId  mute 된 채팅방의 id
+   * @param bannedMember ban 된 멤버의 id
+   */
+  emitBanned(channelId: ChannelId, bannedMember: UserId) {
+    const socketId = this.userSocketStorage.clients.get(bannedMember);
+    if (socketId) {
+      this.server.in(socketId).emit('banned', { channelId });
     }
   }
 

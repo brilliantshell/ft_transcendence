@@ -1,5 +1,4 @@
 import '../../style/Chats.css';
-import ChannelCreate from './ChannelCreate';
 
 interface ChatsBaseProps {
   purpose: string;

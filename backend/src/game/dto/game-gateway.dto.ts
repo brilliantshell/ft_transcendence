@@ -1,12 +1,11 @@
+import { IsBoolean, IsString, Matches } from 'class-validator';
+
 import {
-  ArrayUnique,
-  IsInt,
-  IsString,
-  Matches,
-  Max,
-  Min,
-} from 'class-validator';
-import { GameId } from '../../util/type';
+  BallCoordinates,
+  GameId,
+  PaddlePositions,
+  Score,
+} from '../../util/type';
 
 export interface NewGameDto {
   gameId: GameId;
@@ -28,13 +27,23 @@ export interface GameAbortedDto {
 }
 
 export class GameCompleteDto {
+  winnerSide: 'left' | 'right';
+}
+
+export interface GameDataDto {
+  scores: [Score, Score];
+  ballCoords: BallCoordinates;
+  paddlePositions: PaddlePositions;
+}
+
+export class GamePlayerYDto {
   @IsString()
   @Matches(/^[0-9A-Za-z_-]{21}$/)
-  id: GameId;
+  gameId: GameId;
 
-  @ArrayUnique()
-  @IsInt({ each: true })
-  @Min(0, { each: true })
-  @Max(5, { each: true })
-  scores: [number, number];
+  @IsBoolean()
+  isLeft: boolean;
+
+  @IsBoolean()
+  isUp: boolean;
 }

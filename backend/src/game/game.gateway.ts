@@ -7,12 +7,18 @@ import {
 import { Server } from 'socket.io';
 import { UsePipes, ValidationPipe } from '@nestjs/common';
 
-import { GameCompleteDto, GameStartedDto } from './dto/game-gateway.dto';
-import { GameId, SocketId, UserId } from '../util/type';
+import {
+  GameDataDto,
+  GamePlayerYDto,
+  GameStartedDto,
+} from './dto/game-gateway.dto';
+import { GameData, GameId, SocketId, UserId } from '../util/type';
 import { GameStorage } from './game.storage';
 import { RanksGateway } from '../ranks/ranks.gateway';
+import { UserSocketStorage } from '../user-status/user-socket.storage';
 import { WEBSOCKET_CONFIG } from '../config/constant/constant-config';
 
+@UsePipes(new ValidationPipe({ forbidNonWhitelisted: true, whitelist: true }))
 @WebSocketGateway(WEBSOCKET_CONFIG)
 export class GameGateway {
   @WebSocketServer()
@@ -21,6 +27,7 @@ export class GameGateway {
   constructor(
     private readonly gameStorage: GameStorage,
     private readonly ranksGateway: RanksGateway,
+    private readonly userSocketStorage: UserSocketStorage,
   ) {}
 
   /*****************************************************************************
@@ -109,11 +116,33 @@ export class GameGateway {
     this.server.to('waitingRoom').emit('gameStarted', gameStartedDto);
   }
 
-  // TODO : gameStatus listener
-  // TODO : gameStatus emitter
-  // FIXME : 메시지 추가
-  emitGameStatus(gameId: GameId) {
-    this.server.to(`game-${gameId}`).emit('gameStatus');
+  /**
+   * @description paddle 위치가 변경된 유저의 새로운 위치를 받아 업데이트
+   *
+   * @param {gameId, isLeft, y} 게임 id, 어느쪽 플레이어인지 여부, 플레이어 y 좌표
+   */
+  @SubscribeMessage('gamePlayerY')
+  handleGamePlayerY(
+    @MessageBody()
+    { gameId, isLeft, isUp }: GamePlayerYDto,
+  ) {
+    const gameInfo = this.gameStorage.getGame(gameId);
+    if (gameInfo === undefined) {
+      return;
+    }
+    const {
+      gameData: { paddlePositions },
+    } = gameInfo;
+    const { leftY, rightY } = paddlePositions;
+    if (isLeft) {
+      paddlePositions.leftY = isUp
+        ? Math.max(0, leftY - 0.048)
+        : Math.min(0.83333, leftY + 0.048);
+    } else {
+      paddlePositions.rightY = isUp
+        ? Math.max(0, rightY - 0.048)
+        : Math.min(0.83333, rightY + 0.048);
+    }
   }
 
   /**
@@ -138,17 +167,29 @@ export class GameGateway {
   }
 
   /**
-   * @description 게임 정상 종료 시, 승자가 게임 결과를 서버에 알리는 메시지, 게임 결과 업데이트
+   * @description 현재 게임 데이터 게임방 보고 있는 유저들에게 전송
    *
-   * @param result 게임 결과
+   * @param gameId 게임 id
+   * @param gameData 게임 정보
    */
-  @UsePipes(new ValidationPipe({ forbidNonWhitelisted: true, whitelist: true }))
-  @SubscribeMessage('gameComplete')
-  async handleGameComplete(@MessageBody() result: GameCompleteDto) {
-    const { id, scores } = result;
-    this.emitGameEnded(id);
-    this.server.socketsLeave(`game-${id}`);
-    const ladderUpdateDto = await this.gameStorage.updateResult(id, scores);
+  emitGameData(gameId: GameId, gameData: GameDataDto) {
+    this.server.to(`game-${gameId}`).emit('gameData', gameData);
+  }
+
+  /**
+   * @description 게임이 정상적으로 종료되었다고 플레이어들과 관전자들에게 알림
+   *
+   * @param gameId 게임 id
+   * @param gameData 게임 정보
+   */
+  async emitGameComplete(gameId: GameId, gameData: GameData) {
+    const { scores } = gameData;
+    this.emitGameEnded(gameId);
+    this.server
+      .to(`game-${gameId}`)
+      .emit('gameComplete', { winnerSide: scores[0] === 5 ? 'left' : 'right' });
+    this.server.socketsLeave(`game-${gameId}`);
+    const ladderUpdateDto = await this.gameStorage.updateResult(gameId, scores);
     ladderUpdateDto && this.ranksGateway.emitLadderUpdate(ladderUpdateDto);
   }
 
@@ -191,7 +232,7 @@ export class GameGateway {
    * @param id 게임 id
    */
   private emitGameEnded(id: GameId) {
-    this.gameStorage.getGame(id).isRank &&
+    this.gameStorage.getGame(id)?.isRank &&
       this.server.to('waitingRoom').emit('gameEnded', { id });
   }
 }

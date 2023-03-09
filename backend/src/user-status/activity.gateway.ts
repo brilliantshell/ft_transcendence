@@ -87,10 +87,10 @@ export class ActivityGateway
         this.chatsGateway.joinChannelRoom(channelId, userId);
       }
     }
-    this.userGateway.emitFriendRequestDiff(
-      socketId,
-      this.userRelationshipStorage.countPendingRequests(userId),
-    );
+    const pendingRequestCount =
+      this.userRelationshipStorage.countPendingRequests(userId);
+    pendingRequestCount !== -1 &&
+      this.userGateway.emitFriendRequestDiff(socketId, pendingRequestCount);
     clientSocket.on('disconnecting', () =>
       this.handleDisconnecting(clientSocket.id, clientSocket.rooms),
     );

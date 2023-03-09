@@ -1,11 +1,14 @@
 import {
   BadRequestException,
   ForbiddenException,
+  Inject,
   Injectable,
   NotFoundException,
+  forwardRef,
 } from '@nestjs/common';
 import { nanoid } from 'nanoid';
 
+import { GameEngine } from './game.engine';
 import { GameGateway } from './game.gateway';
 import { GameId, GameInfo, UserId } from '../util/type';
 import { GameStorage } from './game.storage';
@@ -15,6 +18,8 @@ import { UserSocketStorage } from '../user-status/user-socket.storage';
 @Injectable()
 export class GameService {
   constructor(
+    private readonly gameEngine: GameEngine,
+    @Inject(forwardRef(() => GameGateway))
     private readonly gameGateway: GameGateway,
     private readonly gameStorage: GameStorage,
     private readonly userRelationshipStorage: UserRelationshipStorage,
@@ -52,15 +57,8 @@ export class GameService {
    */
   findGameInfo(spectatorId: UserId, gameId: GameId) {
     const gameInfo = this.getExistingGame(spectatorId, gameId);
-    const {
-      leftId,
-      leftNickname,
-      rightId,
-      rightNickname,
-      map,
-      isRank,
-      scores,
-    } = gameInfo;
+    const { leftId, leftNickname, rightId, rightNickname, map, isRank } =
+      gameInfo;
     const [leftRelationship, rightRelationship] = [
       this.userRelationshipStorage.getRelationship(spectatorId, leftId),
       this.userRelationshipStorage.getRelationship(spectatorId, rightId),
@@ -83,7 +81,6 @@ export class GameService {
       leftPlayer: leftNickname,
       rightPlayer: rightNickname,
       map,
-      scores,
     };
   }
 
@@ -204,12 +201,15 @@ export class GameService {
    * @param gameInfo 게임 정보
    */
   startGame(gameId: GameId, gameInfo: GameInfo) {
-    gameInfo.scores = [0, 0];
-    this.gameGateway.emitGameStatus(gameId); // FIXME : 진짜 데이터 넣어주기
+    const { gameData, leftNickname, rightNickname } = gameInfo;
+    if (!gameInfo.isStarted) {
+      this.gameEngine.startGame(gameId, gameData);
+    }
+    gameInfo.isStarted = true;
     this.gameGateway.emitGameStarted({
       id: gameId,
-      left: gameInfo.leftNickname,
-      right: gameInfo.rightNickname,
+      left: leftNickname,
+      right: rightNickname,
     });
   }
 

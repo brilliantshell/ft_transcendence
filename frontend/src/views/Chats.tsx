@@ -1,45 +1,64 @@
 import { useEffect, useState } from 'react';
-import { Channels } from '../components/chats/interface';
+import { ChannelInfo, Channels } from '../components/chats/interface';
 import ChatsFrame from '../components/chats/ChatsFrame';
 import ChatsBody from '../components/chats/ChatsBody';
 import instance from '../util/Axios';
-import { socket } from '../util/Socket';
-import '../style/Chats.css';
-import { AxiosError } from 'axios';
 import { ErrorAlert } from '../util/Alert';
+import { socket } from '../util/Socket';
+import {
+  useBannedEvent,
+  useChannelCreatedEvent,
+  useChannelDeletedEvent,
+  useChannelUpdatedEvent,
+  useMessageArrivedEvent,
+} from '../components/chats/hooks/ChannelHooks';
+import { useCurrentUi } from '../components/hooks/EmitCurrentUi';
+import '../style/Chats.css';
 
 function Chats() {
-  const [joinedChannels, setJoinedChannels] = useState<
-    Channels['joinedChannels']
-  >([]);
-  const [otherChannels, setOtherChannels] = useState<Channels['otherChannels']>(
-    [],
-  );
+  const [joinedChannels, setJoinedChannels] = useState<ChannelInfo[]>([]);
+  const [otherChannels, setOtherChannels] = useState<ChannelInfo[]>([]);
+  const [isEmpty, setIsEmpty] = useState<[boolean, boolean]>([false, false]);
+  const [isConnected, setIsConnected] = useState(socket.connected);
+
+  useCurrentUi(isConnected, setIsConnected, 'chats');
 
   useEffect(() => {
-    (async () => {
-      socket.disconnected &&
-        (await new Promise((resolve: any) => socket.on('connect', resolve)));
-      socket.emit('currentUi', { ui: 'chats' });
-      try {
-        const { joinedChannels, otherChannels } = (
-          await instance.get<Channels>('/chats')
-        ).data;
-        setJoinedChannels(joinedChannels);
-        setOtherChannels(otherChannels);
-      } catch (err) {
-        ErrorAlert('채널 목록 로딩 실패', '오류가 발생했습니다.');
-      }
-    })();
-  }, []);
+    isConnected &&
+      instance
+        .get<Channels>('/chats')
+        .then(({ data: { joinedChannels, otherChannels } }) => {
+          joinedChannels.length === 0
+            ? setIsEmpty(prev => [true, prev[1]])
+            : setJoinedChannels(joinedChannels);
+          otherChannels.length === 0
+            ? setIsEmpty(prev => [prev[0], true])
+            : setOtherChannels(otherChannels);
+        })
+        .catch(() => ErrorAlert('채널 목록 로딩 실패', '오류가 발생했습니다.'));
+  }, [isConnected]);
+
+  useChannelCreatedEvent(setOtherChannels);
+  useChannelDeletedEvent(setJoinedChannels, setOtherChannels);
+  useChannelUpdatedEvent(setJoinedChannels, setOtherChannels);
+  useMessageArrivedEvent(setJoinedChannels);
+  useBannedEvent(setJoinedChannels, setOtherChannels);
 
   return (
     <div className="chats">
       <ChatsFrame purpose={'chatsJoined'}>
-        <ChatsBody channels={joinedChannels} isJoined={true} />
+        <ChatsBody
+          channels={joinedChannels}
+          isJoined={true}
+          isEmpty={isEmpty[0]}
+        />
       </ChatsFrame>
       <ChatsFrame purpose={'chatsAll'}>
-        <ChatsBody channels={otherChannels} isJoined={false} />
+        <ChatsBody
+          channels={otherChannels}
+          isJoined={false}
+          isEmpty={isEmpty[1]}
+        />
       </ChatsFrame>
     </div>
   );

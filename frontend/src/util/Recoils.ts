@@ -16,6 +16,13 @@ export const myIdState = atom<number>({
   }),
 });
 
+export const gamesInProgressState = atom<
+  { id: string; left: string; right: string }[]
+>({
+  key: 'gamesInProgressState',
+  default: [],
+});
+
 export const userActivity = atom<Map<number, activityData>>({
   key: 'userActivity',
   default: new Map<number, activityData>(),

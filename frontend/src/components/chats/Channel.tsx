@@ -36,23 +36,28 @@ function Channel({ channel, isJoined }: ChannelProps) {
   const nav = useNavigate();
   const icon: ReactNode = icons[isDm ? 'dm' : accessMode];
 
+  const hideModal = () => setShowModal(false);
+
   const handleClick = () => {
-    if (isJoined) {
-      return nav(`/chats/${channelId}`);
-    }
-    accessMode === 'protected'
+    accessMode === 'protected' && isJoined !== true
       ? setShowModal(true)
-      : instance
-          .put(`/chats/${channelId}/user/${myId}`)
-          .then(() =>
-            ConfirmAlert(
-              '채널에 입장하시겠습니까?',
-              '확인 버튼을 누르면 이동합니다.',
-            ).then(
-              ({ isConfirmed }) => isConfirmed && nav(`/chats/${channelId}`),
-            ),
-          )
-          .catch(() => ErrorAlert('채널 입장 실패', '오류가 발생했습니다.'));
+      : ConfirmAlert(
+          '채널에 입장하시겠습니까?',
+          '확인 버튼을 누르면 이동합니다.',
+        ).then(({ isConfirmed }) => {
+          isConfirmed &&
+            instance
+              .put(`/chats/${channelId}/user/${myId}`)
+              .then(() => nav(`/chats/${channelId}`))
+              .catch(err => {
+                err.response?.status === 403
+                  ? ErrorAlert(
+                      '채널 입장 실패',
+                      '해당 채널에 입장할 수 없습니다.',
+                    )
+                  : ErrorAlert('채널 입장 실패', '오류가 발생했습니다.');
+              });
+        });
   };
 
   return (
@@ -81,12 +86,12 @@ function Channel({ channel, isJoined }: ChannelProps) {
             title={'비밀번호를 입력해주세요'}
             form={
               <PasswordForm
-                hidden={() => setShowModal(false)}
+                hideModal={hideModal}
                 channelId={channelId}
                 myId={myId}
               />
             }
-            hidden={() => setShowModal(false)}
+            hideModal={hideModal}
           />,
           document.body,
         )}

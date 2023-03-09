@@ -2,9 +2,9 @@ import { ErrorAlert } from '../../../util/Alert';
 import instance from '../../../util/Axios';
 import { listenEvent, socket } from '../../../util/Socket';
 import { useEffect, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
-export function useListenGameEvents(isConnected: boolean) {
+export function useListenGameEvents(isConnected: boolean, isPlayer: boolean) {
   const nav = useNavigate();
 
   useEffect(() => {
@@ -12,34 +12,28 @@ export function useListenGameEvents(isConnected: boolean) {
       listenEvent('gameAborted').then(() => {
         ErrorAlert(
           '게임 중단',
-          '상대방이 게임을 중단했습니다.<br/>당신의 승리로 기록되었습니다!',
-        );
-        nav('/waiting-room'); // NOTE : 일반 게임일 때도?
-      });
-      listenEvent('gameCancelled').then(() => {
-        ErrorAlert(
-          '게임 취소',
-          '상대방이 게임에 접속하지 않아 취소되었습니다.',
+          isPlayer
+            ? '상대방이 게임을 중단했습니다.<br/>당신의 승리로 기록되었습니다!'
+            : '게임이 중단되었습니다.',
         );
         nav('/waiting-room'); // NOTE : 일반 게임일 때도?
       });
     }
     return () => {
       socket.off('gameAborted');
-      socket.off('gameCancelled');
     };
   }, []);
 }
 
 export function useRequestGame(
   isConnected: boolean,
+  isPlayer: boolean,
   gameId: string,
   setIsStarted: React.Dispatch<React.SetStateAction<boolean>>,
 ) {
   const [gameInfo, setGameInfo] = useState<GameInfoData | null>(null);
   const [players, setPlayers] = useState<[string, string] | null>(null);
   const nav = useNavigate();
-  const location = useLocation();
 
   const requestGameStart = async () => {
     let isRank = false;
@@ -57,10 +51,21 @@ export function useRequestGame(
     } catch (e) {
       ErrorAlert('게임 정보 요청', '게임 정보를 가져오는데 실패했습니다.');
       nav('/waiting-room');
+      return;
     }
     try {
+      listenEvent('gameCancelled').then(() => {
+        socket.off('gameCancelled');
+        ErrorAlert(
+          '게임 취소',
+          '상대방이 게임에 접속하지 않아 취소되었습니다.',
+        );
+        nav('/waiting-room'); // NOTE : 일반 게임일 때도?
+      });
       await instance.patch(`/game/${gameId}/start`);
-      isRank && setIsStarted(true);
+      if (isRank) {
+        setIsStarted(true);
+      }
     } catch (e) {
       ErrorAlert('게임 시작', '게임을 시작하는데 실패했습니다.');
       nav('/waiting-room');
@@ -80,9 +85,10 @@ export function useRequestGame(
   };
 
   useEffect(() => {
-    isConnected && location?.state?.isSpectator
-      ? requestSpectate()
-      : requestGameStart();
+    isConnected && isPlayer ? requestGameStart() : requestSpectate();
+    return () => {
+      isPlayer && socket.off('gameCancelled');
+    };
   }, []);
   return { gameInfo, players };
 }

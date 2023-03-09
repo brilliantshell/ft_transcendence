@@ -128,7 +128,7 @@ export class ChatsController {
     @Body(MessageTransformPipe) controlMessageDto: MessageDto,
   ) {
     const { message, command } = controlMessageDto;
-    command === undefined
+    return command === undefined
       ? this.chatsService.createMessage(channelId, req.user.userId, message)
       : this.chatsService.executeCommand(channelId, req.user.userId, command);
   }

@@ -45,7 +45,52 @@ export type CurrentUi =
 
 export type Activity = 'online' | 'offline' | 'inGame';
 
+// SECTION : Game
+
 export type Score = 0 | 1 | 2 | 3 | 4 | 5;
+
+export class BallCoordinates {
+  constructor(x = 0.5, y = 0.5) {
+    this.x = x;
+    this.y = y;
+  }
+
+  x: number;
+  y: number;
+}
+
+export class BallVelocity {
+  constructor(vx = 0.004, vy = 0.004) {
+    this.vx = vx;
+    this.vy = vy;
+  }
+
+  vx: number;
+  vy: number;
+}
+
+export class PaddlePositions {
+  constructor(leftY = 0.5 - 0.08333, rightY = 0.5 - 0.08333) {
+    this.leftY = leftY;
+    this.rightY = rightY;
+  }
+
+  leftY: number;
+  rightY: number;
+}
+
+export class GameData {
+  constructor() {
+    this.ballCoords = new BallCoordinates();
+    this.ballVelocity = new BallVelocity();
+    this.paddlePositions = new PaddlePositions();
+    this.scores = [0, 0];
+  }
+  ballCoords: BallCoordinates;
+  ballVelocity: BallVelocity;
+  paddlePositions: PaddlePositions;
+  scores: [Score, Score];
+}
 
 export class GameInfo {
   constructor(
@@ -58,7 +103,8 @@ export class GameInfo {
     this.rightId = rightId;
     this.map = map;
     this.isRank = isRank;
-    this.scores = null;
+    this.isStarted = false;
+    this.gameData = new GameData();
   }
 
   isRank: boolean;
@@ -67,8 +113,11 @@ export class GameInfo {
   rightId: UserId;
   rightNickname?: string;
   map: 1 | 2 | 3;
-  scores: [Score, Score] | null;
+  isStarted: boolean;
+  gameData: GameData;
 }
+
+// SECTION : User verification
 
 export interface LoginUserInfo {
   userId: UserId;
