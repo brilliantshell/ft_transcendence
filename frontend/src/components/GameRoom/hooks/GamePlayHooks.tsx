@@ -2,14 +2,21 @@ import { ControllerType, Dimensions, GameInfo } from '../util/interfaces';
 import { GamePainter } from '../util/GamePainter';
 import { socket } from '../../../util/Socket';
 import { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 export function useGamePlay(
+  isStarted: boolean,
   canvasRef: React.RefObject<HTMLCanvasElement>,
   gameInfo: GameInfo,
   controllerType: ControllerType,
   dimensions: Dimensions,
 ) {
+  const nav = useNavigate();
+
   useEffect(() => {
+    if (!isStarted) {
+      return;
+    }
     const keyDownHandler = (e: KeyboardEvent) => {
       if (e.key === 'Up' || e.key === 'ArrowUp') {
         e.preventDefault();
@@ -38,6 +45,7 @@ export function useGamePlay(
           gameInfo,
           controllerType,
           dimensions,
+          nav,
         );
         if (controllerType.isPlayer) {
           document.addEventListener('keydown', keyDownHandler);

@@ -1,9 +1,9 @@
-import { atom, atomFamily, selector } from 'recoil';
-import instance from './Axios';
 import {
   activityData,
   relationshipData,
 } from '../components/hooks/SocketOnHooks';
+import { atom, atomFamily, selector } from 'recoil';
+import instance from './Axios';
 
 export const myIdState = atom<number>({
   key: 'myIdState',

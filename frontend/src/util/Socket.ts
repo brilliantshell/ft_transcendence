@@ -8,5 +8,5 @@ export const socket = io('http://localhost:3000', {
   withCredentials: true,
 });
 
-export const listenEvent = <T>(event: string) =>
-  new Promise<T>(resolve => socket.on(event, resolve));
+export const listenOnce = <T>(event: string) =>
+  new Promise<T>(resolve => socket.once(event, resolve));

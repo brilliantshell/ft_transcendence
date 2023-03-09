@@ -1,6 +1,6 @@
 import { ErrorAlert } from '../../util/Alert';
 import instance from '../../util/Axios';
-import { listenEvent, socket } from '../../util/Socket';
+import { listenOnce } from '../../util/Socket';
 import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 
@@ -10,19 +10,15 @@ export default function GameEnterQueueButton() {
 
   const handleButtonClick = () => {
     hasEnteredQueue
-      ? instance
-          .delete('/game/queue')
-          .then(() => setHasEnteredQueue(false))
-          .catch(err => {
-            // NOTE : 서버에서 에러가 날 케이스가 없을 것으로 보이는데 한번 더 확인 필요
-          })
+      ? instance.delete('/game/queue').then(() => setHasEnteredQueue(false))
       : instance
           .post('/game/queue')
           .then(() => {
             setHasEnteredQueue(true);
-            listenEvent<NewGameMessage>('newGame').then(({ gameId }) =>
-              nav(`/game/${gameId}`, { state: { isPlayer: true } }),
-            );
+            listenOnce<NewGameMessage>('newGame').then(({ gameId }) => {
+              nav(`/game/${gameId}`);
+              sessionStorage.setItem(`game-${gameId}-isPlayer`, 'true');
+            });
           })
           .catch(err => {
             switch (err.response.status) {
