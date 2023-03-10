@@ -11,6 +11,10 @@ interface ChannelCreated extends ChannelId {
   accessMode: 'public' | 'protected' | 'private';
 }
 
+interface ChannelShown extends ChannelCreated {
+  memberCount: number;
+}
+
 interface ChannelUpdated extends ChannelId {
   memberCountDiff: 1 | 0 | -1;
   accessMode: 'public' | 'protected' | 'private' | null;
@@ -18,7 +22,7 @@ interface ChannelUpdated extends ChannelId {
 
 function addToOtherChannels(
   prevOtherChannels: ChannelInfo[],
-  { channelId, channelName, accessMode }: ChannelCreated,
+  { channelId, channelName, accessMode, memberCount }: ChannelShown,
 ) {
   const newChannelPos = prevOtherChannels.findIndex(
     prev => Intl.Collator('ko').compare(channelName, prev.channelName) < 0,
@@ -28,7 +32,7 @@ function addToOtherChannels(
         channelId,
         channelName,
         accessMode,
-        memberCount: 1,
+        memberCount,
       })
     : prevOtherChannels
         .slice(0, newChannelPos)
@@ -36,7 +40,7 @@ function addToOtherChannels(
           channelId,
           channelName,
           accessMode,
-          memberCount: 1,
+          memberCount,
         })
         .concat(prevOtherChannels.slice(newChannelPos));
 }
@@ -44,13 +48,51 @@ function addToOtherChannels(
 export function useChannelCreatedEvent(
   setOtherChannels: React.Dispatch<React.SetStateAction<ChannelInfo[]>>,
 ) {
-  const handleChannelCreated = (newChannel: ChannelCreated) => {
-    setOtherChannels(prev => addToOtherChannels(prev, newChannel));
+  const handleChannelCreated = (channel: ChannelCreated) => {
+    setOtherChannels(prev =>
+      addToOtherChannels(prev, { ...channel, memberCount: 1 }),
+    );
   };
   useEffect(() => {
     socket.on('channelCreated', handleChannelCreated);
     return () => {
       socket.off('channelCreated');
+    };
+  }, []);
+}
+
+export function useChannelShownEvent(
+  joinedChannels: ChannelInfo[],
+  setOtherChannels: React.Dispatch<React.SetStateAction<ChannelInfo[]>>,
+) {
+  const handleChannelShown = (channel: ChannelShown) => {
+    if (joinedChannels.findIndex(c => c.channelId === channel.channelId) < 0) {
+      setOtherChannels(prev => addToOtherChannels(prev, channel));
+    }
+  };
+
+  useEffect(() => {
+    socket.on('channelShown', handleChannelShown);
+    return () => {
+      socket.off('channelShown');
+    };
+  }, []);
+}
+
+export function useChannelHiddenEvent(
+  joinedChannels: ChannelInfo[],
+  setOtherChannels: React.Dispatch<React.SetStateAction<ChannelInfo[]>>,
+) {
+  const handleChannelHidden = ({ channelId }: ChannelId) => {
+    if (joinedChannels.findIndex(c => c.channelId === channelId) < 0) {
+      setOtherChannels(prev => prev.filter(c => c.channelId !== channelId));
+    }
+  };
+
+  useEffect(() => {
+    socket.on('channelHidden', handleChannelHidden);
+    return () => {
+      socket.off('channelHidden');
     };
   }, []);
 }
@@ -176,7 +218,9 @@ export function useBannedEvent(
         .slice(0, bannedChannelIdx)
         .concat(prev.slice(bannedChannelIdx + 1));
     });
-    setOtherChannels(prev => addToOtherChannels(prev, newChannel));
+    setOtherChannels(prev =>
+      addToOtherChannels(prev, { ...newChannel, memberCount: 1 }),
+    ); // FIXME
   };
   useEffect(() => {
     socket.on('banned', handleBanned);
