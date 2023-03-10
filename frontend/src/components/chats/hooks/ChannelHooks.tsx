@@ -218,9 +218,7 @@ export function useBannedEvent(
         .slice(0, bannedChannelIdx)
         .concat(prev.slice(bannedChannelIdx + 1));
     });
-    setOtherChannels(prev =>
-      addToOtherChannels(prev, { ...newChannel, memberCount: 1 }),
-    ); // FIXME
+    setOtherChannels(prev => addToOtherChannels(prev, newChannel));
   };
   useEffect(() => {
     socket.on('banned', handleBanned);
