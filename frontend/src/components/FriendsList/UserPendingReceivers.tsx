@@ -1,21 +1,18 @@
-import { useRecoilState } from 'recoil';
+import { ErrorAlert } from '../../util/Alert';
 import instance from '../../util/Axios';
-import { userRelationship } from '../../util/Recoils';
-import { activityData, relationshipData } from '../hooks/SocketOnHooks';
 import User from '../User/User';
+import { useSetRecoilState } from 'recoil';
+import { userRelationship } from '../../util/Recoils';
 
 interface Props {
   userId: number;
-  activity?: activityData;
-  relationship?: relationshipData;
 }
 
 function UserPendingReceivers(props: Props) {
-  const [relationshipMap, setRelationshipMap] =
-    useRecoilState(userRelationship);
-  const friendPut = () => {
+  const setRelationshipMap = useSetRecoilState(userRelationship);
+  const friendPatch = () => {
     instance
-      .put(`/user/${props.userId}/friend`)
+      .patch(`/user/${props.userId}/friend`)
       .then(() => {
         setRelationshipMap(prev => {
           const copy = new Map(prev);
@@ -26,33 +23,39 @@ function UserPendingReceivers(props: Props) {
           return copy;
         });
       })
-      .catch(() => {
-        // 400 | 403(차단된 사용자 접근)
+      .catch(err => {
+        console.error(err.response.data);
+        if (err.response.status === 403) {
+          ErrorAlert('차단된 사용자', '차단된 사용자입니다!');
+        }
       });
   };
 
   const friendDelete = () => {
-    instance.delete(`/user/${props.userId}/friend`).then(() => {
-      setRelationshipMap(prev => {
-        const copy = new Map(prev);
-        copy.set(props.userId, {
-          userId: props.userId,
-          relationship: 'normal',
+    instance
+      .delete(`/user/${props.userId}/friend`)
+      .then(() => {
+        setRelationshipMap(prev => {
+          const copy = new Map(prev);
+          copy.set(props.userId, {
+            userId: props.userId,
+            relationship: 'normal',
+          });
+          return copy;
         });
-        return copy;
+      })
+      .catch(() => {
+        ErrorAlert('오류가 발생', '오류가 발생했습니다!');
       });
-    });
   };
 
   return (
     <User
       userId={props.userId}
-      activity={props.activity}
-      relationship={props.relationship}
       downChild={
         <>
-          <button>수락</button>
-          <button>거절</button>
+          <button onClick={friendPatch}>수락</button>
+          <button onClick={friendDelete}>거절</button>
         </>
       }
     ></User>

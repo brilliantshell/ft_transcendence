@@ -2,10 +2,11 @@ import instance from '../../util/Axios';
 import { memo, ReactNode, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ErrorAlert } from '../../util/Alert';
+import { useRecoilValue } from 'recoil';
+import { userActivity } from '../../util/Recoils';
 
 interface Props {
   userId: number;
-  online: boolean;
   session?: boolean;
   rightChild?: ReactNode;
   downChild?: ReactNode;
@@ -26,6 +27,8 @@ function UserBase(props: Props) {
     isDefaultImage: true,
   });
 
+  const activityMap = useRecoilValue(userActivity);
+
   useEffect(() => {
     instance
       .get(`/user/${props.userId}/info`)
@@ -43,12 +46,17 @@ function UserBase(props: Props) {
       });
   }, [props.userId]);
 
+  const onlineFunc = () => {
+    if (!activityMap.get(props.userId)) return false;
+    return activityMap.get(props.userId)?.activity !== 'offline';
+  };
+
   // TODO : user?.isDefault 체크하는 걸로 수정
 
   return (
     <div className="userBase">
       <div className="profileDiv">
-        {props.online ? (
+        {onlineFunc() ? (
           <div style={{ background: 'var(--online)' }} />
         ) : (
           <div style={{ background: 'var(--offline)' }} />

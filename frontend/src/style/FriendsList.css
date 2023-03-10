@@ -36,4 +36,9 @@ div.friendsList {
   overflow-y: scroll;
 }
 
+/* Hide scrollbar for Chrome, Safari and Opera */
+.friendListMap::-webkit-scrollbar {
+  display: none;
+}
+
 /* FIXME : 윗부분 css가 둥글게 안되는...ㅠㅠㅠ */
