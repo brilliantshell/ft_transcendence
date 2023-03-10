@@ -37,7 +37,7 @@ function Content() {
       <div className="friendCategory">받은 친구 요청</div>
       <div className="friendListMap">
         {friends.pendingReceivers.map(id => (
-          <UserPendingReceivers key={id} userId={id}></UserPendingReceivers>
+          <UserPendingReceivers key={id} userId={id} />
         ))}
       </div>
       <div className="friendCategory">내 친구</div>
