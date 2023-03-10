@@ -7,6 +7,7 @@ import {
   PaddlePositions,
   Score,
 } from './interfaces';
+import { NavigateFunction } from 'react-router-dom';
 import { socket } from '../../../util/Socket';
 
 export class GamePainter {
@@ -17,6 +18,7 @@ export class GamePainter {
     private readonly gameInfo: GameInfo,
     private readonly controllerType: ControllerType,
     private readonly dimension: { w: number; h: number },
+    private readonly nav: NavigateFunction,
   ) {
     this.context.font = '4rem DungGeunMo';
     this.metaData = new GameMetaData(dimension);
@@ -44,6 +46,13 @@ export class GamePainter {
       ({ winnerSide }: { winnerSide: 'left' | 'right' }) => {
         socket.off('gameData');
         this.drawResult(winnerSide);
+        sessionStorage.removeItem(`game-${this.gameInfo.id}-isStarted`);
+        sessionStorage.removeItem(`game-${this.gameInfo.id}-isPlayer`);
+        setTimeout(() => {
+          if (window.location.pathname === `/game/${this.gameInfo.id}`) {
+            this.nav('/waiting-room');
+          }
+        }, 5000);
       },
     );
   }

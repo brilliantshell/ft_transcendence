@@ -1,10 +1,4 @@
-export default function GameMenu({
-  isRank,
-  isOwner,
-  startGame,
-}: GameMenuProps) {
-  const handleStartClick = () => startGame();
-
+export default function GameMenu({ gameId, isRank, isOwner }: GameMenuProps) {
   const handleMapClick = () => {};
 
   return (
@@ -13,7 +7,9 @@ export default function GameMenu({
         <button
           className="gameButton gameStartButton"
           type="button"
-          onClick={handleStartClick}
+          onClick={() =>
+            sessionStorage.setItem(`game-${gameId}-isStarted`, 'true')
+          }
         >
           START GAME
         </button>
@@ -30,7 +26,7 @@ export default function GameMenu({
 // SECTION : Interfaces
 
 interface GameMenuProps {
+  gameId: string;
   isRank: boolean;
   isOwner: boolean;
-  startGame: () => void;
 }

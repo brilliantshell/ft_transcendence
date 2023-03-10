@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { ReplaySubject, Subscription } from 'rxjs';
+import { ReplaySubject } from 'rxjs';
 
 import { BallVelocity, GameData, GameId } from '../util/type';
 import { GameGateway } from './game.gateway';
@@ -16,19 +16,14 @@ export class GameEngine {
   constructor(private readonly gameGateway: GameGateway) {}
 
   startGame(gameId: GameId, gameData: GameData) {
-    const drawSubject = new ReplaySubject<void>(1);
-    const interval = { intervalId: setInterval(() => drawSubject.next(), 10) };
-    const drawSubscription = drawSubject.subscribe(() => {
+    const subject = new ReplaySubject<void>(1);
+    gameData.intervalId = setInterval(() => subject.next(), 10);
+
+    gameData.subscription = subject.subscribe(() => {
       const { ballCoords, ballVelocity } = gameData;
       const nextX = ballCoords.x + ballVelocity.vx;
       nextX < 0 || nextX > 1
-        ? this.updateScore(
-            interval,
-            drawSubject,
-            drawSubscription,
-            gameId,
-            gameData,
-          )
+        ? this.updateScore(gameId, gameData, subject)
         : this.updateBallData(gameData);
       this.gameGateway.emitGameData(gameId, {
         scores: gameData.scores,
@@ -39,25 +34,24 @@ export class GameEngine {
   }
 
   private updateScore(
-    interval: { intervalId: NodeJS.Timer },
-    drawSubject: ReplaySubject<void>,
-    drawSubscription: Subscription,
     gameId: GameId,
     gameData: GameData,
+    subject: ReplaySubject<void>,
   ) {
-    const { scores, ballCoords, ballVelocity } = gameData;
+    const { scores, ballCoords, ballVelocity, subscription, intervalId } =
+      gameData;
     scores[ballCoords.x > 0.5 ? 0 : 1] += 1;
-    clearInterval(interval.intervalId);
+    clearInterval(intervalId);
     setTimeout(() => {
       if (scores[0] === 5 || scores[1] === 5) {
-        drawSubscription.unsubscribe();
+        subscription.unsubscribe();
         this.gameGateway.emitGameComplete(gameId, gameData);
       } else {
         ballCoords.x = 0.5;
         ballCoords.y = 0.5;
         ballVelocity.vx = Math.random() > 0.5 ? INITIAL_SPEED : -INITIAL_SPEED;
         ballVelocity.vy = Math.random() > 0.5 ? INITIAL_SPEED : -INITIAL_SPEED;
-        interval.intervalId = setInterval(() => drawSubject.next(), 10);
+        gameData.intervalId = setInterval(() => subject.next(), 10);
       }
     }, 500);
   }

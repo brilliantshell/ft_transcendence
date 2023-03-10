@@ -15,7 +15,6 @@ import {
 import { GameData, GameId, SocketId, UserId } from '../util/type';
 import { GameStorage } from './game.storage';
 import { RanksGateway } from '../ranks/ranks.gateway';
-import { UserSocketStorage } from '../user-status/user-socket.storage';
 import { WEBSOCKET_CONFIG } from '../config/constant/constant-config';
 
 @UsePipes(new ValidationPipe({ forbidNonWhitelisted: true, whitelist: true }))
@@ -27,7 +26,6 @@ export class GameGateway {
   constructor(
     private readonly gameStorage: GameStorage,
     private readonly ranksGateway: RanksGateway,
-    private readonly userSocketStorage: UserSocketStorage,
   ) {}
 
   /*****************************************************************************
@@ -159,10 +157,11 @@ export class GameGateway {
     ) {
       return;
     }
-    await this.emitGameAborted(
-      gameId,
-      gameInfo.leftId === userId ? 'left' : 'right',
-    );
+    const { leftId, gameData } = gameInfo;
+    const { intervalId, subscription } = gameData;
+    intervalId && clearInterval(intervalId);
+    subscription && gameData.subscription.unsubscribe();
+    await this.emitGameAborted(gameId, leftId === userId ? 'left' : 'right');
     this.server.socketsLeave(`game-${gameId}`);
   }
 
