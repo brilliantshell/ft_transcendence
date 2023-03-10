@@ -21,10 +21,7 @@
 }
 
 /* Hide scrollbar for Chrome, Safari and Opera */
-.chatRoomUserList::-webkit-scrollbar {
-  display: none;
-}
-
+.chatRoomUserList::-webkit-scrollbar,
 .chatList::-webkit-scrollbar {
   display: none;
 }
