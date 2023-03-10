@@ -36,7 +36,7 @@ function ChatRoom() {
   return (
     <div className="chatRoom">
       <div>
-        <UserList id={id ?? ''}></UserList>
+        <UserList id={id ?? ''} />
         <button>나가기</button>
         <button>맴버 추가</button>
       </div>
