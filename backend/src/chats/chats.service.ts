@@ -98,7 +98,8 @@ export class ChatsService {
 
   async updateChannel(channelId: ChannelId, channel: UpdateChannelDto) {
     const { accessMode, password } = channel;
-    const prevAccessMode = this.channelStorage.getChannel(channelId).accessMode;
+    const channelInfo = this.channelStorage.getChannel(channelId);
+    const prevAccessMode = channelInfo.accessMode;
 
     await this.channelStorage.updateChannel(
       channelId,
@@ -106,20 +107,26 @@ export class ChatsService {
       password,
     );
     if (prevAccessMode === 'private' && accessMode !== 'private') {
+      let name: string;
       try {
-        const name = (
+        name = (
           await this.channelsRepository.findOneOrFail({
             where: { channelId },
             select: ['name'],
           })
         ).name;
-        this.chatsGateway.emitChannelCreated(channelId, name, accessMode);
       } catch (e) {
         this.logger.error(e);
         throw e instanceof EntityNotFoundError
           ? new NotFoundException('Channel not found')
           : new InternalServerErrorException('Failed to get channel name');
       }
+      this.chatsGateway.emitChannelShown(
+        channelId,
+        name,
+        accessMode,
+        channelInfo.userRoleMap.size,
+      );
     } else if (prevAccessMode !== 'private' && accessMode === 'private') {
       this.chatsGateway.emitChannelHidden(channelId);
     }

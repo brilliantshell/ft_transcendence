@@ -115,6 +115,28 @@ export class ChatsGateway {
   }
 
   /**
+   * @description 채널이 public | protected 로 변경 되었을 때, chats-UI 를 보고 있는 유저에게 알림
+   *
+   * @param channelId 변경된 채널
+   * @param channelName 채널의 이름
+   * @param accessMode 변경된 채널의 접근 권한
+   * @param memberCount 채널의 참여 인원
+   */
+  emitChannelShown(
+    channelId: ChannelId,
+    channelName: string,
+    accessMode: 'public' | 'protected',
+    memberCount: number,
+  ) {
+    this.server.in('chats').emit('channelShown', {
+      channelId,
+      channelName,
+      memberCount,
+      accessMode,
+    });
+  }
+
+  /**
    * @description 채널이 private 로 변경 되었을 때, chats-UI 를 보고 있는 유저에게 알림
    *
    * @param channelId 변경된 채널
