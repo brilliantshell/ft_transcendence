@@ -13,7 +13,7 @@ import { Channels } from '../entity/channels.entity';
 import { ChatsGateway } from './chats.gateway';
 import { ChatsModule } from './chats.module';
 import { ChatsService } from './chats.service';
-import { CreateChannelDto } from './dto/chats.dto';
+import { CreateChannelDto, UpdateChannelDto } from './dto/chats.dto';
 import { Messages } from '../entity/messages.entity';
 import {
   TYPEORM_SHARED_CONFIG,
@@ -30,7 +30,7 @@ import {
   generateMessages,
   generateUsers,
 } from '../../test/util/generate-mock-data';
-import { ValidateNewChannelPipe } from './pipe/validate-new-channel.pipe';
+import { ValidateChannelInfoPipe } from './pipe/validate-channel-info.pipe';
 
 const TEST_DB = 'test_db_chat_service';
 const ENTITIES = [BannedMembers, ChannelMembers, Channels, Messages, Users];
@@ -52,7 +52,7 @@ describe('ChatsService', () => {
     const dataSources = await createDataSources(TEST_DB, ENTITIES);
     initDataSource = dataSources.initDataSource;
     dataSource = dataSources.dataSource;
-    usersEntities = generateUsers(10);
+    usersEntities = generateUsers(50);
     channelsEntities = generateChannels(usersEntities);
     channelsEntities
       .filter((_, index) => index & 1)
@@ -260,9 +260,9 @@ describe('ChatsService', () => {
         password: '1q2w3e4r',
         accessMode: 'protected',
       };
-      newChannelData = await new ValidateNewChannelPipe().transform(
+      newChannelData = (await new ValidateChannelInfoPipe().transform(
         newChannelData,
-      );
+      )) as CreateChannelDto;
       const newChannelId = await service.createChannel(userId, newChannelData);
       expect(channelStorage.getUser(userId).has(newChannelId)).toBeTruthy();
       expect(channelStorage.getUserRole(newChannelId, userId)).toBe('owner');
@@ -293,7 +293,7 @@ describe('ChatsService', () => {
       };
       expect(
         async () =>
-          await new ValidateNewChannelPipe().transform(newChannelData),
+          await new ValidateChannelInfoPipe().transform(newChannelData),
       ).rejects.toThrow(BadRequestException);
     });
   });
@@ -358,9 +358,9 @@ describe('ChatsService', () => {
         channelName: 'newChannel',
         accessMode: 'public',
       };
-      newChannelData = await new ValidateNewChannelPipe().transform(
+      newChannelData = (await new ValidateChannelInfoPipe().transform(
         newChannelData,
-      );
+      )) as CreateChannelDto;
       const newChannelId = await service.createChannel(userId, newChannelData);
       const anotherUserId = usersEntities[1].userId;
       await service.joinChannel(newChannelId, anotherUserId, false);
@@ -381,9 +381,9 @@ describe('ChatsService', () => {
         password: '1q2w3e4r',
         accessMode: 'protected',
       };
-      newChannelData = await new ValidateNewChannelPipe().transform(
+      newChannelData = (await new ValidateChannelInfoPipe().transform(
         newChannelData,
-      );
+      )) as CreateChannelDto;
       const newChannelId = await service.createChannel(userId, newChannelData);
       const anotherUserId = usersEntities[1].userId;
       await service.joinChannel(newChannelId, anotherUserId, false, '1q2w3e4r');
@@ -404,9 +404,9 @@ describe('ChatsService', () => {
         password: 'trickyPassword',
         accessMode: 'protected',
       };
-      newChannelData = await new ValidateNewChannelPipe().transform(
+      newChannelData = (await new ValidateChannelInfoPipe().transform(
         newChannelData,
-      );
+      )) as CreateChannelDto;
       const newChannelId = await service.createChannel(userId, newChannelData);
       const anotherUserId = usersEntities[1].userId;
       expect(async () =>
@@ -424,9 +424,9 @@ describe('ChatsService', () => {
         password: 'password',
         accessMode: 'protected',
       };
-      newChannelData = await new ValidateNewChannelPipe().transform(
+      newChannelData = (await new ValidateChannelInfoPipe().transform(
         newChannelData,
-      );
+      )) as CreateChannelDto;
       const newChannelId = await service.createChannel(userId, newChannelData);
       const anotherUserId = usersEntities[1].userId;
       await service.joinChannel(newChannelId, anotherUserId, true);
@@ -446,9 +446,9 @@ describe('ChatsService', () => {
         channelName: 'newChannel',
         accessMode: 'private',
       };
-      newChannelData = await new ValidateNewChannelPipe().transform(
+      newChannelData = (await new ValidateChannelInfoPipe().transform(
         newChannelData,
-      );
+      )) as CreateChannelDto;
       const newChannelId = await service.createChannel(userId, newChannelData);
       const anotherUserId = usersEntities[1].userId;
       expect(async () =>
@@ -462,9 +462,9 @@ describe('ChatsService', () => {
         channelName: 'newChannel',
         accessMode: 'private',
       };
-      newChannelData = await new ValidateNewChannelPipe().transform(
+      newChannelData = (await new ValidateChannelInfoPipe().transform(
         newChannelData,
-      );
+      )) as CreateChannelDto;
       const newChannelId = await service.createChannel(userId, newChannelData);
       const anotherUserId = usersEntities[1].userId;
       await service.joinChannel(newChannelId, anotherUserId, true);
@@ -502,9 +502,9 @@ describe('ChatsService', () => {
         password: 'password',
         accessMode: 'protected',
       };
-      newChannelData = await new ValidateNewChannelPipe().transform(
+      newChannelData = (await new ValidateChannelInfoPipe().transform(
         newChannelData,
-      );
+      )) as CreateChannelDto;
       const newChannelId = await service.createChannel(userId, newChannelData);
       const anotherUserId = usersEntities[1].userId;
       await service.joinChannel(newChannelId, anotherUserId, true);
@@ -527,9 +527,9 @@ describe('ChatsService', () => {
         password: 'trickyPassword',
         accessMode: 'protected',
       };
-      newChannelData = await new ValidateNewChannelPipe().transform(
+      newChannelData = (await new ValidateChannelInfoPipe().transform(
         newChannelData,
-      );
+      )) as CreateChannelDto;
       const newChannelId = await service.createChannel(userId, newChannelData);
       const anotherUserId = usersEntities[1].userId;
       await service.joinChannel(newChannelId, anotherUserId, true);
@@ -549,9 +549,9 @@ describe('ChatsService', () => {
         password: 'trickyPassword',
         accessMode: 'protected',
       };
-      newChannelData = await new ValidateNewChannelPipe().transform(
+      newChannelData = (await new ValidateChannelInfoPipe().transform(
         newChannelData,
-      );
+      )) as CreateChannelDto;
       const newChannelId = await service.createChannel(userId, newChannelData);
       const anotherUserId = usersEntities[1].userId;
       await service.joinChannel(newChannelId, anotherUserId, true);
@@ -680,9 +680,9 @@ describe('ChatsService', () => {
         channelName: 'newChannel',
         accessMode: 'private',
       };
-      newChannelData = await new ValidateNewChannelPipe().transform(
+      newChannelData = (await new ValidateChannelInfoPipe().transform(
         newChannelData,
-      );
+      )) as CreateChannelDto;
       const newChannelId = await service.createChannel(userId, newChannelData);
       const anotherUserId = usersEntities[2].userId;
       activityManager.setActivity(userId, `chatRooms-${newChannelId}`);
@@ -723,9 +723,9 @@ describe('ChatsService', () => {
         channelName: 'newChannel',
         accessMode: 'private',
       };
-      newChannelData = await new ValidateNewChannelPipe().transform(
+      newChannelData = (await new ValidateChannelInfoPipe().transform(
         newChannelData,
-      );
+      )) as CreateChannelDto;
       const newChannelId = await service.createChannel(ownerId, newChannelData);
       const anotherUserId = usersEntities[2].userId;
 
@@ -764,9 +764,9 @@ describe('ChatsService', () => {
         channelName: 'newChannel',
         accessMode: 'private',
       };
-      newChannelData = await new ValidateNewChannelPipe().transform(
+      newChannelData = (await new ValidateChannelInfoPipe().transform(
         newChannelData,
-      );
+      )) as CreateChannelDto;
       const newChannelId = await service.createChannel(ownerId, newChannelData);
       const memberId = usersEntities[2].userId;
       const adminId = usersEntities[3].userId;
@@ -797,9 +797,9 @@ describe('ChatsService', () => {
         channelName: 'newChannel',
         accessMode: 'private',
       };
-      newChannelData = await new ValidateNewChannelPipe().transform(
+      newChannelData = (await new ValidateChannelInfoPipe().transform(
         newChannelData,
-      );
+      )) as CreateChannelDto;
       const newChannelId = await service.createChannel(ownerId, newChannelData);
       const memberId = usersEntities[2].userId;
       const adminId = usersEntities[3].userId;
@@ -840,9 +840,9 @@ describe('ChatsService', () => {
         channelName: 'newChannel',
         accessMode: 'private',
       };
-      newChannelData = await new ValidateNewChannelPipe().transform(
+      newChannelData = (await new ValidateChannelInfoPipe().transform(
         newChannelData,
-      );
+      )) as CreateChannelDto;
       const newChannelId = await service.createChannel(ownerId, newChannelData);
       const anotherUserId = usersEntities[2].userId;
       await service.joinChannel(newChannelId, anotherUserId, true);
@@ -862,9 +862,9 @@ describe('ChatsService', () => {
         channelName: 'newChannel',
         accessMode: 'private',
       };
-      newChannelData = await new ValidateNewChannelPipe().transform(
+      newChannelData = (await new ValidateChannelInfoPipe().transform(
         newChannelData,
-      );
+      )) as CreateChannelDto;
       const newChannelId = await service.createChannel(ownerId, newChannelData);
       const anotherUserId = usersEntities[2].userId;
       await service.joinChannel(newChannelId, anotherUserId, true);
@@ -892,9 +892,9 @@ describe('ChatsService', () => {
         channelName: 'newChannel',
         accessMode: 'private',
       };
-      newChannelData = await new ValidateNewChannelPipe().transform(
+      newChannelData = (await new ValidateChannelInfoPipe().transform(
         newChannelData,
-      );
+      )) as CreateChannelDto;
       const newChannelId = await service.createChannel(ownerId, newChannelData);
       const memberId = usersEntities[2].userId;
       const adminId = usersEntities[3].userId;
@@ -939,9 +939,9 @@ describe('ChatsService', () => {
         channelName: 'newChannel',
         accessMode: 'private',
       };
-      newChannelData = await new ValidateNewChannelPipe().transform(
+      newChannelData = (await new ValidateChannelInfoPipe().transform(
         newChannelData,
-      );
+      )) as CreateChannelDto;
       const newChannelId = await service.createChannel(ownerId, newChannelData);
       const memberId = usersEntities[2].userId;
       const adminId = usersEntities[3].userId;
@@ -973,9 +973,9 @@ describe('ChatsService', () => {
         channelName: 'newChannel',
         accessMode: 'private',
       };
-      newChannelData = await new ValidateNewChannelPipe().transform(
+      newChannelData = (await new ValidateChannelInfoPipe().transform(
         newChannelData,
-      );
+      )) as CreateChannelDto;
       const newChannelId = await service.createChannel(ownerId, newChannelData);
       const memberId = usersEntities[2].userId;
       const adminId = usersEntities[3].userId;
@@ -1015,9 +1015,9 @@ describe('ChatsService', () => {
         channelName: 'newChannel',
         accessMode: 'private',
       };
-      newChannelData = await new ValidateNewChannelPipe().transform(
+      newChannelData = (await new ValidateChannelInfoPipe().transform(
         newChannelData,
-      );
+      )) as CreateChannelDto;
       const newChannelId = await service.createChannel(ownerId, newChannelData);
       const memberId = usersEntities[2].userId;
       const adminId = usersEntities[3].userId;
@@ -1041,9 +1041,9 @@ describe('ChatsService', () => {
         channelName: 'newChannel',
         accessMode: 'private',
       };
-      newChannelData = await new ValidateNewChannelPipe().transform(
+      newChannelData = (await new ValidateChannelInfoPipe().transform(
         newChannelData,
-      );
+      )) as CreateChannelDto;
       const newChannelId = await service.createChannel(ownerId, newChannelData);
       const memberId = usersEntities[2].userId;
       const adminId = usersEntities[3].userId;
@@ -1086,6 +1086,238 @@ describe('ChatsService', () => {
             ownerId,
           ]),
       ).rejects.toThrow(ForbiddenException);
+    });
+  });
+
+  describe('updateChannel', () => {
+    let channelCreatedSpy: jest.SpyInstance;
+    let channelDeletedSpy: jest.SpyInstance;
+    let channelUpdatedSpy: jest.SpyInstance;
+    beforeEach(() => {
+      channelCreatedSpy = jest
+        .spyOn(chatsGateway, 'emitChannelCreated')
+        .mockImplementation(() => undefined);
+      channelDeletedSpy = jest
+        .spyOn(chatsGateway, 'emitChannelDeleted')
+        .mockImplementation(() => undefined);
+      channelUpdatedSpy = jest
+        .spyOn(chatsGateway, 'emitChannelUpdated')
+        .mockImplementation(() => undefined);
+      const joinChannelSpy = jest
+        .spyOn(service, 'joinChannel')
+        .mockImplementation(() => undefined);
+    });
+
+    it('should update channel (public -> public)', async () => {
+      const channel = channelsEntities.find((c) => c.accessMode === 'public');
+      if (!channel) {
+        console.log('SKIP CHANNEL UPDATE TEST !!');
+      }
+      const channelId = channel.channelId;
+      const updatedChannelData: UpdateChannelDto = {
+        accessMode: 'public',
+      };
+      await service.updateChannel(channelId, updatedChannelData);
+      expect(channelStorage.getChannel(channelId).accessMode).toBe(
+        updatedChannelData.accessMode,
+      );
+      expect(channelUpdatedSpy).toBeCalledWith(
+        channelId,
+        0,
+        updatedChannelData.accessMode,
+      );
+    });
+
+    it('should update channel (public -> protected)', async () => {
+      const channel = channelsEntities.filter(
+        (c) => c.accessMode === 'public',
+      )[1];
+      if (!channel) {
+        console.log('SKIP CHANNEL UPDATE TEST !!');
+      }
+      const channelId = channel.channelId;
+      const updatedChannelData: UpdateChannelDto = {
+        accessMode: 'protected',
+        password: '123456abcd',
+      };
+      await service.updateChannel(channelId, updatedChannelData);
+      expect(channelStorage.getChannel(channelId).accessMode).toBe(
+        updatedChannelData.accessMode,
+      );
+      expect(channelUpdatedSpy).toBeCalledWith(
+        channelId,
+        0,
+        updatedChannelData.accessMode,
+      );
+    });
+
+    it('should update channel (public -> private)', async () => {
+      const channel = channelsEntities.filter(
+        (c) => c.accessMode === 'public',
+      )[2];
+      if (!channel) {
+        console.log('SKIP CHANNEL UPDATE TEST !!');
+      }
+      const channelId = channel.channelId;
+      const updatedChannelData: UpdateChannelDto = {
+        accessMode: 'private',
+      };
+      await service.updateChannel(channelId, updatedChannelData);
+      expect(channelStorage.getChannel(channelId).accessMode).toBe(
+        updatedChannelData.accessMode,
+      );
+      expect(channelUpdatedSpy).toBeCalledWith(
+        channelId,
+        0,
+        updatedChannelData.accessMode,
+      );
+      expect(channelDeletedSpy).toBeCalledWith(channelId);
+    });
+
+    it('should update channel (protected -> public)', async () => {
+      const channel = channelsEntities.filter(
+        (c) => c.accessMode === 'protected',
+      )[0];
+      if (!channel) {
+        console.log('SKIP CHANNEL UPDATE TEST !!');
+      }
+      const channelId = channel.channelId;
+      const updatedChannelData: UpdateChannelDto = {
+        accessMode: 'public',
+      };
+      await service.updateChannel(channelId, updatedChannelData);
+      expect(channelStorage.getChannel(channelId).accessMode).toBe(
+        updatedChannelData.accessMode,
+      );
+      expect(channelUpdatedSpy).toBeCalledWith(
+        channelId,
+        0,
+        updatedChannelData.accessMode,
+      );
+    });
+
+    it('should update channel (protected -> protected)', async () => {
+      const channel = channelsEntities.filter(
+        (c) => c.accessMode === 'protected',
+      )[1];
+      if (!channel) {
+        console.log('SKIP CHANNEL UPDATE TEST !!');
+      }
+      const channelId = channel.channelId;
+      const updatedChannelData: UpdateChannelDto = {
+        accessMode: 'protected',
+        password: '123456abcd',
+      };
+      await service.updateChannel(channelId, updatedChannelData);
+      expect(channelStorage.getChannel(channelId).accessMode).toBe(
+        updatedChannelData.accessMode,
+      );
+      expect(channelUpdatedSpy).toBeCalledWith(
+        channelId,
+        0,
+        updatedChannelData.accessMode,
+      );
+    });
+
+    it('should update channel (protected -> private)', async () => {
+      const channel = channelsEntities.filter(
+        (c) => c.accessMode === 'protected',
+      )[2];
+      if (!channel) {
+        console.log('SKIP CHANNEL UPDATE TEST !!');
+      }
+      const channelId = channel.channelId;
+      const updatedChannelData: UpdateChannelDto = {
+        accessMode: 'private',
+      };
+      await service.updateChannel(channelId, updatedChannelData);
+      expect(channelStorage.getChannel(channelId).accessMode).toBe(
+        updatedChannelData.accessMode,
+      );
+      expect(channelUpdatedSpy).toBeCalledWith(
+        channelId,
+        0,
+        updatedChannelData.accessMode,
+      );
+      expect(channelDeletedSpy).toBeCalledWith(channelId);
+    });
+
+    it('should update channel (private -> public)', async () => {
+      const channel = channelsEntities.filter(
+        (c) => c.accessMode === 'private',
+      )[0];
+      if (!channel) {
+        console.log('SKIP CHANNEL UPDATE TEST !!');
+      }
+      const channelId = channel.channelId;
+      const updatedChannelData: UpdateChannelDto = {
+        accessMode: 'public',
+      };
+      await service.updateChannel(channelId, updatedChannelData);
+      expect(channelStorage.getChannel(channelId).accessMode).toBe(
+        updatedChannelData.accessMode,
+      );
+      expect(channelUpdatedSpy).toBeCalledWith(
+        channelId,
+        0,
+        updatedChannelData.accessMode,
+      );
+      expect(channelCreatedSpy).toBeCalledWith(
+        channelId,
+        channel.name,
+        updatedChannelData.accessMode,
+      );
+    });
+
+    it('should update channel (private -> protected)', async () => {
+      const channel = channelsEntities.filter(
+        (c) => c.accessMode === 'private',
+      )[1];
+      if (!channel) {
+        console.log('SKIP CHANNEL UPDATE TEST !!');
+      }
+      const channelId = channel.channelId;
+      const updatedChannelData: UpdateChannelDto = {
+        accessMode: 'protected',
+        password: '123456abcd',
+      };
+      await service.updateChannel(channelId, updatedChannelData);
+      expect(channelStorage.getChannel(channelId).accessMode).toBe(
+        updatedChannelData.accessMode,
+      );
+      expect(channelUpdatedSpy).toBeCalledWith(
+        channelId,
+        0,
+        updatedChannelData.accessMode,
+      );
+      console.log('here is test');
+      expect(channelCreatedSpy).toBeCalledWith(
+        channelId,
+        channel.name,
+        updatedChannelData.accessMode,
+      );
+    });
+
+    it('should update channel (private -> private)', async () => {
+      const channel = channelsEntities.filter(
+        (c) => c.accessMode === 'private',
+      )[2];
+      if (!channel) {
+        console.log('SKIP CHANNEL UPDATE TEST !!');
+      }
+      const channelId = channel.channelId;
+      const updatedChannelData: UpdateChannelDto = {
+        accessMode: 'private',
+      };
+      await service.updateChannel(channelId, updatedChannelData);
+      expect(channelStorage.getChannel(channelId).accessMode).toBe(
+        updatedChannelData.accessMode,
+      );
+      expect(channelUpdatedSpy).toBeCalledWith(
+        channelId,
+        0,
+        updatedChannelData.accessMode,
+      );
     });
   });
 });

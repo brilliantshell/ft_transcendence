@@ -7,6 +7,7 @@ import {
   HttpStatus,
   Param,
   ParseIntPipe,
+  Patch,
   Post,
   Put,
   Query,
@@ -18,15 +19,21 @@ import {
 import { ChatsService } from './chats.service';
 import { ChannelExistGuard } from './guard/channel-exist.guard';
 import { ChannelId, UserId, VerifiedRequest } from '../util/type';
-import { CreateChannelDto, JoinChannelDto, MessageDto } from './dto/chats.dto';
+import {
+  CreateChannelDto,
+  JoinChannelDto,
+  MessageDto,
+  UpdateChannelDto,
+} from './dto/chats.dto';
 import { JoinChannelGuard } from './guard/join-channel.guard';
 import { MockAuthGuard } from '../guard/mock-auth.guard';
 import { MemberExistGuard } from './guard/member-exist.guard';
 import { MemberMessagingGuard } from './guard/member-messaging.guard';
 import { MessageTransformPipe } from './pipe/message-transform.pipe';
 import { Response } from 'express';
-import { ValidateNewChannelPipe } from './pipe/validate-new-channel.pipe';
+import { ValidateChannelInfoPipe } from './pipe/validate-channel-info.pipe';
 import { ValidateRangePipe } from '../pipe/validate-range.pipe';
+import { ChannelOwnerGuard } from './guard/channel-owner.guard';
 
 const RANGE_LIMIT_MAX = 10000;
 
@@ -49,7 +56,7 @@ export class ChatsController {
   @Post()
   async createChannel(
     @Req() req: VerifiedRequest,
-    @Body(ValidateNewChannelPipe) createChannelDto: CreateChannelDto,
+    @Body(ValidateChannelInfoPipe) createChannelDto: CreateChannelDto,
     @Res() res: Response,
   ) {
     res
@@ -64,12 +71,21 @@ export class ChatsController {
       .end();
   }
 
+  @Patch(':channelId')
+  @UseGuards(ChannelExistGuard, ChannelOwnerGuard)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  updateChannel(
+    @Param('channelId', ParseIntPipe) channelId: ChannelId,
+    @Body(ValidateChannelInfoPipe) updateChannelDto: UpdateChannelDto,
+  ) {
+    return this.chatsService.updateChannel(channelId, updateChannelDto);
+  }
+
   /*****************************************************************************
    *                                                                           *
    * SECTION : Join & Leave channel                                            *
    *                                                                           *
    ****************************************************************************/
-
   @Get(':channelId')
   @UseGuards(ChannelExistGuard, MemberExistGuard)
   findChannelMembers(@Param('channelId', ParseIntPipe) channelId: ChannelId) {

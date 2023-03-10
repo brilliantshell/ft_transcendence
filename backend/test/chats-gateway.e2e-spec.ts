@@ -208,7 +208,11 @@ describe('ChatsGateway (e2e)', () => {
     const channelUpdatedMsg = await new Promise((resolve) =>
       clientSockets[2].on('channelUpdated', (data) => resolve(data)),
     );
-    expect(channelUpdatedMsg).toEqual({ channelId: 1, memberCountDiff: 1 });
+    expect(channelUpdatedMsg).toEqual({
+      channelId: 1,
+      memberCountDiff: 1,
+      accessMode: null,
+    });
   });
 
   it('should send newMessage and messageArrived events to appropriate users', async () => {

@@ -250,6 +250,30 @@ export class ChannelStorage implements OnModuleInit {
   }
 
   /**
+   * @description 채팅방 정보 수정
+   *
+   * @param channelId 채팅방 id
+   * @param accessMode 채팅방 접근 권한
+   * @param password 채팅방 비밀번호
+   */
+  async updateChannel(
+    channelId: ChannelId,
+    accessMode: AccessMode,
+    password: string | null = null,
+  ) {
+    try {
+      this.channelsRepository.update(channelId, {
+        accessMode,
+        password,
+      });
+    } catch (e) {
+      this.logger.error(e);
+      throw new InternalServerErrorException(`Failed to update channel`);
+    }
+    this.getChannel(channelId).accessMode = accessMode;
+  }
+
+  /**
    * @description 채팅방에 유저 추가
    *
    * @param channelId 채팅방 id

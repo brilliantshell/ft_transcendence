@@ -98,6 +98,31 @@ export class ChatsGateway {
     });
   }
 
+  /**
+   * @description 채널에 멤버가 추가/삭제 되었을 때, chats-UI 를 보고 있는 유저에게 알림
+   *
+   * @param channelId 참여 인원 변동이 일어난 채널
+   * @param memberCountDiff 참여 인원 변동량
+   */
+  emitChannelUpdated(
+    channelId: ChannelId,
+    memberCountDiff: -1 | 0 | 1 = 0,
+    accessMode: 'public' | 'protected' | 'private' | null = null,
+  ) {
+    this.server
+      .in('chats')
+      .emit('channelUpdated', { channelId, memberCountDiff, accessMode });
+  }
+
+  /**
+   * @description 채널이 삭제 되었을 때, chats-UI 를 보고 있는 유저에게 알림
+   *
+   * @param channelId 삭제된 채널
+   */
+  emitChannelDeleted(channelId: ChannelId) {
+    this.server.in('chats').emit('channelDeleted', { channelId });
+  }
+
   /*****************************************************************************
    *                                                                           *
    * SECTION : Events when user does viewing the chatRoom-UI                   *
@@ -245,32 +270,5 @@ export class ChatsGateway {
       .in(`chatRooms-${channelId}`)
       .except(`chatRooms-${channelId}-active`)
       .emit('messageArrived', { channelId });
-  }
-
-  /*****************************************************************************
-   *                                                                           *
-   * SECTION : Events when user does viewing the chats-UI                      *
-   *                                                                           *
-   ****************************************************************************/
-
-  /**
-   * @description 채널에 멤버가 추가/삭제 되었을 때, chats-UI 를 보고 있는 유저에게 알림
-   *
-   * @param channelId 참여 인원 변동이 일어난 채널
-   * @param memberCountDiff 참여 인원 변동량
-   */
-  private emitChannelUpdated(channelId: ChannelId, memberCountDiff: number) {
-    this.server
-      .in('chats')
-      .emit('channelUpdated', { channelId, memberCountDiff });
-  }
-
-  /**
-   * @description 채널이 삭제 되었을 때, chats-UI 를 보고 있는 유저에게 알림
-   *
-   * @param channelId 삭제된 채널
-   */
-  private emitChannelDeleted(channelId: ChannelId) {
-    this.server.in('chats').emit('channelDeleted', { channelId });
   }
 }

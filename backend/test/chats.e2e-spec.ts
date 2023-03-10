@@ -222,6 +222,118 @@ describe('UserController (e2e)', () => {
         })
         .expect(400);
     });
+
+    it('PATCH /chats (valid DTO without password)', async () => {
+      let newChannelId: string;
+      const newChannelOwner = usersEntities[2];
+      await request(app.getHttpServer())
+        .post('/chats')
+        .set('x-user-id', newChannelOwner.userId.toString())
+        .send({
+          channelName: 'test',
+          accessMode: 'public',
+        })
+        .expect(201)
+        .expect(async (res) => {
+          newChannelId = res.headers['location'].replace('/chats/', '');
+        });
+
+      return request(app.getHttpServer())
+        .patch(`/chats/${newChannelId}`)
+        .set('x-user-id', newChannelOwner.userId.toString())
+        .send({ accessMode: 'private' })
+        .expect(204);
+    });
+
+    it('PATCH /chats (valid DTO with password)', async () => {
+      let newChannelId: string;
+      const newChannelOwner = usersEntities[2];
+      await request(app.getHttpServer())
+        .post('/chats')
+        .set('x-user-id', newChannelOwner.userId.toString())
+        .send({
+          channelName: 'test',
+          accessMode: 'public',
+        })
+        .expect(201)
+        .expect(async (res) => {
+          newChannelId = res.headers['location'].replace('/chats/', '');
+        });
+
+      return request(app.getHttpServer())
+        .patch(`/chats/${newChannelId}`)
+        .set('x-user-id', newChannelOwner.userId.toString())
+        .send({ accessMode: 'protected', password: '1q2w3e4r5' })
+        .expect(204);
+    });
+
+    it('PATCH /chats (valid DTO but not Owner)', async () => {
+      let newChannelId: string;
+      const newChannelOwner = usersEntities[2];
+      await request(app.getHttpServer())
+        .post('/chats')
+        .set('x-user-id', newChannelOwner.userId.toString())
+        .send({
+          channelName: 'test',
+          accessMode: 'public',
+        })
+        .expect(201)
+        .expect(async (res) => {
+          newChannelId = res.headers['location'].replace('/chats/', '');
+        });
+
+      return request(app.getHttpServer())
+        .patch(`/chats/${newChannelId}`)
+        .set('x-user-id', usersEntities[0].userId.toString())
+        .send({ accessMode: 'protected', password: '1q2w3e4r5' })
+        .expect(403);
+    });
+
+    it('PATCH /chats (non-exist channel)', async () => {
+      const newChannelId = '99999';
+      return request(app.getHttpServer())
+        .patch(`/chats/${newChannelId}`)
+        .set('x-user-id', usersEntities[0].userId.toString())
+        .send({ accessMode: 'protected', password: '1q2w3e4r5' })
+        .expect(404);
+    });
+
+    it('PATCH /chats (invalid DTO)', async () => {
+      let newChannelId: string;
+      const newChannelOwner = usersEntities[2];
+      await request(app.getHttpServer())
+        .post('/chats')
+        .set('x-user-id', newChannelOwner.userId.toString())
+        .send({
+          channelName: 'test',
+          accessMode: 'public',
+        })
+        .expect(201)
+        .expect(async (res) => {
+          newChannelId = res.headers['location'].replace('/chats/', '');
+        });
+
+      const invalidDtos = [
+        { accessMode: 'public', password: '1q2w3e4r5' },
+        { accessMode: 'private', password: '1q2w3e4r5' },
+        { accessMode: 'protected' },
+        { password: '1q2w3e4r5' },
+        {},
+      ];
+
+      const requests = invalidDtos.map((dto) =>
+        request(app.getHttpServer())
+          .patch(`/chats/${newChannelId}`)
+          .set('x-user-id', newChannelOwner.userId.toString())
+          .send(dto),
+      );
+
+      return Promise.all(requests).then((responses) => {
+        responses.forEach((res) => {
+          expect(res.status).toBe(400);
+        });
+      });
+    });
   });
 
   describe('/chats/:channelId, Join & Leave channel', () => {

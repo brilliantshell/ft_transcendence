@@ -7,13 +7,17 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { DateTime } from 'luxon';
+import { EntityNotFoundError, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
 import { compare } from 'bcrypt';
 
 import { AccessMode, Channels } from '../entity/channels.entity';
 import { ActivityManager } from '../user-status/activity.manager';
-import { AllChannelsDto, CreateChannelDto } from './dto/chats.dto';
+import {
+  AllChannelsDto,
+  CreateChannelDto,
+  UpdateChannelDto,
+} from './dto/chats.dto';
 import { ChannelStorage } from '../user-status/channel.storage';
 import { ChannelId, UserChannelStatus, UserId, UserRole } from '../util/type';
 import { ChatsGateway } from './chats.gateway';
@@ -90,6 +94,36 @@ export class ChatsService {
     }
     this.chatsGateway.joinChannelRoom(channelId, userId);
     return channelId;
+  }
+
+  async updateChannel(channelId: ChannelId, channel: UpdateChannelDto) {
+    const { accessMode, password } = channel;
+    const prevAccessMode = this.channelStorage.getChannel(channelId).accessMode;
+
+    await this.channelStorage.updateChannel(
+      channelId,
+      accessMode as AccessMode,
+      password,
+    );
+    if (prevAccessMode === 'private' && accessMode !== 'private') {
+      try {
+        const name = (
+          await this.channelsRepository.findOneOrFail({
+            where: { channelId },
+            select: ['name'],
+          })
+        ).name;
+        this.chatsGateway.emitChannelCreated(channelId, name, accessMode);
+      } catch (e) {
+        this.logger.error(e);
+        throw e instanceof EntityNotFoundError
+          ? new NotFoundException('Channel not found')
+          : new InternalServerErrorException('Failed to get channel name');
+      }
+    } else if (prevAccessMode !== 'private' && accessMode === 'private') {
+      this.chatsGateway.emitChannelDeleted(channelId);
+    }
+    this.chatsGateway.emitChannelUpdated(channelId, 0, accessMode);
   }
 
   /*****************************************************************************
