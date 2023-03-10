@@ -11,8 +11,9 @@ interface ChannelCreated extends ChannelId {
   accessMode: 'public' | 'protected' | 'private';
 }
 
-interface MemberChange extends ChannelId {
-  memberCountDiff: 1 | -1;
+interface ChannelUpdated extends ChannelId {
+  memberCountDiff: 1 | 0 | -1;
+  accessMode: 'public' | 'protected' | 'private' | null;
 }
 
 function addToOtherChannels(
@@ -89,7 +90,8 @@ export function useChannelUpdatedEvent(
   const handleChannelUpdated = ({
     channelId,
     memberCountDiff,
-  }: MemberChange) => {
+    accessMode,
+  }: ChannelUpdated) => {
     let updated = false;
     setJoinedChannels(prev =>
       prev.map(channel => {
@@ -98,6 +100,7 @@ export function useChannelUpdatedEvent(
           return {
             ...channel,
             memberCount: channel.memberCount + memberCountDiff,
+            accessMode: accessMode || channel.accessMode,
           };
         }
         return channel;
@@ -110,6 +113,7 @@ export function useChannelUpdatedEvent(
             ? {
                 ...channel,
                 memberCount: channel.memberCount + memberCountDiff,
+                accessMode: accessMode || channel.accessMode,
               }
             : channel,
         ),
