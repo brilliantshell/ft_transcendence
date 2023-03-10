@@ -35,13 +35,7 @@ function GameButton(props: Props) {
           online: <button onClick={inviteGame}>게임 초대</button>,
           inGame: <button onClick={watchingGame}>게임 관전</button>,
         }[
-          (
-            activityMap.get(props.userId) ?? {
-              userId: props.userId,
-              activity: 'offline',
-              gameId: null,
-            }
-          )?.activity
+            activityMap.get(props.userId)?.activity ?? 'offline'
         ]
       }
     </>
