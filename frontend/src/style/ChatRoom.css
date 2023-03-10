@@ -1,8 +1,7 @@
 .chatRoom {
   display: grid;
   width: 80%;
-  margin-left: 5%;
-  margin-right: 5%;
+  margin: 0 5%;
   grid-template-columns: 0.3fr 1fr;
   background-color: var(--primary_dark);
   padding: 1rem;
