@@ -1090,12 +1090,12 @@ describe('ChatsService', () => {
   });
 
   describe('updateChannel', () => {
-    let channelCreatedSpy: jest.SpyInstance;
+    let channelShown: jest.SpyInstance;
     let channelHiddenSpy: jest.SpyInstance;
     let channelUpdatedSpy: jest.SpyInstance;
     beforeEach(() => {
-      channelCreatedSpy = jest
-        .spyOn(chatsGateway, 'emitChannelCreated')
+      channelShown = jest
+        .spyOn(chatsGateway, 'emitChannelShown')
         .mockImplementation(() => undefined);
       channelHiddenSpy = jest
         .spyOn(chatsGateway, 'emitChannelHidden')
@@ -1262,10 +1262,11 @@ describe('ChatsService', () => {
         0,
         updatedChannelData.accessMode,
       );
-      expect(channelCreatedSpy).toBeCalledWith(
+      expect(channelShown).toBeCalledWith(
         channelId,
         channel.name,
         updatedChannelData.accessMode,
+        channelStorage.getChannel(channelId).userRoleMap.size,
       );
     });
 
@@ -1290,11 +1291,11 @@ describe('ChatsService', () => {
         0,
         updatedChannelData.accessMode,
       );
-      console.log('here is test');
-      expect(channelCreatedSpy).toBeCalledWith(
+      expect(channelShown).toBeCalledWith(
         channelId,
         channel.name,
         updatedChannelData.accessMode,
+        channelStorage.getChannel(channelId).userRoleMap.size,
       );
     });
 
