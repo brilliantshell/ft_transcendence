@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from 'react-router-dom';
 
 interface RanksItemProps {
   id: number;
@@ -8,12 +8,13 @@ interface RanksItemProps {
 }
 
 function RanksItem({ id, rank, ladder, children }: RanksItemProps) {
+  const nav = useNavigate();
   return (
-    <Link to={`/profile/${id}`} className="ranksItem selectNone" key={`rank-${id}`}>
+    <div onClick={() => nav(`/profile/${id}`)} className="ranksItem selectNone">
       <p>{rank} 등</p>
       {children}
       <p>{ladder}</p>
-    </Link>
+    </div>
   );
 }
 
