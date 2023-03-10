@@ -67,17 +67,23 @@ export class GameGateway {
    ****************************************************************************/
 
   /**
-   * @description 게임 player 들에게 매칭되었다고 알림
+   * @description ladder 게임 player 들에게 매칭되었다고 알림
    *
    * @param gameId 게임 id
    */
-  emitNewGame(gameId: GameId, inviterNickname: string | null = null) {
+  emitNewGame(gameId: GameId) {
+    this.server.to(`game-${gameId}`).emit('newGame', { gameId });
+  }
+
+  /**
+   * @description normal 게임 에 초대된 유저에게 게임이 매칭되었다고 알림
+   *
+   * @param gameId 게임 id
+   */
+  emitNewNormalGame(gameId: GameId, inviterNickname: string) {
     this.server
       .to(`game-${gameId}`)
-      .emit(
-        'newGame',
-        inviterNickname ? { gameId, inviterNickname } : { gameId },
-      );
+      .emit('newGame', { gameId, inviterNickname });
   }
 
   /**

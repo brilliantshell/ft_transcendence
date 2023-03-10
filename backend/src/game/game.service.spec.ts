@@ -81,8 +81,9 @@ describe('GameService', () => {
       .overrideProvider(GameGateway)
       .useValue({
         joinRoom: jest.fn((socketId: string, roomId: string) => undefined),
-        emitNewGame: jest.fn(
-          (gameId: GameId, inviterNickname: string | null = null) => undefined,
+        emitNewGame: jest.fn((gameId: GameId) => undefined),
+        emitNewNormalGame: jest.fn(
+          (gameId: GameId, inviterNickname: string) => undefined,
         ),
         emitGameOption: jest.fn(
           (gameId: GameId, socketId: SocketId, map: number) => undefined,
@@ -247,7 +248,7 @@ describe('GameService', () => {
         map: 1,
         isRank: false,
       });
-      expect(gameGateway.emitNewGame).toHaveBeenCalledWith(
+      expect(gameGateway.emitNewNormalGame).toHaveBeenCalledWith(
         newGameId,
         playerOne.nickname,
       );

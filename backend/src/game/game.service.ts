@@ -131,7 +131,7 @@ export class GameService {
       this.userSocketStorage.clients.get(invitedId),
       `game-${gameId}`,
     );
-    this.gameGateway.emitNewGame(
+    this.gameGateway.emitNewNormalGame(
       gameId,
       this.gameStorage.getGame(gameId).leftNickname,
     );
