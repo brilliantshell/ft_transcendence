@@ -121,7 +121,7 @@ export class ChatsService {
           : new InternalServerErrorException('Failed to get channel name');
       }
     } else if (prevAccessMode !== 'private' && accessMode === 'private') {
-      this.chatsGateway.emitChannelDeleted(channelId);
+      this.chatsGateway.emitChannelHidden(channelId);
     }
     this.chatsGateway.emitChannelUpdated(channelId, 0, accessMode);
   }
