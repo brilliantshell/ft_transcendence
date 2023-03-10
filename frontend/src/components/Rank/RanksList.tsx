@@ -3,28 +3,29 @@ import { useRecoilValue } from 'recoil';
 import instance from '../../util/Axios';
 import User from '../User/User';
 import { useSocketOn } from '../hooks/SocketOnHooks';
-import { userActivity, userRelationship } from '../../util/Recoils';
+import { myIdState, userActivity, userRelationship } from '../../util/Recoils';
 import { ErrorAlert } from '../../util/Alert';
+import { MyRankInfo, RankData } from './interface';
+import { useUpdateMyRank, useUpdateRank } from './hooks/UpdateRank';
 
 const RanksItem = lazy(() => import('./RanksItem'));
 
-interface RankData {
-  id: number;
-  ladder: number;
-  rank: number;
+interface RanksListProps {
+  setMyRankInfo: React.Dispatch<React.SetStateAction<MyRankInfo>>;
 }
 
-function RanksList() {
+function RanksList({ setMyRankInfo }: RanksListProps) {
+  const myId = useRecoilValue(myIdState);
   const activityMap = useRecoilValue(userActivity);
   const relationshipMap = useRecoilValue(userRelationship);
-  const [data, setData] = useState<Array<RankData>>([]);
+  const [rankData, setRankData] = useState<Array<RankData>>([]);
   const [isEmpty, setIsEmpty] = useState(false);
 
   useSocketOn();
   useEffect(() => {
     instance
       .get('/ranks?range=0,50')
-      .then(({ data }) => setData(data.users))
+      .then(({ data }) => setRankData(data.users))
       .catch(err => {
         err.response.status === 404
           ? setIsEmpty(true)
@@ -35,7 +36,10 @@ function RanksList() {
       });
   }, []);
 
-  const rankData = useMemo(() => data, [data]);
+  useUpdateRank(setRankData);
+  useUpdateMyRank(setMyRankInfo, myId, rankData)
+
+  const rankDataMemo = useMemo(() => rankData, [rankData]);
 
   return (
     <div className="ranksList">
@@ -48,8 +52,13 @@ function RanksList() {
         <Suspense fallback={<div className="ranksSpin spinSmall"></div>}>
           {isEmpty
             ? '랭크 데이터가 존재하지 않습니다.'
-            : rankData.map(({ rank, id, ladder }) => (
-                <RanksItem id={id} rank={rank} ladder={ladder}>
+            : rankDataMemo.map(({ rank, id, ladder }, i) => (
+                <RanksItem
+                  key={`rank-${id}`}
+                  id={id}
+                  rank={rank}
+                  ladder={ladder}
+                >
                   <User
                     userId={id}
                     activity={activityMap.get(id)}
