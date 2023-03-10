@@ -37,9 +37,9 @@ function Dropdown({ userId }: Props) {
         ) : (
           <>
             <button onClick={dmOnclick}>DM</button>
-            <GameButton userId={userId}></GameButton>
+            <GameButton userId={userId} />
             <BlockButton userId={userId} />
-            <FriendButton userId={userId}></FriendButton>
+            <FriendButton userId={userId} />
           </>
         )}
       </div>
