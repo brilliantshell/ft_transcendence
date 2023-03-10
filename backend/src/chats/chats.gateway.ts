@@ -115,12 +115,12 @@ export class ChatsGateway {
   }
 
   /**
-   * @description 채널이 삭제 되었을 때, chats-UI 를 보고 있는 유저에게 알림
+   * @description 채널이 private 로 변경 되었을 때, chats-UI 를 보고 있는 유저에게 알림
    *
-   * @param channelId 삭제된 채널
+   * @param channelId 변경된 채널
    */
-  emitChannelDeleted(channelId: ChannelId) {
-    this.server.in('chats').emit('channelDeleted', { channelId });
+  emitChannelHidden(channelId: ChannelId) {
+    this.server.in('chats').emit('channelHidden', { channelId });
   }
 
   /*****************************************************************************
@@ -270,5 +270,14 @@ export class ChatsGateway {
       .in(`chatRooms-${channelId}`)
       .except(`chatRooms-${channelId}-active`)
       .emit('messageArrived', { channelId });
+  }
+
+  /**
+   * @description 채널이 삭제 되었을 때, chats-UI 를 보고 있는 유저에게 알림
+   *
+   * @param channelId 삭제된 채널
+   */
+  private emitChannelDeleted(channelId: ChannelId) {
+    this.server.in('chats').emit('channelDeleted', { channelId });
   }
 }

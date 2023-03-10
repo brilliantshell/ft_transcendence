@@ -1091,14 +1091,14 @@ describe('ChatsService', () => {
 
   describe('updateChannel', () => {
     let channelCreatedSpy: jest.SpyInstance;
-    let channelDeletedSpy: jest.SpyInstance;
+    let channelHiddenSpy: jest.SpyInstance;
     let channelUpdatedSpy: jest.SpyInstance;
     beforeEach(() => {
       channelCreatedSpy = jest
         .spyOn(chatsGateway, 'emitChannelCreated')
         .mockImplementation(() => undefined);
-      channelDeletedSpy = jest
-        .spyOn(chatsGateway, 'emitChannelDeleted')
+      channelHiddenSpy = jest
+        .spyOn(chatsGateway, 'emitChannelHidden')
         .mockImplementation(() => undefined);
       channelUpdatedSpy = jest
         .spyOn(chatsGateway, 'emitChannelUpdated')
@@ -1171,7 +1171,7 @@ describe('ChatsService', () => {
         0,
         updatedChannelData.accessMode,
       );
-      expect(channelDeletedSpy).toBeCalledWith(channelId);
+      expect(channelHiddenSpy).toBeCalledWith(channelId);
     });
 
     it('should update channel (protected -> public)', async () => {
@@ -1239,7 +1239,7 @@ describe('ChatsService', () => {
         0,
         updatedChannelData.accessMode,
       );
-      expect(channelDeletedSpy).toBeCalledWith(channelId);
+      expect(channelHiddenSpy).toBeCalledWith(channelId);
     });
 
     it('should update channel (private -> public)', async () => {
