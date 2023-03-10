@@ -19,6 +19,7 @@ import {
 import { ChatsService } from './chats.service';
 import { ChannelExistGuard } from './guard/channel-exist.guard';
 import { ChannelId, UserId, VerifiedRequest } from '../util/type';
+import { ChannelOwnerGuard } from './guard/channel-owner.guard';
 import {
   CreateChannelDto,
   JoinChannelDto,
@@ -33,7 +34,6 @@ import { MessageTransformPipe } from './pipe/message-transform.pipe';
 import { Response } from 'express';
 import { ValidateChannelInfoPipe } from './pipe/validate-channel-info.pipe';
 import { ValidateRangePipe } from '../pipe/validate-range.pipe';
-import { ChannelOwnerGuard } from './guard/channel-owner.guard';
 
 const RANGE_LIMIT_MAX = 10000;
 
