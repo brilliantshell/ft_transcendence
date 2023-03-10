@@ -41,8 +41,8 @@ function ChatRoom() {
         <button>맴버 추가</button>
       </div>
       <div className="chatRoomRight">
-        <ChatList id={id ?? ''}></ChatList>
-        <ChatInput></ChatInput>
+        <ChatList id={id ?? ''} />
+        <ChatInput />
       </div>
     </div>
   );
