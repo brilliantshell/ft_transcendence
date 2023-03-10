@@ -1008,6 +1008,85 @@ describe('ChatsService', () => {
 
       expect(memberLeftSpy).toBeCalledWith(newChannelId, memberId, false);
     });
+
+    it('should execute kick command', async () => {
+      const ownerId = usersEntities[1].userId;
+      let newChannelData: CreateChannelDto = {
+        channelName: 'newChannel',
+        accessMode: 'private',
+      };
+      newChannelData = await new ValidateNewChannelPipe().transform(
+        newChannelData,
+      );
+      const newChannelId = await service.createChannel(ownerId, newChannelData);
+      const memberId = usersEntities[2].userId;
+      const adminId = usersEntities[3].userId;
+
+      await service.joinChannel(newChannelId, adminId, true);
+      await service.joinChannel(newChannelId, memberId, true);
+
+      await service.executeCommand(newChannelId, ownerId, ['kick', memberId]);
+      expect(
+        (
+          await dataSource
+            .getRepository(BannedMembers)
+            .findOneBy({ memberId, channelId: newChannelId })
+        ).endAt > DateTime.now().plus({ years: 141 }),
+      ).toBeTruthy();
+    });
+
+    it('should not execute kick command', async () => {
+      const ownerId = usersEntities[1].userId;
+      let newChannelData: CreateChannelDto = {
+        channelName: 'newChannel',
+        accessMode: 'private',
+      };
+      newChannelData = await new ValidateNewChannelPipe().transform(
+        newChannelData,
+      );
+      const newChannelId = await service.createChannel(ownerId, newChannelData);
+      const memberId = usersEntities[2].userId;
+      const adminId = usersEntities[3].userId;
+
+      await service.joinChannel(newChannelId, adminId, true);
+      await service.joinChannel(newChannelId, memberId, true);
+
+      // member to owner
+      expect(
+        async () =>
+          await service.executeCommand(newChannelId, memberId, [
+            'kick',
+            ownerId,
+          ]),
+      ).rejects.toThrow(ForbiddenException);
+
+      // member to admin
+      expect(
+        async () =>
+          await service.executeCommand(newChannelId, memberId, [
+            'kick',
+            memberId,
+          ]),
+      ).rejects.toThrow(ForbiddenException);
+
+      // admin to owner
+      expect(
+        async () =>
+          await service.executeCommand(newChannelId, adminId, [
+            'kick',
+            ownerId,
+          ]),
+      ).rejects.toThrow(ForbiddenException);
+
+      // owner to owner
+      expect(
+        async () =>
+          await service.executeCommand(newChannelId, ownerId, [
+            'kick',
+            ownerId,
+          ]),
+      ).rejects.toThrow(ForbiddenException);
+    });
   });
 });
 

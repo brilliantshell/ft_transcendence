@@ -256,7 +256,7 @@ export class ChatsService {
   async executeCommand(
     channelId: ChannelId,
     senderId: UserId,
-    command: [string, number, string],
+    command: [string, number, string?],
   ) {
     const [kind, targetId, arg] = command;
     if (this.channelStorage.getUserRole(channelId, targetId) === null) {
@@ -275,7 +275,9 @@ export class ChatsService {
       await this.channelStorage.updateMuteStatus(channelId, targetId, minutes);
       return this.chatsGateway.emitMuted(targetId, channelId, minutes);
     } else {
-      const minutes = now.plus({ minutes: Number(arg) });
+      const minutes = arg
+        ? now.plus({ minutes: Number(arg) })
+        : now.plus({ years: 142 });
       await this.channelStorage.banUser(channelId, targetId, minutes);
       this.chatsGateway.emitMemberLeft(channelId, targetId, false);
       return this.chatsGateway.emitBanned(channelId, targetId);

@@ -884,6 +884,62 @@ describe('UserController (e2e)', () => {
         });
     });
 
+    it('POST /chats/:channelId/message (valid DTO), kicked member', async () => {
+      const channel = channelsEntities.filter(
+        (c) => c.accessMode === 'public',
+      )[1];
+      const member = channelMembersEntities.find(
+        (c) =>
+          c.channelId === channel.channelId && c.memberId !== channel.ownerId,
+      );
+      const memberNickname = usersEntities.find(
+        (u) => u.userId === member.memberId,
+      ).nickname;
+
+      await request(app.getHttpServer())
+        .put(`/chats/${channel.channelId}/user/${member.memberId}`)
+        .set('x-user-id', member.memberId.toString())
+        .expect(204);
+
+      return request(app.getHttpServer())
+        .post(`/chats/${channel.channelId}/message`)
+        .set('x-user-id', channel.ownerId.toString())
+        .send({
+          message: `/kick ${memberNickname}`,
+        })
+        .expect(201)
+        .expect(() => {
+          request(app.getHttpServer())
+            .put(`/chats/${channel.channelId}/user/${member.memberId}`)
+            .set('x-user-id', member.memberId.toString())
+            .send({
+              message: 'test message',
+            })
+            .expect(403);
+        });
+    });
+
+    it('POST /chats/:channelId/message (invalid DTO), kicked member', async () => {
+      const channel = channelsEntities.filter(
+        (c) => c.accessMode === 'public',
+      )[1];
+      const member = channelMembersEntities.find(
+        (c) =>
+          c.channelId === channel.channelId && c.memberId !== channel.ownerId,
+      );
+      const memberNickname = usersEntities.find(
+        (u) => u.userId === member.memberId,
+      ).nickname;
+
+      return request(app.getHttpServer())
+        .post(`/chats/${channel.channelId}/message`)
+        .set('x-user-id', channel.ownerId.toString())
+        .send({
+          message: `/kick ${memberNickname} 42`,
+        })
+        .expect(400);
+    });
+
     it('POST /chats/:channelId/message (invalid DTO, empty message)', async () => {
       const channel = channelsEntities.find((c) => c.dmPeerId !== null);
       return request(app.getHttpServer())
