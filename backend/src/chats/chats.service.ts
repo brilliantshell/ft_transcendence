@@ -225,7 +225,7 @@ export class ChatsService {
       const messages = (
         await this.messagesRepository.find({
           where: { channelId },
-          order: { createdAt: 'ASC' as any },
+          order: { createdAt: 'DESC' as any },
           skip: offset,
           take: limit,
           select: ['senderId', 'contents', 'createdAt'],
