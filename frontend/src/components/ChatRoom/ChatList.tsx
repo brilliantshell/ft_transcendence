@@ -48,7 +48,7 @@ function ChatList(props: Props) {
         // 만약에 년월일이 다르면 년월일 출력!
         // message 컴포넌트로!
 
-        <Message key={index} data={data}></Message>
+        <Message key={index} data={data} />
       ))}
     </div>
   );
