@@ -3,30 +3,20 @@ import GameMenu from '../components/GameRoom/GameMenu';
 import GamePlay from '../components/GameRoom/GamePlay';
 import { socket } from '../util/Socket';
 import { useCurrentUi } from '../components/hooks/EmitCurrentUi';
-import {
-  useListenGameEvents,
-  useRequestGame,
-} from '../components/GameRoom/hooks/GameDataHooks';
-import { useLocation, useParams } from 'react-router-dom';
+import { useRequestGame } from '../components/GameRoom/hooks/GameDataHooks';
+import { useParams } from 'react-router-dom';
 import { useState } from 'react';
 import '../style/GameRoom.css';
 
 export default function GameRoom() {
   const { gameId } = useParams();
-  if (gameId === undefined) return;
-  const location = useLocation();
+  if (gameId === undefined) {
+    return;
+  }
   const [isConnected, setIsConnected] = useState(socket.connected);
-  const [isStarted, setIsStarted] = useState(false);
-  const isPlayer = location.state?.isPlayer ?? false;
 
   useCurrentUi(isConnected, setIsConnected, `game-${gameId}`);
-  const { gameInfo, players } = useRequestGame(
-    isConnected,
-    isPlayer,
-    gameId,
-    setIsStarted,
-  );
-  useListenGameEvents(isConnected, isPlayer);
+  const { gameInfo, players } = useRequestGame(isConnected, gameId);
 
   return (
     <div className="gameRoom">
@@ -39,13 +29,16 @@ export default function GameRoom() {
           />
           <GamePlay
             gameInfo={{ id: gameId, players }}
-            controllerType={{ isLeft: gameInfo.isLeft, isPlayer }}
-            isStarted={isStarted}
+            controllerType={{
+              isLeft: gameInfo.isLeft,
+              isPlayer:
+                sessionStorage.getItem(`game-${gameId}-isPlayer`) === 'true',
+            }}
           />
           <GameMenu
+            gameId={gameId}
             isRank={gameInfo.isRank}
             isOwner={gameInfo.isLeft}
-            startGame={() => setIsStarted(true)}
           />
         </>
       )}

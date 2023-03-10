@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { listenEvent, socket } from '../../util/Socket';
+import { listenOnce, socket } from '../../util/Socket';
 
 export function useCurrentUi(
   isConnected: boolean,
@@ -9,7 +9,7 @@ export function useCurrentUi(
   useEffect(() => {
     isConnected
       ? socket.emit('currentUi', { ui })
-      : listenEvent('connect').then(() => {
+      : listenOnce('connect').then(() => {
           socket.emit('currentUi', { ui });
           setIsConnected(true);
         });
