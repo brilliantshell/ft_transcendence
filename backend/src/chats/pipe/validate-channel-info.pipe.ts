@@ -1,17 +1,17 @@
 import { BadRequestException, Injectable, PipeTransform } from '@nestjs/common';
 import { hash } from 'bcrypt';
 
-import { CreateChannelDto } from '../dto/chats.dto';
+import { CreateChannelDto, UpdateChannelDto } from '../dto/chats.dto';
 
 @Injectable()
-export class ValidateNewChannelPipe implements PipeTransform {
-  async transform(value: CreateChannelDto) {
+export class ValidateChannelInfoPipe implements PipeTransform {
+  async transform(value: CreateChannelDto | UpdateChannelDto) {
     const password = this.validate(value);
     value.password = password === undefined ? null : await hash(password, 10);
     return value;
   }
 
-  private validate(value: CreateChannelDto) {
+  private validate(value: CreateChannelDto | UpdateChannelDto) {
     const { accessMode, password } = value;
     if (accessMode === 'protected' && !password) {
       throw new BadRequestException(

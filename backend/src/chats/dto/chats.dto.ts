@@ -51,6 +51,17 @@ export class CreateChannelDto {
   accessMode: 'public' | 'protected' | 'private';
 }
 
+export class UpdateChannelDto {
+  @IsAlphanumeric()
+  @Length(8, 16)
+  @IsOptional()
+  password?: string;
+
+  @IsString()
+  @Matches(/^(public|protected|private)$/)
+  accessMode: 'public' | 'protected' | 'private';
+}
+
 export class MessageDto {
   @IsString()
   @Length(1, 4096)
