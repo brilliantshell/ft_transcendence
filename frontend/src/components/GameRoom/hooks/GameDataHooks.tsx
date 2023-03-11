@@ -12,7 +12,6 @@ export function useRequestGame(isConnected: boolean, gameId: string) {
   const listenGameAbortedOnce = (isLeft: boolean | null = null) => {
     listenOnce<{ abortedSide: 'left' | 'right' }>('gameAborted').then(
       ({ abortedSide }) => {
-        console.log('isLeft', isLeft);
         const message =
           isLeft !== null
             ? (isLeft && abortedSide === 'right') ||

@@ -75,12 +75,21 @@
   text-shadow: 0.2rem 0.2rem var(--primary);
 }
 
-.gameOptionInvitedText {
+.gameOptionText {
   padding-bottom: 14%;
 }
 
-.gameOptionInvitedText p {
-  margin: 1rem;
+.gameOptionText p {
+  margin: 0.7rem;
+}
+
+.gameOptionText span {
+  background-color: var(--primary_light);
+  border: 1px solid var(--secondary);
+  box-shadow: 0.1rem 0.1rem var(--secondary);
+  border-radius: 0.4rem;
+  color: var(--secondary);
+  padding: 0.2rem 0.5rem;
 }
 
 .gameOptionForm {
@@ -112,6 +121,7 @@
   position: relative;
 }
 
+.gameOptionSelectionButton.gameOptionSelected,
 .gameOptionSelectionButton:hover {
   background-color: var(--secondary_dark);
   border: none;
@@ -183,7 +193,7 @@
 }
 
 .gameOptionSelectionButton:hover > .gameOptionLargerBallSvg {
-  animation: largerBallAnimation 1.8s ease-in-out forwards;
+  animation: largerBallAnimation 1s ease-in-out forwards;
   color: var(--primary);
   opacity: 0;
 }
@@ -232,7 +242,8 @@
   flex-direction: row-reverse;
 }
 
-.gameButton {
+.gameStartButton,
+.gameStartButtonDeactivated {
   background: var(--primary_light);
   border: none;
   border-radius: 0.5em;
@@ -243,7 +254,7 @@
   width: 15%;
 }
 
-.gameButton:hover {
+.gameStartButton:hover {
   background: var(--primary_dark);
   color: var(--secondary);
 }
