@@ -1,37 +1,48 @@
 import { useRecoilState } from 'recoil';
+import { ErrorAlert } from '../../util/Alert';
 import instance from '../../util/Axios';
-import { relationshipState } from '../../util/Recoils';
+import { userRelationship } from '../../util/Recoils';
 
 interface Props {
   userId: number;
 }
 
 function FriendButton(props: Props) {
-  const [relationship, setRelationship] = useRecoilState(
-    relationshipState(props.userId),
-  );
-
-  // put (추가 버튼)
+  const [relationshipMap, setRelationshipMap] =
+    useRecoilState(userRelationship);
 
   const friendPut = () => {
     instance
       .put(`/user/${props.userId}/friend`)
       .then(() => {
-        setRelationship({
-          userId: props.userId,
-          relationship: 'pendingSender',
+        setRelationshipMap(prev => {
+          const copy = new Map(prev);
+          copy.set(props.userId, {
+            userId: props.userId,
+            relationship: 'pendingSender',
+          });
+          return copy;
         });
       })
-      .catch(() => {
-        // 400 | 403(차단된 사용자 접근)
+      .catch(err => {
+        // TODO :400 | 403(차단된 사용자 접근)
+        if (err.response.status === 400) {
+          ErrorAlert('', '');
+        } else if (err.response.status === 403) {
+          ErrorAlert('', '');
+        }
       });
   };
 
   const friendDelete = () => {
     instance.delete(`/user/${props.userId}/friend`).then(() => {
-      setRelationship({
-        userId: props.userId,
-        relationship: 'normal',
+      setRelationshipMap(prev => {
+        const copy = new Map(prev);
+        copy.set(props.userId, {
+          userId: props.userId,
+          relationship: 'normal',
+        });
+        return copy;
       });
     });
   };
@@ -45,8 +56,8 @@ function FriendButton(props: Props) {
           blocker: <></>,
           normal: <button onClick={friendPut}>친구 추가</button>,
           pendingSender: <button onClick={friendDelete}>요청 취소</button>,
-          pendingReceiver: <div>친구 대기</div>,
-        }[relationship.relationship]
+          pendingReceiver: <button>친구 대기</button>,
+        }[relationshipMap.get(props.userId)?.relationship ?? 'normal']
       }
     </>
   );

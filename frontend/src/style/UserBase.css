@@ -1,6 +1,5 @@
 div.userBase {
   display: grid;
-  outline: solid 5px red;
   width: 10rem;
   height: auto;
   grid-template: 1fr auto / 2fr 3fr auto;
