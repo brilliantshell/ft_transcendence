@@ -36,7 +36,7 @@ function InvitationButton({ channelId }: InvitationButtonProps) {
 
   return (
     <>
-      <button onClick={() => setShowModal(true)}>당장 드루와</button>
+      <button onClick={() => setShowModal(true)}>초대</button>
       {showModal &&
         createPortal(
           <SearchModal

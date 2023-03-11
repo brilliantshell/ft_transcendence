@@ -8,7 +8,6 @@ import {
 } from '../components/hooks/SocketOnHooks';
 import { useRecoilValue } from 'recoil';
 import { userActivity, userRelationship } from '../util/Recoils';
-import InvitationButton from '../components/search/InvitationButton';
 import UserList from '../components/ChatRoom/UserList';
 import ChatList from '../components/ChatRoom/ChatList';
 import ChatInput from '../components/ChatRoom/ChatInput';
@@ -41,9 +40,6 @@ function ChatRoom() {
     <div className="chatRoom">
       <div>
         <UserList id={id ?? ''} />
-        <button>나가기</button>
-        <button>맴버 추가</button>
-        <InvitationButton channelId={id} />
       </div>
       <div className="chatRoomRight">
         <ChatList id={id ?? ''} />
