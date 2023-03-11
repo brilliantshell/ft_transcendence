@@ -1,0 +1,11 @@
+.ladderBar {
+  justify-content: stretch;
+}
+
+.ladderProportion {
+  /* position: relative; */
+  /* top: -1rem; */
+  height: 2rem;
+  background-color: var(--primary_dark);
+  border-radius: 10px;
+}
