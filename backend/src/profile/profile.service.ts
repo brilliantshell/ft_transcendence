@@ -269,6 +269,7 @@ export class ProfileService {
         where: [{ userOneId: userId }, { userTwoId: userId }],
         relations: ['userOne', 'userTwo'],
         select: {
+          matchId: true,
           userOneScore: true,
           userTwoScore: true,
           endAt: true as any,
@@ -280,15 +281,24 @@ export class ProfileService {
     )
       .sort((a, b) => b.endAt.valueOf() - a.endAt.valueOf())
       .map((e) => {
-        const { userOne, userTwo, userOneScore, userTwoScore, isRank } = e;
+        const {
+          matchId,
+          userOne,
+          userTwo,
+          userOneScore,
+          userTwoScore,
+          isRank,
+        } = e;
         return userOneScore > userTwoScore
           ? {
+              matchId,
               winner: userOne.nickname,
               loser: userTwo.nickname,
               score: [userOneScore, userTwoScore],
               isRank,
             }
           : {
+              matchId,
               winner: userTwo.nickname,
               loser: userOne.nickname,
               score: [userTwoScore, userOneScore],
