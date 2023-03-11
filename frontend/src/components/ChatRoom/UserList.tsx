@@ -6,6 +6,7 @@ import ChannelInvitationButton from './ChannelInvitationButton';
 import { useRecoilValue } from 'recoil';
 import { myIdState } from '../../util/Recoils';
 import { useSocketOn } from '../hooks/SocketOnHooks';
+import ChannelUpdateButton from './ChannelUpdateButton';
 
 interface Props {
   id: string;
@@ -68,7 +69,9 @@ function UserList(props: Props) {
       </div>
       <button>나가기</button>
       {!isDm && <ChannelInvitationButton channelId={props.id} />}
-      {!isDm && myRole === 'owner' && <button>방 설정</button>}
+      {!isDm && myRole === 'owner' && (
+        <ChannelUpdateButton channelId={props.id} />
+      )}
     </>
   );
 }
