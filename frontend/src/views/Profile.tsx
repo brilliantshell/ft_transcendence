@@ -26,9 +26,9 @@ export interface profileDataForm {
 
 /* TODO - uri의 id가 존재하지 않는 케이스 따로 처리 */
 function Profile() {
-  useEffect(() => {
-    socket.emit('currentUi', { ui: 'profile' });
-  }, []);
+  const [isConnected, setIsConnected] = useState(socket.connected);
+
+  useCurrentUi(isConnected, setIsConnected, 'profile');
 
   const { id } = useParams();
   const myId = useRecoilValue(myIdState);
