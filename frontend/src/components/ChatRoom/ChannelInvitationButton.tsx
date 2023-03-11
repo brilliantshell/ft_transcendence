@@ -2,13 +2,13 @@ import { useCallback, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { ErrorAlert, SuccessAlert } from '../../util/Alert';
 import instance from '../../util/Axios';
-import SearchModal from './SearchModal';
+import SearchModal from '../search/SearchModal';
 
 interface InvitationButtonProps {
   channelId: string;
 }
 
-function InvitationButton({ channelId }: InvitationButtonProps) {
+function ChannelInvitationButton({ channelId }: InvitationButtonProps) {
   const [showModal, setShowModal] = useState<boolean>(false);
 
   const hideModal = useCallback(() => {
@@ -51,4 +51,4 @@ function InvitationButton({ channelId }: InvitationButtonProps) {
   );
 }
 
-export default InvitationButton;
+export default ChannelInvitationButton;

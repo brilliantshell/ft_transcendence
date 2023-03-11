@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import instance from '../../util/Axios';
 import User from '../User/User';
 import { ErrorAlert } from '../../util/Alert';
-import InvitationButton from '../search/InvitationButton';
+import ChannelInvitationButton from './ChannelInvitationButton';
 import { useRecoilValue } from 'recoil';
 import { myIdState } from '../../util/Recoils';
 import { useSocketOn } from '../hooks/SocketOnHooks';
@@ -67,7 +67,7 @@ function UserList(props: Props) {
         ))}
       </div>
       <button>나가기</button>
-      {!isDm && <InvitationButton channelId={props.id} />}
+      {!isDm && <ChannelInvitationButton channelId={props.id} />}
       {!isDm && myRole === 'owner' && <button>방 설정</button>}
     </>
   );
