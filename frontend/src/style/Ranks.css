@@ -1,7 +1,7 @@
 .ranks {
-  aspect-ratio: 5 / 3;
   display: grid;
   font-family: 'DungGeunMo';
+  height: 80vh;
   grid-template-rows: minmax(200px, 30%) minmax(calc(100% - 220px), 60%);
   min-height: 80%;
   min-width: 400px;

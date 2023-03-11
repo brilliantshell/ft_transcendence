@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { AxiosError } from 'axios';
 import instance from '../../util/Axios';
 import SearchModalHeader from './SearchModalHeader';
@@ -17,17 +17,25 @@ export interface UserInfo {
 }
 
 interface SearchModalProps {
+  title: string;
+  actionName: string;
+  searchAction: (targetId: number) => void;
   hideModal: () => void;
 }
 
-function SearchModal({ hideModal }: SearchModalProps) {
+function SearchModal({
+  title,
+  actionName,
+  searchAction,
+  hideModal,
+}: SearchModalProps) {
   const searchRef = useRef<HTMLDivElement>(null);
   const [error, setError] = useState<string>(EMPTY_MSG);
   const [loading, setLoading] = useState<boolean>(false);
   const [query, setQuery] = useState<string>('');
   const [searchResult, setSearchResult] = useState<Array<UserInfo>>([]);
 
-  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleSearch = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     setQuery(e.target.value);
     const { length } = e.target.value;
     if (length === 0 || length > 16) {
@@ -57,7 +65,7 @@ function SearchModal({ hideModal }: SearchModalProps) {
         clearTimeout(timeout);
         setLoading(false);
       });
-  };
+  }, []);
 
   const handleClickOutside = (e: MouseEvent) => {
     if (searchRef.current && searchRef.current === (e.target as Node)) {
@@ -84,6 +92,7 @@ function SearchModal({ hideModal }: SearchModalProps) {
     <div className="searchModalBackground" ref={searchRef}>
       <div className="searchModal regular">
         <SearchModalHeader
+          title={title}
           query={query}
           loading={loading}
           handleSearch={handleSearch}
@@ -93,9 +102,12 @@ function SearchModal({ hideModal }: SearchModalProps) {
             <div className="searchModalErrorMessage">{error}</div>
           </div>
         ) : (
-          <SearchModalBody searchResult={searchResult} hideModal={hideModal} />
+          <SearchModalBody
+            searchResult={searchResult}
+            searchAction={searchAction}
+          />
         )}
-        <SearchModalFooter />
+        <SearchModalFooter actionName={actionName} />
       </div>
     </div>
   );
