@@ -1,5 +1,3 @@
-import '../../style/Chats.css';
-
 interface ChatsBaseProps {
   purpose: string;
   children: React.ReactNode;

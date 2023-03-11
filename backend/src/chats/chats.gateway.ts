@@ -103,6 +103,7 @@ export class ChatsGateway {
    *
    * @param channelId 참여 인원 변동이 일어난 채널
    * @param memberCountDiff 참여 인원 변동량
+   * @param accessMode 채널의 접근 권한
    */
   emitChannelUpdated(
     channelId: ChannelId,

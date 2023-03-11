@@ -11,4 +11,7 @@
 @import './GameRoom.css';
 @import './FriendsList.css';
 @import './WaitingRoom.css';
+@import './Search.css';
+@import './Chats.css';
+@import './FormModal.css';
 @import './ChatRoom.css';

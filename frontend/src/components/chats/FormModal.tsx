@@ -1,5 +1,4 @@
 import { ReactNode, useEffect, useRef } from 'react';
-import '../../style/FormModal.css';
 
 interface FormModalProps {
   title: string;
