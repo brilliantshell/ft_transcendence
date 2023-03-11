@@ -101,13 +101,13 @@ export class GameGateway {
    *
    * @param gameId 게임 id
    * @param ignoreSocketId 무시할 socket id
-   * @param map 맵
+   * @param mode 게임 모드
    */
-  emitGameOption(gameId: GameId, ignoreSocketId: SocketId, map: 1 | 2 | 3) {
+  emitGameOption(gameId: GameId, ignoreSocketId: SocketId, mode: 0 | 1 | 2) {
     this.server
       .to(`game-${gameId}`)
       .except(ignoreSocketId)
-      .emit('gameOption', { map });
+      .emit('gameOption', { mode });
   }
 
   /**

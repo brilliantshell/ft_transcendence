@@ -436,7 +436,7 @@ describe('GameGateway (e2e)', () => {
         gateway.emitGameOption(
           gameId,
           userSocketStorage.clients.get(userIds[1]),
-          3,
+          2,
         ),
       ]);
       expect(wsError.status).toEqual('rejected');
@@ -446,8 +446,8 @@ describe('GameGateway (e2e)', () => {
       ) {
         fail();
       }
-      expect(wsMessageOne.value).toEqual({ map: 3 });
-      expect(wsMessageTwo.value).toEqual({ map: 3 });
+      expect(wsMessageOne.value).toEqual({ mode: 2 });
+      expect(wsMessageTwo.value).toEqual({ mode: 2 });
     });
   });
 

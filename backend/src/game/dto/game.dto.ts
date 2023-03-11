@@ -8,9 +8,9 @@ export class GameIdParamDto {
   gameId: GameId;
 }
 
-export class GameMapDto {
-  @IsIn([1, 2, 3])
-  map: 1 | 2 | 3;
+export class GameModeDto {
+  @IsIn([0, 1, 2])
+  mode: 0 | 1 | 2;
 }
 
 export interface LadderGamesDto {
