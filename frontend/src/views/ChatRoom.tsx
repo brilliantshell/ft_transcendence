@@ -8,9 +8,13 @@ import {
 } from '../components/hooks/SocketOnHooks';
 import { useRecoilValue } from 'recoil';
 import { userActivity, userRelationship } from '../util/Recoils';
+import InvitationButton from '../components/search/InvitationButton';
 
 function ChatRoom() {
-  const params = useParams();
+  const { id } = useParams();
+  if (id === undefined || !/^[1-9]\d{0,9}$/.test(id)) {
+    return <></>;
+  }
   const activityMap = useRecoilValue(userActivity);
   const relationshipMap = useRecoilValue(userRelationship);
   //   const [chatsId, setChatsId] = useState();
@@ -35,6 +39,7 @@ function ChatRoom() {
         activity={activityMap.get(72786)}
         relationship={relationshipMap.get(72786)}
       ></User> */}
+      <InvitationButton channelId={id} />
     </>
   );
 }

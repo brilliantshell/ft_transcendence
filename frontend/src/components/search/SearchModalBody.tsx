@@ -1,16 +1,16 @@
 import { useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Link } from 'react-router-dom';
 import { UserInfo } from './SearchModal';
 import { useKeyPress } from './hooks/SearchKeyPress';
 
 interface SearchModalBodyProps {
   searchResult: Array<UserInfo>;
-  hideModal: () => void;
+  searchAction: (targetId: number) => void;
 }
 
-function SearchModalBody({ searchResult, hideModal }: SearchModalBodyProps) {
-  const nav = useNavigate();
+function SearchModalBody({
+  searchResult,
+  searchAction,
+}: SearchModalBodyProps) {
   const downPressed = useKeyPress('ArrowDown');
   const upPressed = useKeyPress('ArrowUp');
   const enterPressed = useKeyPress('Enter');
@@ -35,8 +35,7 @@ function SearchModalBody({ searchResult, hideModal }: SearchModalBodyProps) {
 
   useEffect(() => {
     if (enterPressed && searchResult.length > 0) {
-      nav(`/profile/${searchResult[cursor].userId}`);
-      hideModal();
+      searchAction(searchResult[cursor].userId);
     }
   }, [enterPressed]);
 
@@ -44,14 +43,13 @@ function SearchModalBody({ searchResult, hideModal }: SearchModalBodyProps) {
     <div className="searchModalBody" ref={bodyRef}>
       {searchResult.map((user, index) => {
         return (
-          <Link
+          <div
             key={`search-${index}`}
             className={`searchResult ${
               index === cursor ? 'searchResultActive' : ''
             }`}
             onMouseOver={() => setCursor(index)}
-            to={`/profile/${user.userId}`}
-            onClick={() => hideModal()}
+            onClick={() => searchAction(user.userId)}
           >
             <img
               src="http://localhost:5173/assets/defaultProfile.svg"
@@ -59,7 +57,7 @@ function SearchModalBody({ searchResult, hideModal }: SearchModalBodyProps) {
             />
             {/* FIXME: <img src={user.isDefaultImage ? 'http://localhost:5173/assets/defaultProfile'  : `http://localhost:3000/asset/profile-image/${user.userId}`}/> */}
             <span className="textBold">{user.nickname}</span>
-          </Link>
+          </div>
         );
       })}
     </div>

@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import SearchModal from './SearchModal';
-import '../../style/Search.css';
+import { useNavigate } from 'react-router-dom';
 
 function Search() {
   const [showSearch, setShowSearch] = useState<boolean>(false);
+  const nav = useNavigate();
 
   const handleKeydown = (e: KeyboardEvent) => {
     if (e.key === 'k' && e.metaKey) {
@@ -11,9 +12,9 @@ function Search() {
     }
   };
 
-  const hideModal = () => {
+  const hideModal = useCallback(() => {
     setShowSearch(false);
-  };
+  }, []);
 
   useEffect(() => {
     document.addEventListener('keydown', handleKeydown);
@@ -22,11 +23,16 @@ function Search() {
     };
   }, []);
 
+  const searchAction = useCallback((targetId: number) => {
+    nav(`/profile/${targetId}`);
+    setShowSearch(false);
+  }, []);
+
   return (
     <>
       <button
         className="searchButton selectNone"
-        onClick={() => setShowSearch(!showSearch)}
+        onClick={() => setShowSearch(true)}
       >
         <img
           className="searchIcon"
@@ -36,7 +42,14 @@ function Search() {
         <span>Search</span>
         <span className="xsmall">⌘+k</span>
       </button>
-      {showSearch && <SearchModal hideModal={hideModal} />}
+      {showSearch && (
+        <SearchModal
+          title={'게임할 친구들을 찾아봐요~~!'}
+          actionName={'검색'}
+          searchAction={searchAction}
+          hideModal={hideModal}
+        />
+      )}
     </>
   );
 }

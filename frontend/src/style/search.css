@@ -38,6 +38,7 @@
   border-radius: 10px;
   box-shadow: 0px 5px 5px rgba(0, 0, 0, 0.5);
   display: grid;
+  font-family: 'DungGeunMo', 'Apple SD Gothic Neo', arial, sans-serif;
   grid-template-rows: 5rem 1fr 2rem;
   max-height: 50%;
   min-height: 30%;
@@ -128,6 +129,7 @@
   border-radius: 10px;
   box-shadow: 3px 3px 3px rgba(0, 0, 0, 0.5);
   color: var(--secondary_light);
+  cursor: pointer;
   display: flex;
   margin: 5px;
   padding: 15px 10px;
