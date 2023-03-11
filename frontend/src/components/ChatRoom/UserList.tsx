@@ -32,7 +32,7 @@ function UserList(props: Props) {
   const myId = useRecoilValue(myIdState);
 
   useSocketOn();
-  
+
   useEffect(() => {
     instance
       .get(`/chats/${props.id}`)
@@ -51,15 +51,15 @@ function UserList(props: Props) {
       });
     return () => {};
   }, []);
-  
+
   const isDm = channelInfo.isReadonlyDm !== null;
 
   return (
     <>
       <div className="chatRoomUserList">
-        {channelInfo.channelMembers.map((data, index) => (
+        {channelInfo.channelMembers.map(data => (
           <User
-            key={index}
+            key={data.id}
             userId={data.id}
             downChild={!isDm && data.role}
             session={true}
