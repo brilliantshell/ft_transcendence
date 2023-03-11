@@ -9,6 +9,8 @@ import {
   useBannedEvent,
   useChannelCreatedEvent,
   useChannelDeletedEvent,
+  useChannelHiddenEvent,
+  useChannelShownEvent,
   useChannelUpdatedEvent,
   useMessageArrivedEvent,
 } from '../components/chats/hooks/ChannelHooks';
@@ -38,6 +40,8 @@ function Chats() {
   }, [isConnected]);
 
   useChannelCreatedEvent(setOtherChannels);
+  useChannelShownEvent(joinedChannels, setOtherChannels);
+  useChannelHiddenEvent(joinedChannels, setOtherChannels);
   useChannelDeletedEvent(setJoinedChannels, setOtherChannels);
   useChannelUpdatedEvent(setJoinedChannels, setOtherChannels);
   useMessageArrivedEvent(setJoinedChannels);

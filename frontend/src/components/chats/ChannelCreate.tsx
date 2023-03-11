@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import FormModal from './FormModal';
 import ChannelCreateForm from './ChannelCreateForm';
-import '../../style/FormModal.css';
 
 function ChannelCreate() {
   const [showModal, setShowModal] = useState<boolean>(false);
