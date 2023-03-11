@@ -5,6 +5,7 @@ import { ErrorAlert } from '../../util/Alert';
 import InvitationButton from '../search/InvitationButton';
 import { useRecoilValue } from 'recoil';
 import { myIdState } from '../../util/Recoils';
+import { useSocketOn } from '../hooks/SocketOnHooks';
 
 interface Props {
   id: string;
@@ -30,6 +31,8 @@ function UserList(props: Props) {
   const [myRole, setMyRole] = useState<'owner' | 'admin' | 'member'>('member');
   const myId = useRecoilValue(myIdState);
 
+  useSocketOn();
+  
   useEffect(() => {
     instance
       .get(`/chats/${props.id}`)

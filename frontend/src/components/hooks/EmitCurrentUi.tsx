@@ -21,7 +21,7 @@ export function useCurrentUi(
 
 type CurrentUi =
   | 'chats'
-  | `chatRooms-${number}`
+  | `chatRooms-${string}`
   | `game-${string}`
   | 'profile'
   | 'ranks'
