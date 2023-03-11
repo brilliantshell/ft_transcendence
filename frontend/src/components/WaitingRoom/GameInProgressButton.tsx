@@ -25,8 +25,8 @@ export default function GameInProgressButton({
     setHoverInfoCoords({ x: e.clientX + 8, y: e.clientY + 20 });
 
   const handleClick = () => {
-    nav(`/game/${gameId}`);
     sessionStorage.setItem(`game-${gameId}-isPlayer`, 'false');
+    nav(`/game/${gameId}`);
   };
 
   return (

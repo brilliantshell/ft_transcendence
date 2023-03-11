@@ -83,7 +83,7 @@ export class GameGateway {
   emitNewNormalGame(gameId: GameId, inviterNickname: string) {
     this.server
       .to(`game-${gameId}`)
-      .emit('newGame', { gameId, inviterNickname });
+      .emit('newNormalGame', { gameId, inviterNickname });
   }
 
   /**

@@ -73,7 +73,7 @@ function User(props: Props) {
                 <button onClick={dmOnclick}>DM</button>
                 <GameButton
                   userId={props.userId}
-                  activity={props.activity}
+                  activityData={props.activity}
                 ></GameButton>
                 <BlockButton userId={props.userId} />
                 <FriendButton userId={props.userId}></FriendButton>

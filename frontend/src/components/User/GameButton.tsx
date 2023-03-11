@@ -1,29 +1,47 @@
-import { useRecoilValue } from 'recoil';
-import { relationshipState } from '../../util/Recoils';
+import { AxiosError } from 'axios';
+import { ErrorAlert } from '../../util/Alert';
 import { activityData } from '../hooks/SocketOnHooks';
+import instance from '../../util/Axios';
+import { relationshipState } from '../../util/Recoils';
+import { useNavigate } from 'react-router-dom';
+import { useRecoilValue } from 'recoil';
 
 interface Props {
   userId: number;
-  activity: activityData;
+  activityData: activityData;
 }
 
-function GameButton(props: Props) {
-  const relationship = useRecoilValue(relationshipState(props.userId));
+function GameButton({ userId, activityData }: Props) {
+  const { relationship } = useRecoilValue(relationshipState(userId));
+  const { activity, gameId } = activityData;
+  const nav = useNavigate();
 
   const inviteGame = () => {
-    // TODO : 게임 초대
-    // POST /user/{:userId}/game ⇒ 201 || 400 || 403 || 409
+    instance
+      .post(`/user/${userId}/game`)
+      .then(({ headers }) => {
+        sessionStorage.setItem(
+          `game-${headers.location.slice(6)}-isPlayer`,
+          'true',
+        );
+        nav(headers.location);
+      })
+      .catch((err: AxiosError) =>
+        ErrorAlert(
+          '게임 초대',
+          err.status === 400
+            ? '이미 진행 중인 게임이 있습니다.<br/>게임이 끝나면 다시 시도하세요.'
+            : '게임 초대에 실패했습니다.',
+        ),
+      );
   };
 
   const watchingGame = () => {
-    // TODO : 게임 관전
-    // /game/:gameId 로 이동
+    sessionStorage.setItem(`game-${gameId}-isPlayer`, 'false');
+    nav(`/game/${gameId}`);
   };
 
-  if (
-    relationship.relationship === 'blocked' ||
-    relationship.relationship === 'blocker'
-  ) {
+  if (relationship === 'blocked' || relationship === 'blocker') {
     return <></>;
   }
 
@@ -34,7 +52,7 @@ function GameButton(props: Props) {
           offline: <></>,
           online: <button onClick={inviteGame}>게임 초대</button>,
           inGame: <button onClick={watchingGame}>게임 관전</button>,
-        }[props.activity.activity]
+        }[activity]
       }
     </>
   );

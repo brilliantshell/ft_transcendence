@@ -5,6 +5,7 @@ export interface Dimensions {
 
 export interface GameInfo {
   id: string;
+  isRank: boolean;
   players: [string, string];
 }
 

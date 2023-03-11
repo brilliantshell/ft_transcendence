@@ -57,6 +57,171 @@
   place-self: center;
 }
 
+/* SECTION : GameOption */
+
+.gameOption {
+  background-color: var(--primary_dark);
+  border-radius: 1rem;
+  color: var(--secondary);
+  display: grid;
+  grid-template-rows: 28% 1fr;
+  height: 90%;
+  place-self: center;
+  width: 90%;
+  align-items: center;
+}
+
+.gameOption h1 {
+  text-shadow: 0.2rem 0.2rem var(--primary);
+}
+
+.gameOptionInvitedText {
+  padding-bottom: 14%;
+}
+
+.gameOptionInvitedText p {
+  margin: 1rem;
+}
+
+.gameOptionForm {
+  background-color: var(--primary_dark);
+  border-radius: 1rem;
+  color: var(--secondary);
+  display: grid;
+  grid-template-rows: 1fr 30%;
+  height: 100%;
+  width: 100%;
+}
+
+.gameOptionSelections {
+  display: flex;
+  height: 80%;
+  justify-self: center;
+  justify-content: space-evenly;
+  margin: 1rem;
+  width: 80%;
+}
+
+.gameOptionSelectionButton {
+  background-color: var(--primary);
+  border-radius: 1rem;
+  color: var(--secondary);
+  height: 84%;
+  transition: 0.5s;
+  width: 25%;
+  position: relative;
+}
+
+.gameOptionSelectionButton:hover {
+  background-color: var(--secondary_dark);
+  border: none;
+  box-shadow: 0.3rem 0.3rem var(--primary);
+  color: var(--primary_dark);
+}
+
+.gameOptionSelectionName {
+  margin-top: 0.5rem;
+}
+
+.gameOptionSubmitButton {
+  background-color: var(--primary_dark);
+  border: 0.5px solid var(--secondary);
+  border-radius: 1rem;
+  color: var(--secondary);
+  height: 50%;
+  justify-self: center;
+  transition: 0.7s;
+  width: 40%;
+}
+
+.gameOptionSubmitButton:hover {
+  background-color: var(--primary_light);
+  border: none;
+  box-shadow: 0.15rem 0.15rem var(--secondary);
+}
+
+.gameOptionNormalBallSvg {
+  left: 15%;
+  opacity: 0;
+  position: absolute;
+  top: 64%;
+}
+
+.gameOptionSelectionButton:hover > .gameOptionNormalBallSvg {
+  animation: ballMoveAnimation 1.8s ease-in-out forwards;
+  color: var(--primary_light);
+}
+
+@keyframes ballMoveAnimation {
+  0% {
+    transform: translate(0, 0);
+  }
+  100% {
+    transform: translate(
+      calc(var(--game_option_button_width) * 0.3),
+      calc(var(--game_option_button_height) * -0.26)
+    );
+    opacity: 1;
+  }
+}
+
+.gameOptionSelectionButton:hover > .gameOptionNormalSvg {
+  animation: racketAnimation 1.8s ease-in-out forwards;
+  color: var(--primary);
+  opacity: 0;
+}
+
+@keyframes racketAnimation {
+  0% {
+    transform: translate(0, 25%);
+  }
+
+  100% {
+    transform: translate(0, 0);
+    opacity: 1;
+  }
+}
+
+.gameOptionSelectionButton:hover > .gameOptionLargerBallSvg {
+  animation: largerBallAnimation 1.8s ease-in-out forwards;
+  color: var(--primary);
+  opacity: 0;
+}
+
+@keyframes largerBallAnimation {
+  0% {
+    transform: translate(42%, -42%) scale(0.2);
+  }
+
+  100% {
+    transform: translate(0, 0);
+    opacity: 1;
+  }
+}
+
+.gameOptionShorterPaddleSvg {
+  margin: 5% 0;
+}
+
+.gameOptionSelectionButton:hover > .gameOptionShorterPaddleSvg {
+  animation: shorterPaddleAnimation 1.8s ease-in-out forwards;
+  color: var(--primary);
+}
+
+@keyframes shorterPaddleAnimation {
+  0% {
+    transform: scale(2) rotate(-180deg);
+  }
+
+  50% {
+    transform: scale(1) rotate(720deg);
+  }
+
+  100% {
+    transform: rotate(720deg);
+  }
+}
+
 /* SECTION : GameMenu */
 
 .gameMenu {

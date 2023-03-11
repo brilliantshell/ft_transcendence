@@ -1,4 +1,5 @@
 import { ControllerType, GameInfo } from './util/interfaces';
+import GameOption from './GameOption';
 import { useCanvasResize } from './hooks/GameResizeHooks';
 import { useGamePlay } from './hooks/GamePlayHooks';
 import { useLayoutEffect, useRef, useState } from 'react';
@@ -10,6 +11,7 @@ export default function GamePlay({ gameInfo, controllerType }: GamePlayProps) {
   const [isStarted, setIsStarted] = useState(
     sessionStorage.getItem(`game-${gameInfo.id}-isStarted`) === 'true',
   );
+
   useLayoutEffect(() => {
     const intervalId = setInterval(() => {
       if (sessionStorage.getItem(`game-${gameInfo.id}-isStarted`) === 'true') {
@@ -18,16 +20,22 @@ export default function GamePlay({ gameInfo, controllerType }: GamePlayProps) {
       }
     }, 100);
   }, []);
+
   useGamePlay(isStarted, canvasRef, gameInfo, controllerType, dimensions);
+
   return (
     <div className="gamePlay" ref={parentRef}>
-      {isStarted && (
+      {isStarted ? (
         <canvas
           id="gameBoard"
           width={dimensions.w}
           height={dimensions.h}
           ref={canvasRef}
         />
+      ) : gameInfo.isRank ? (
+        <></>
+      ) : (
+        <GameOption gameId={gameInfo.id} isOwner={controllerType.isLeft} />
       )}
     </div>
   );

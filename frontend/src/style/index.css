@@ -2,9 +2,12 @@
 @import './presets/font.css';
 @import './presets/reset.css';
 @import './presets/general.css';
+@import './presets/animation.css';
+
 @import './App.css';
 @import './UserBase.css';
 @import './User.css';
 @import './Ranks.css';
 @import './GameRoom.css';
 @import './FriendsList.css';
+@import './WaitingRoom.css';

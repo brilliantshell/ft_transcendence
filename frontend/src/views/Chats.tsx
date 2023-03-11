@@ -12,7 +12,7 @@ import {
   useChannelUpdatedEvent,
   useMessageArrivedEvent,
 } from '../components/chats/hooks/ChannelHooks';
-import { useCurrentUi } from '../components/hooks/EmitCurrentUi';
+import { useCurrentUi } from '../components/hooks/CurrentUi';
 import '../style/Chats.css';
 
 function Chats() {
