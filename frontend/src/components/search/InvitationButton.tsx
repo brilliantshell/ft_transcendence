@@ -1,6 +1,5 @@
 import { useCallback, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Params } from 'react-router-dom';
 import { ErrorAlert, SuccessAlert } from '../../util/Alert';
 import instance from '../../util/Axios';
 import SearchModal from './SearchModal';

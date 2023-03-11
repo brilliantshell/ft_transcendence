@@ -1,14 +1,13 @@
 import { useRecoilValue } from 'recoil';
-import { relationshipState } from '../../util/Recoils';
-import { activityData } from '../hooks/SocketOnHooks';
+import { userActivity, userRelationship } from '../../util/Recoils';
 
 interface Props {
   userId: number;
-  activity: activityData;
 }
 
 function GameButton(props: Props) {
-  const relationship = useRecoilValue(relationshipState(props.userId));
+  const relationshipMap = useRecoilValue(userRelationship);
+  const activityMap = useRecoilValue(userActivity);
 
   const inviteGame = () => {
     // TODO : 게임 초대
@@ -21,8 +20,9 @@ function GameButton(props: Props) {
   };
 
   if (
-    relationship.relationship === 'blocked' ||
-    relationship.relationship === 'blocker'
+    !relationshipMap.get(props.userId) ||
+    relationshipMap.get(props.userId)?.relationship === 'blocked' ||
+    relationshipMap.get(props.userId)?.relationship === 'blocker'
   ) {
     return <></>;
   }
@@ -34,7 +34,9 @@ function GameButton(props: Props) {
           offline: <></>,
           online: <button onClick={inviteGame}>게임 초대</button>,
           inGame: <button onClick={watchingGame}>게임 관전</button>,
-        }[props.activity.activity]
+        }[
+            activityMap.get(props.userId)?.activity ?? 'offline'
+        ]
       }
     </>
   );

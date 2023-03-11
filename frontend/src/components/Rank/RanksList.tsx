@@ -37,7 +37,7 @@ function RanksList({ setMyRankInfo }: RanksListProps) {
   }, []);
 
   useUpdateRank(setRankData);
-  useUpdateMyRank(setMyRankInfo, myId, rankData)
+  useUpdateMyRank(setMyRankInfo, myId, rankData);
 
   const rankDataMemo = useMemo(() => rankData, [rankData]);
 
@@ -59,11 +59,7 @@ function RanksList({ setMyRankInfo }: RanksListProps) {
                   rank={rank}
                   ladder={ladder}
                 >
-                  <User
-                    userId={id}
-                    activity={activityMap.get(id)}
-                    relationship={relationshipMap.get(id)}
-                  />
+                  <User userId={id} />
                 </RanksItem>
               ))}
         </Suspense>
