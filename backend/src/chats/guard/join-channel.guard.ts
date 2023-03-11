@@ -15,6 +15,7 @@ import { Repository } from 'typeorm';
 import { ChannelId, UserId, VerifiedRequest } from '../../util/type';
 import { ChannelStorage } from '../../user-status/channel.storage';
 import { Users } from '../../entity/users.entity';
+import { UserRelationshipStorage } from 'src/user-status/user-relationship.storage';
 
 @Injectable()
 export class JoinChannelGuard implements CanActivate {
@@ -22,6 +23,7 @@ export class JoinChannelGuard implements CanActivate {
 
   constructor(
     private readonly channelStorage: ChannelStorage,
+    private readonly userRelationshipStorage: UserRelationshipStorage,
     @InjectRepository(Users)
     private readonly usersRepository: Repository<Users>,
   ) {}
@@ -35,6 +37,13 @@ export class JoinChannelGuard implements CanActivate {
     }
     const safeUserId = Math.floor(Number(userId));
     const safeChannelId = Math.floor(Number(channelId));
+
+    if (
+      this.userRelationshipStorage.isBlockedDm(safeChannelId) !== undefined &&
+      !this.channelStorage.getChannel(safeChannelId).userRoleMap.has(safeUserId)
+    ) {
+      throw new ForbiddenException('Cannot join to DM channel');
+    }
 
     await this.checkUserExist(safeUserId);
     await this.checkBanned(safeChannelId, safeUserId);
