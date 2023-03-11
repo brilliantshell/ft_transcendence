@@ -2,6 +2,10 @@ import { useEffect, useState } from 'react';
 import instance from '../../util/Axios';
 import User from '../User/User';
 import { ErrorAlert } from '../../util/Alert';
+import ChannelInvitationButton from './ChannelInvitationButton';
+import { useRecoilValue } from 'recoil';
+import { myIdState } from '../../util/Recoils';
+import { useSocketOn } from '../hooks/SocketOnHooks';
 
 interface Props {
   id: string;
@@ -24,12 +28,21 @@ function UserList(props: Props) {
     channelMembers: [],
     isReadonlyDm: null,
   });
+  const [myRole, setMyRole] = useState<'owner' | 'admin' | 'member'>('member');
+  const myId = useRecoilValue(myIdState);
+
+  useSocketOn();
 
   useEffect(() => {
     instance
       .get(`/chats/${props.id}`)
       .then(result => {
         setChannelInfo(result.data);
+        setMyRole(
+          result.data.channelMembers.find(
+            ({ id }: { id: number }) => id === myId,
+          )?.role || 'member',
+        );
       })
       .catch(err => {
         if (err.response.status === 403) {
@@ -39,17 +52,24 @@ function UserList(props: Props) {
     return () => {};
   }, []);
 
+  const isDm = channelInfo.isReadonlyDm !== null;
+
   return (
-    <div className="chatRoomUserList">
-      {channelInfo.channelMembers.map((data, index) => (
-        <User
-          key={index}
-          userId={data.id}
-          downChild={channelInfo.isReadonlyDm === null && data.role}
-          session={true}
-        ></User>
-      ))}
-    </div>
+    <>
+      <div className="chatRoomUserList">
+        {channelInfo.channelMembers.map(data => (
+          <User
+            key={data.id}
+            userId={data.id}
+            downChild={!isDm && data.role}
+            session={true}
+          ></User>
+        ))}
+      </div>
+      <button>나가기</button>
+      {!isDm && <ChannelInvitationButton channelId={props.id} />}
+      {!isDm && myRole === 'owner' && <button>방 설정</button>}
+    </>
   );
 }
 

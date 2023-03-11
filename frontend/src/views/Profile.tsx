@@ -3,6 +3,8 @@ import { useEffect, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 import { myIdState } from '../util/Recoils';
 import { socket } from '../util/Socket';
+import { useCurrentUi } from '../components/hooks/CurrentUi';
+import { useSocketOn } from '../components/hooks/SocketOnHooks';
 import instance from '../util/Axios';
 import User from '../components/User/User';
 import ProfileMenuBar from '../components/Profile/MenuBar';
@@ -10,9 +12,8 @@ import LadderProgressBar from '../components/Profile/LadderProgressBar';
 import Achievements from '../components/Profile/Achievements';
 import MatchHistoryList from '../components/Profile/MatchHistoryList';
 import WinLossTotalCounter from '../components/Profile/WinLossTotalCounter';
-import '../style/Profile/Profile.css';
 
-export interface profileDataForm {
+export interface ProfileDataForm {
   ladder: number;
   achievements: Array<{ id: number; title: string; about: string }>;
   winLossTotal: Array<number>;
@@ -24,15 +25,16 @@ export interface profileDataForm {
   }>;
 }
 
-/* TODO - uri의 id가 존재하지 않는 케이스 따로 처리 */
+/* TODO - uri의 id가 존재하지 않는 케이스 따로 처리, ALERT 사용하기 */
 function Profile() {
   const [isConnected, setIsConnected] = useState(socket.connected);
 
   useCurrentUi(isConnected, setIsConnected, 'profile');
+  useSocketOn();
 
   const { id } = useParams();
   const myId = useRecoilValue(myIdState);
-  const [profileData, setProfileData] = useState<profileDataForm>();
+  const [profileData, setProfileData] = useState<ProfileDataForm>();
 
   useEffect(() => {
     instance

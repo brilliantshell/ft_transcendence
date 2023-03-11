@@ -1,10 +1,12 @@
 interface SearchModalHeaderProps {
+  title: string;
   query: string;
   loading: boolean;
   handleSearch: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
 function SearchModalHeader({
+  title,
   query,
   loading,
   handleSearch,
@@ -27,7 +29,7 @@ function SearchModalHeader({
           value={query}
           onChange={handleSearch}
           autoFocus={true}
-          placeholder="게임할 친구들을 찾아봐요~~!"
+          placeholder={title}
         />
       </div>
     </div>
