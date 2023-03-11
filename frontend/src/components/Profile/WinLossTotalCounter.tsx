@@ -1,5 +1,3 @@
-import '../../style/Profile/WinLossTotalCounter.css';
-
 function WinLossTotalCounter(props: { winLoss: Array<number> | undefined }) {
   return (
     <div className="profileItem">
