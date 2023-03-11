@@ -4,6 +4,7 @@ import { useRecoilValue } from 'recoil';
 import { myIdState } from '../util/Recoils';
 import { socket } from '../util/Socket';
 import { useCurrentUi } from '../components/hooks/EmitCurrentUi';
+import { useSocketOn } from '../components/hooks/SocketOnHooks';
 import instance from '../util/Axios';
 import User from '../components/User/User';
 import ProfileMenuBar from '../components/Profile/MenuBar';
@@ -11,8 +12,6 @@ import LadderProgressBar from '../components/Profile/LadderProgressBar';
 import Achievements from '../components/Profile/Achievements';
 import MatchHistoryList from '../components/Profile/MatchHistoryList';
 import WinLossTotalCounter from '../components/Profile/WinLossTotalCounter';
-import '../style/Profile/index.css';
-import { useSocketOn } from '../components/hooks/SocketOnHooks';
 
 export interface profileDataForm {
   ladder: number;
@@ -26,7 +25,7 @@ export interface profileDataForm {
   }>;
 }
 
-/* TODO - uri의 id가 존재하지 않는 케이스 따로 처리 */
+/* TODO - uri의 id가 존재하지 않는 케이스 따로 처리, ALERT 사용하기 */
 function Profile() {
   const [isConnected, setIsConnected] = useState(socket.connected);
 
