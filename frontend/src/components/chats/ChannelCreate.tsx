@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
-import FormModal from './FormModal';
+import FormModal from '../common/FormModal/FormModal';
 import ChannelCreateForm from './ChannelCreateForm';
 
 function ChannelCreate() {

@@ -5,7 +5,7 @@ import { useRecoilValue } from 'recoil';
 import { ConfirmAlert, ErrorAlert } from '../../util/Alert';
 import instance from '../../util/Axios';
 import { myIdState } from '../../util/Recoils';
-import FormModal from './FormModal';
+import FormModal from '../common/FormModal/FormModal';
 import { ChannelInfo } from './interface';
 import PasswordForm from './PasswordForm';
 import {

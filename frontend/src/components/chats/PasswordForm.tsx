@@ -2,9 +2,9 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import instance from '../../util/Axios';
 import { ErrorAlert, SuccessAlert } from '../../util/Alert';
+import ChannelPasswordField from '../common/FormModal/ChannelPasswordField';
 
 const PWD_REGEX = /^[a-zA-Z0-9]{8,16}$/;
-const PWD_ERR = '비밀번호는 8~16자로 입력해주세요';
 
 interface PasswordFormProps {
   hideModal: () => void;
@@ -51,22 +51,11 @@ function PasswordForm({ hideModal, myId, channelId }: PasswordFormProps) {
   return (
     <>
       <form className="formModalBody" onSubmit={handleSubmit} id="joinChat">
-        <label className="formModalField" htmlFor="password">
-          <div className="formModalFieldName">비밀번호</div>
-          <div className="formModalFieldValue">
-            <input
-              className="formModalFieldInput"
-              type="password"
-              name="password"
-              autoFocus={true}
-              value={password}
-              onChange={handlePassword}
-            />
-            {error && (
-              <span className="formModalFieldError xsmall"> {PWD_ERR} </span>
-            )}
-          </div>
-        </label>
+          <ChannelPasswordField
+            password={password}
+            error={error}
+            handlePassword={handlePassword}
+          />
       </form>
       <div className="formModalButtons">
         <button
