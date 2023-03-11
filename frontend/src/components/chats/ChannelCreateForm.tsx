@@ -2,9 +2,10 @@ import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import instance from '../../util/Axios';
 import { ErrorAlert, SuccessAlert } from '../../util/Alert';
+import ChannelAccessModeField from '../common/FormModal/ChannelAccessModeField';
+import ChannelPasswordField from '../common/FormModal/ChannelPasswordField';
 
 const NAME_ERR = '채널은 1~128자로 입력해주세요';
-const PWD_ERR = '비밀번호는 8~16자로 입력해주세요';
 const PWD_REGEX = /^[a-zA-Z0-9]{8,16}$/;
 
 interface InputErrorInfo {
@@ -38,6 +39,15 @@ function ChannelCreateForm({ hideModal }: ChannelCreateFormProps) {
     value.length > 0 && value.length < 129
       ? setError({ ...error, name: false })
       : setError({ ...error, name: true });
+  };
+
+  const handleAccessMode = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const { value } = e.target;
+    setAccessMode(value);
+    if (value !== 'protected') {
+      setPassword(undefined);
+      setError({ ...error, password: false });
+    }
   };
 
   const handlePassword = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -100,38 +110,17 @@ function ChannelCreateForm({ hideModal }: ChannelCreateFormProps) {
             )}
           </div>
         </label>
-        <label className="formModalField" htmlFor="accessMode">
-          <p className="formModalFieldName">공개 범위</p>
-          <div className="formModalFieldValue">
-            <select
-              className="formModalFieldInput"
-              name="accessMode"
-              value={accessMode}
-              onChange={e => setAccessMode(e.target.value)}
-            >
-              <option value="public">공개</option>
-              <option value="protected">공개 (비밀번호)</option>
-              <option value="private">비공개</option>
-            </select>
-          </div>
-        </label>
+        <ChannelAccessModeField
+          autoFocus={false}
+          accessMode={accessMode}
+          handleAccessMode={handleAccessMode}
+        />
         {accessMode === 'protected' && (
-          <label className="formModalField" htmlFor="password">
-            <p className="formModalFieldName">비밀번호</p>
-            <div className="formModalFieldValue">
-              <input
-                className="formModalFieldInput"
-                type="password"
-                name="password"
-                autoFocus={true}
-                value={password}
-                onChange={handlePassword}
-              />
-              {error.password && (
-                <span className="formModalFieldError xsmall"> {PWD_ERR} </span>
-              )}
-            </div>
-          </label>
+          <ChannelPasswordField
+            password={password}
+            error={error.password}
+            handlePassword={handlePassword}
+          />
         )}
       </form>
       <div className="formModalButtons">

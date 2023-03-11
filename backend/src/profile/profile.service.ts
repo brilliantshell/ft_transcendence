@@ -274,8 +274,8 @@ export class ProfileService {
           userTwoScore: true,
           endAt: true as any,
           isRank: true,
-          userOne: { nickname: true },
-          userTwo: { nickname: true },
+          userOne: { nickname: true, userId: true, isDefaultImage: true },
+          userTwo: { nickname: true, userId: true, isDefaultImage: true },
         },
       })
     )
@@ -292,15 +292,15 @@ export class ProfileService {
         return userOneScore > userTwoScore
           ? {
               matchId,
-              winner: userOne.nickname,
-              loser: userTwo.nickname,
+              winner: userOne,
+              loser: userTwo,
               score: [userOneScore, userTwoScore],
               isRank,
             }
           : {
               matchId,
-              winner: userTwo.nickname,
-              loser: userOne.nickname,
+              winner: userTwo,
+              loser: userOne,
               score: [userTwoScore, userOneScore],
               isRank,
             };
