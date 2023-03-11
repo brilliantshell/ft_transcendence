@@ -1,20 +1,18 @@
 import { AxiosError } from 'axios';
 import { ErrorAlert } from '../../util/Alert';
-import { activityData } from '../hooks/SocketOnHooks';
 import instance from '../../util/Axios';
-import { relationshipState } from '../../util/Recoils';
+import { userActivity, userRelationship } from '../../util/Recoils';
 import { useNavigate } from 'react-router-dom';
 import { useRecoilValue } from 'recoil';
 
 interface Props {
   userId: number;
-  activityData: activityData;
 }
 
-function GameButton({ userId, activityData }: Props) {
-  const { relationship } = useRecoilValue(relationshipState(userId));
-  const { activity, gameId } = activityData;
+function GameButton({ userId }: Props) {
   const nav = useNavigate();
+  const relationshipMap = useRecoilValue(userRelationship);
+  const activityMap = useRecoilValue(userActivity);
 
   const inviteGame = () => {
     instance
@@ -36,23 +34,35 @@ function GameButton({ userId, activityData }: Props) {
       );
   };
 
+  const activityData = activityMap.get(userId);
+  const relationship = relationshipMap.get(userId)?.relationship;
+
+  if (
+    !activityData ||
+    activityData.activity === 'offline' ||
+    !relationship ||
+    relationship === 'blocked' ||
+    relationship === 'blocker'
+  ) {
+    return <></>;
+  }
+
   const watchingGame = () => {
+    const gameId = activityData?.gameId;
+    if (!gameId) {
+      return;
+    }
     sessionStorage.setItem(`game-${gameId}-isPlayer`, 'false');
     nav(`/game/${gameId}`);
   };
-
-  if (relationship === 'blocked' || relationship === 'blocker') {
-    return <></>;
-  }
 
   return (
     <>
       {
         {
-          offline: <></>,
           online: <button onClick={inviteGame}>게임 초대</button>,
           inGame: <button onClick={watchingGame}>게임 관전</button>,
-        }[activity]
+        }[activityData.activity]
       }
     </>
   );

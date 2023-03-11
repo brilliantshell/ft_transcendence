@@ -7,13 +7,17 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { DateTime } from 'luxon';
+import { EntityNotFoundError, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
 import { compare } from 'bcrypt';
 
 import { AccessMode, Channels } from '../entity/channels.entity';
 import { ActivityManager } from '../user-status/activity.manager';
-import { AllChannelsDto, CreateChannelDto } from './dto/chats.dto';
+import {
+  AllChannelsDto,
+  CreateChannelDto,
+  UpdateChannelDto,
+} from './dto/chats.dto';
 import { ChannelStorage } from '../user-status/channel.storage';
 import { ChannelId, UserChannelStatus, UserId, UserRole } from '../util/type';
 import { ChatsGateway } from './chats.gateway';
@@ -90,6 +94,43 @@ export class ChatsService {
     }
     this.chatsGateway.joinChannelRoom(channelId, userId);
     return channelId;
+  }
+
+  async updateChannel(channelId: ChannelId, channel: UpdateChannelDto) {
+    const { accessMode, password } = channel;
+    const channelInfo = this.channelStorage.getChannel(channelId);
+    const prevAccessMode = channelInfo.accessMode;
+
+    await this.channelStorage.updateChannel(
+      channelId,
+      accessMode as AccessMode,
+      password,
+    );
+    if (prevAccessMode === 'private' && accessMode !== 'private') {
+      let name: string;
+      try {
+        name = (
+          await this.channelsRepository.findOneOrFail({
+            where: { channelId },
+            select: ['name'],
+          })
+        ).name;
+      } catch (e) {
+        this.logger.error(e);
+        throw e instanceof EntityNotFoundError
+          ? new NotFoundException('Channel not found')
+          : new InternalServerErrorException('Failed to get channel name');
+      }
+      this.chatsGateway.emitChannelShown(
+        channelId,
+        name,
+        accessMode,
+        channelInfo.userRoleMap.size,
+      );
+    } else if (prevAccessMode !== 'private' && accessMode === 'private') {
+      this.chatsGateway.emitChannelHidden(channelId);
+    }
+    this.chatsGateway.emitChannelUpdated(channelId, 0, accessMode);
   }
 
   /*****************************************************************************
@@ -256,7 +297,7 @@ export class ChatsService {
   async executeCommand(
     channelId: ChannelId,
     senderId: UserId,
-    command: [string, number, string],
+    command: [string, number, string?],
   ) {
     const [kind, targetId, arg] = command;
     if (this.channelStorage.getUserRole(channelId, targetId) === null) {
@@ -275,7 +316,9 @@ export class ChatsService {
       await this.channelStorage.updateMuteStatus(channelId, targetId, minutes);
       return this.chatsGateway.emitMuted(targetId, channelId, minutes);
     } else {
-      const minutes = now.plus({ minutes: Number(arg) });
+      const minutes = arg
+        ? now.plus({ minutes: Number(arg) })
+        : now.plus({ years: 142 });
       await this.channelStorage.banUser(channelId, targetId, minutes);
       this.chatsGateway.emitMemberLeft(channelId, targetId, false);
       return this.chatsGateway.emitBanned(channelId, targetId);

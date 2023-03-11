@@ -98,6 +98,53 @@ export class ChatsGateway {
     });
   }
 
+  /**
+   * @description 채널에 멤버가 추가/삭제 되었을 때, chats-UI 를 보고 있는 유저에게 알림
+   *
+   * @param channelId 참여 인원 변동이 일어난 채널
+   * @param memberCountDiff 참여 인원 변동량
+   */
+  emitChannelUpdated(
+    channelId: ChannelId,
+    memberCountDiff: -1 | 0 | 1 = 0,
+    accessMode: 'public' | 'protected' | 'private' | null = null,
+  ) {
+    this.server
+      .in('chats')
+      .emit('channelUpdated', { channelId, memberCountDiff, accessMode });
+  }
+
+  /**
+   * @description 채널이 public | protected 로 변경 되었을 때, chats-UI 를 보고 있는 유저에게 알림
+   *
+   * @param channelId 변경된 채널
+   * @param channelName 채널의 이름
+   * @param accessMode 변경된 채널의 접근 권한
+   * @param memberCount 채널의 참여 인원
+   */
+  emitChannelShown(
+    channelId: ChannelId,
+    channelName: string,
+    accessMode: 'public' | 'protected',
+    memberCount: number,
+  ) {
+    this.server.in('chats').emit('channelShown', {
+      channelId,
+      channelName,
+      memberCount,
+      accessMode,
+    });
+  }
+
+  /**
+   * @description 채널이 private 로 변경 되었을 때, chats-UI 를 보고 있는 유저에게 알림
+   *
+   * @param channelId 변경된 채널
+   */
+  emitChannelHidden(channelId: ChannelId) {
+    this.server.in('chats').emit('channelHidden', { channelId });
+  }
+
   /*****************************************************************************
    *                                                                           *
    * SECTION : Events when user does viewing the chatRoom-UI                   *
@@ -245,24 +292,6 @@ export class ChatsGateway {
       .in(`chatRooms-${channelId}`)
       .except(`chatRooms-${channelId}-active`)
       .emit('messageArrived', { channelId });
-  }
-
-  /*****************************************************************************
-   *                                                                           *
-   * SECTION : Events when user does viewing the chats-UI                      *
-   *                                                                           *
-   ****************************************************************************/
-
-  /**
-   * @description 채널에 멤버가 추가/삭제 되었을 때, chats-UI 를 보고 있는 유저에게 알림
-   *
-   * @param channelId 참여 인원 변동이 일어난 채널
-   * @param memberCountDiff 참여 인원 변동량
-   */
-  private emitChannelUpdated(channelId: ChannelId, memberCountDiff: number) {
-    this.server
-      .in('chats')
-      .emit('channelUpdated', { channelId, memberCountDiff });
   }
 
   /**

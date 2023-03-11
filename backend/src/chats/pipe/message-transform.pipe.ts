@@ -13,7 +13,7 @@ import { MessageDto } from '../dto/chats.dto';
 import { Users } from '../../entity/users.entity';
 
 const COMMAND_REGEX =
-  /^\/((role [a-z|A-Z]{1,16} (admin|member))|((ban|mute) [a-z|A-Z]{1,16} \d{1,4}))$/;
+  /^\/((role [a-z|A-Z]{1,16} (admin|member))|((ban|mute) [a-z|A-Z]{1,16} \d{1,4}))|((kick) [a-z|A-Z]{1,16})$/;
 
 @Injectable()
 export class MessageTransformPipe implements PipeTransform {
