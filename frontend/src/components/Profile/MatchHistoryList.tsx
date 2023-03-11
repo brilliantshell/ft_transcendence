@@ -1,8 +1,8 @@
 function MatchHistory(props: {
   history:
     | {
-        winner: string;
-        loser: string;
+        winner: {userId: number, nickname : string, isDefaultImage: boolean};
+        loser: {userId: number, nickname : string, isDefaultImage: boolean};
         score: Array<number>;
         isRank: boolean;
       }
@@ -10,8 +10,8 @@ function MatchHistory(props: {
 }) {
   return (
     <div className="matchHistory">
-      <div className="matchHistoryItem">WINNER {props.history?.winner}</div>
-      <div className="matchHistoryItem">LOSER {props.history?.loser}</div>
+      <div className="matchHistoryItem">WINNER {props.history?.winner.nickname}</div>
+      <div className="matchHistoryItem">LOSER {props.history?.loser.nickname}</div>
       <div className="matchHistoryItem">
         <p>SCORE</p>
         <p>
@@ -28,8 +28,8 @@ function MatchHistory(props: {
 function MatchHistoryList(props: {
   history:
     | Array<{
-        winner: string;
-        loser: string;
+        winner: {userId: number, nickname : string, isDefaultImage: boolean};
+        loser: {userId: number, nickname : string, isDefaultImage: boolean};
         score: Array<number>;
         isRank: boolean;
       }>
