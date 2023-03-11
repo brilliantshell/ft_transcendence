@@ -24,7 +24,8 @@ export default function GameOption({ gameId, isOwner }: GameOptionProps) {
         <div className="gameOptionText large">
           <p>게임 모드가 설정되었습니다!</p>
           <p>
-            <span>START GAME</span> 버튼을 눌러 게임을 시작하세요 :D
+            <span className="gameOptionButtonLikeText">START GAME</span> 버튼을
+            눌러 게임을 시작하세요 :D
           </p>
         </div>
       ) : (

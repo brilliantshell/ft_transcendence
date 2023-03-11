@@ -83,7 +83,7 @@
   margin: 0.7rem;
 }
 
-.gameOptionText span {
+.gameOptionButtonLikeText {
   background-color: var(--primary_light);
   border: 1px solid var(--secondary);
   box-shadow: 0.1rem 0.1rem var(--secondary);
