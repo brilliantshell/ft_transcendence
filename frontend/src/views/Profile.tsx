@@ -13,7 +13,7 @@ import Achievements from '../components/Profile/Achievements';
 import MatchHistoryList from '../components/Profile/MatchHistoryList';
 import WinLossTotalCounter from '../components/Profile/WinLossTotalCounter';
 
-export interface profileDataForm {
+export interface ProfileDataForm {
   ladder: number;
   achievements: Array<{ id: number; title: string; about: string }>;
   winLossTotal: Array<number>;
@@ -34,7 +34,7 @@ function Profile() {
 
   const { id } = useParams();
   const myId = useRecoilValue(myIdState);
-  const [profileData, setProfileData] = useState<profileDataForm>();
+  const [profileData, setProfileData] = useState<ProfileDataForm>();
 
   useEffect(() => {
     instance

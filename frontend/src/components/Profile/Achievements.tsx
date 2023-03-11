@@ -1,4 +1,4 @@
-const imgPath = '/assets/achievements/achievement';
+const IMG_PATH = '/assets/achievements/achievement';
 
 /* TODO
  * - 아이콘 하나씩 컴포넌트화 하기 - 진행중
@@ -14,7 +14,7 @@ function AchievementElement(props: {
     <li className="achievementElement">
       <img
         className="achievementImage"
-        src={imgPath + props.achievementId + '.png'}
+        src={IMG_PATH + props.achievementId + '.png'}
       ></img>
       <span className="achievementTooltip">
         <div>{props.achievementTitle}</div>
@@ -41,7 +41,7 @@ function Achievements(props: {
     <div className="profileItem">
       <ul className="achievementBar">
         <li className="achievementElement">
-          <img className="achievementImage" src={imgPath + '1.png'}></img>
+          <img className="achievementImage" src={IMG_PATH + '1.png'}></img>
           <span className="achievementTooltip">
             <div>ONE GIANT LEAP FOR MANKIND</div>
             <div>
@@ -51,7 +51,7 @@ function Achievements(props: {
           </span>
         </li>
         <li className="achievementElement">
-          <img className="achievementImage" src={imgPath + '2.png'}></img>
+          <img className="achievementImage" src={IMG_PATH + '2.png'}></img>
           <span className="achievementTooltip">
             <div>THE WORLD'S BEST PINGPONG PLAYER</div>
             <div>
@@ -60,14 +60,14 @@ function Achievements(props: {
           </span>
         </li>
         <li className="achievementElement">
-          <img className="achievementImage" src={imgPath + '3.png'}></img>
+          <img className="achievementImage" src={IMG_PATH + '3.png'}></img>
           <span className="achievementTooltip">
             <div>SOCIAL ANIMAL</div>
             <div>무려 10명의 친구! 아리스토텔레스가 당신을 부러워합니다.</div>
           </span>
         </li>
         <li className="achievementElement">
-          <img className="achievementImage" src={imgPath + '4.png'}></img>
+          <img className="achievementImage" src={IMG_PATH + '4.png'}></img>
           <span className="achievementTooltip">
             <div>BORN TO BE FT</div>
             <div>
@@ -77,7 +77,7 @@ function Achievements(props: {
           </span>
         </li>
         <li className="achievementElement">
-          <img className="achievementImage" src={imgPath + '5.png'}></img>
+          <img className="achievementImage" src={IMG_PATH + '5.png'}></img>
           <span className="achievementTooltip">
             <div>SO NOISY</div>
             <div>U R MY CELEBRITY</div>
