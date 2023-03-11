@@ -1,5 +1,3 @@
-import '../../style/Profile/MatchHistoryList.css';
-
 function MatchHistory(props: {
   history:
     | {
@@ -38,6 +36,7 @@ function MatchHistoryList(props: {
     | undefined;
 }) {
   return (
+    /* TODO - MatchHistory의 ID까지 받아 동작하도록 수정 */
     <div className="profileItem matchHistoryList">
       {props.history?.map((matchLog, index) => (
         <MatchHistory history={matchLog} key={index} />

@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 import { myIdState } from '../util/Recoils';
 import { socket } from '../util/Socket';
+import { useCurrentUi } from '../components/hooks/EmitCurrentUi';
 import instance from '../util/Axios';
 import User from '../components/User/User';
 import ProfileMenuBar from '../components/Profile/MenuBar';
@@ -10,7 +11,8 @@ import LadderProgressBar from '../components/Profile/LadderProgressBar';
 import Achievements from '../components/Profile/Achievements';
 import MatchHistoryList from '../components/Profile/MatchHistoryList';
 import WinLossTotalCounter from '../components/Profile/WinLossTotalCounter';
-import '../style/Profile/Profile.css';
+import '../style/Profile/index.css';
+import { useSocketOn } from '../components/hooks/SocketOnHooks';
 
 export interface profileDataForm {
   ladder: number;
@@ -29,6 +31,7 @@ function Profile() {
   const [isConnected, setIsConnected] = useState(socket.connected);
 
   useCurrentUi(isConnected, setIsConnected, 'profile');
+  useSocketOn();
 
   const { id } = useParams();
   const myId = useRecoilValue(myIdState);

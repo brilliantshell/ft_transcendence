@@ -1,5 +1,3 @@
-import '../../style/Profile/Achievements.css';
-
 const imgPath = '/assets/achievements/achievement';
 
 /* TODO

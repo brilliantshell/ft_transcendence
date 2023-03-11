@@ -1,5 +1,3 @@
-import '../../style/Profile/MenuBar.css';
-
 function MenuBarWrapper() {
   return (
     <div className="profileItem">
