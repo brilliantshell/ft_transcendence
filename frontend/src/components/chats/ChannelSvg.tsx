@@ -1,5 +1,3 @@
-import '../../style/Chats.css';
-
 interface SvgProps {
   width?: string; // SVG width
   height?: string; // SVG height
