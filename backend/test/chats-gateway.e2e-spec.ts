@@ -231,15 +231,17 @@ describe('ChatsGateway (e2e)', () => {
     });
     const sentMsg: NewMessage = {
       senderId: users[0].userId,
+      messageId: 4242,
       content: 'nice to meet you',
-      sentAt: DateTime.now(),
+      createdAt: DateTime.now(),
     };
     await new Promise((resolve) => setTimeout(() => resolve('done'), 1000));
     chatsGateway.emitNewMessage(
       channel.channelId,
       sentMsg.senderId,
+      4242,
       sentMsg.content,
-      sentMsg.sentAt,
+      sentMsg.createdAt,
     );
     const recvMsg = await Promise.all([
       new Promise<NewMessage>((resolve) =>
@@ -249,7 +251,7 @@ describe('ChatsGateway (e2e)', () => {
         clientSockets[1].on('newMessage', (msg) => resolve(msg)),
       ),
     ]);
-    sentMsg.sentAt = sentMsg.sentAt.toString() as any;
+    sentMsg.createdAt = sentMsg.createdAt.toMillis() as any;
     expect(recvMsg[0]).toEqual(recvMsg[1]);
     expect(recvMsg[1]).toEqual(sentMsg);
     expect(

@@ -15,6 +15,7 @@ import { BannedMembers } from '../entity/banned-members.entity';
 import {
   ChannelId,
   ChannelInfo,
+  MessageId,
   UserChannelStatus,
   UserId,
   UserRole,
@@ -363,15 +364,18 @@ export class ChannelStorage implements OnModuleInit {
     contents: string,
     modifiedAt: DateTime,
   ) {
+    let messageId: MessageId;
     try {
       await this.dataSource.manager.transaction(async (manager) => {
         await manager.update(Channels, channelId, { modifiedAt });
-        await manager.insert(Messages, {
-          senderId,
-          channelId,
-          contents,
-          createdAt: modifiedAt,
-        });
+        messageId = (
+          await manager.insert(Messages, {
+            senderId,
+            channelId,
+            contents,
+            createdAt: modifiedAt,
+          })
+        ).identifiers[0].messageId;
       });
     } catch (e) {
       this.logger.error(e);
@@ -380,6 +384,7 @@ export class ChannelStorage implements OnModuleInit {
       );
     }
     this.getChannel(channelId).modifiedAt = modifiedAt;
+    return messageId;
   }
 
   /*****************************************************************************

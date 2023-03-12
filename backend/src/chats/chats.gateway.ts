@@ -2,7 +2,7 @@ import { DateTime } from 'luxon';
 import { Server } from 'socket.io';
 import { WebSocketGateway, WebSocketServer } from '@nestjs/websockets';
 
-import { ChannelId, SocketId, UserId, UserRole } from '../util/type';
+import { ChannelId, MessageId, SocketId, UserId, UserRole } from '../util/type';
 import { UserSocketStorage } from '../user-status/user-socket.storage';
 import { WEBSOCKET_CONFIG } from '../config/constant/constant-config';
 
@@ -171,18 +171,23 @@ export class ChatsGateway {
    *
    * @param userId 메시지를 보낸 유저의 id
    * @param channelId 메시지를 보낸 채팅방의 id
+   * @param messageId 메시지의 id
    * @param content 메시지 내용
    * @param sentAt 메시지 작성 시간
    */
   emitNewMessage(
     channelId: ChannelId,
     senderId: UserId,
+    messageId: MessageId,
     content: string,
-    sentAt: DateTime,
+    createdAt: DateTime,
   ) {
-    this.server
-      .in(`chatRooms-${channelId}-active`)
-      .emit('newMessage', { senderId, content, sentAt });
+    this.server.in(`chatRooms-${channelId}-active`).emit('newMessage', {
+      senderId,
+      messageId,
+      content,
+      createdAt: createdAt.toMillis(),
+    });
     this.emitMessageArrived(channelId);
   }
 
