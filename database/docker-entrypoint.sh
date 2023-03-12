@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 
-PGDATA=${PGDATA:-/var/lib/postgresql/data}
+PGDATA=${PGDATA:-/var/lib/postgresql/ft_transcendence}
 PGLOG=/var/log/postgresql/postgresql.log
-PGDATABASE=${PGDATABASE:dev}
-CONFIG_FILE=/workspaces/database/configs/postgresql.dev.conf
+PGDATABASE=${PGDATABASE:-"prod"}
+CONFIG_FILE=/tmp/postgresql.conf
+PGHOST='localhost'
 
 set -e
 
@@ -23,9 +24,9 @@ setup_db() {
 
 	# Create Database named ${PGDATABASE} owned by ${PGUSER}
 	createdb -O ${PGUSER} 
-
+  
   # Create tables and insert data
-	psql -f /workspaces/backend/test/integration/integration.sql > /dev/null 2>&1
+  psql -f /tmp/init_db.sql
 
 	gosu postgres pg_ctl stop
 }
@@ -33,8 +34,8 @@ setup_db() {
 # Setup database
 setup_db
 
-# Start PostgreSQL
-gosu postgres pg_ctl -l ${PGLOG} start -s -o "-c config_file=${CONFIG_FILE}" 
-
+if [ "$1" = 'postgres' ]; then
+  set -- gosu postgres "$@" -c config_file=${CONFIG_FILE}
+fi
 
 exec "$@"
