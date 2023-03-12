@@ -6,8 +6,43 @@ name: "ft_transcendence"
 
 # SECTION : SERVICES
 services:
-  # backend:
-  # frontend:
+  app:
+    container_name: app_prod_con
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    depends_on:
+      database:
+        condition: service_healthy
+    env_file:
+      - .env.production
+    expose:
+      - "3000"
+    init: true
+    networks:
+      development:
+        ipv4_address: 172.18.0.3
+    ports:
+      - "3000:3000"
+    cpu_count: 8
+    mem_limit: 16g
+
+  database:
+    container_name: db_prod_con
+    build:
+      context: ./database
+      dockerfile: Dockerfile
+    env_file:
+      - .env.production
+    expose:
+      - "5432"
+    init: true
+    networks:
+      development:
+        ipv4_address: 172.18.0.2
+    volumes:
+      # Database Volume
+      - pgdata_prod:/var/lib/postgresql/data/
 
 # SECTION : NETWORKS
 networks:
@@ -17,8 +52,7 @@ networks:
         - subnet: 172.18.0.0/24
           gateway: 172.18.0.1
 
-# SECTION : CONFIGS
-# configs:
-
+volumes:
+  pgdata_prod:
 # SECTION : VOLUMES
 # volumes:
