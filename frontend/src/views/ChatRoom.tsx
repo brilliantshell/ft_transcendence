@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import UserList from '../components/ChatRoom/UserList';
 import ChatList from '../components/ChatRoom/ChatList';
 import ChatInput from '../components/ChatRoom/ChatInput';
-import { useCurrentUi } from '../components/hooks/EmitCurrentUi';
+import { useCurrentUi } from '../components/hooks/CurrentUi';
 import { socket } from '../util/Socket';
 import { ErrorAlert } from '../util/Alert';
 

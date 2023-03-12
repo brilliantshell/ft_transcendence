@@ -14,7 +14,7 @@ import {
   useChannelUpdatedEvent,
   useMessageArrivedEvent,
 } from '../components/Chats/hooks/ChannelHooks';
-import { useCurrentUi } from '../components/hooks/EmitCurrentUi';
+import { useCurrentUi } from '../components/hooks/CurrentUi';
 
 function Chats() {
   const [joinedChannels, setJoinedChannels] = useState<ChannelInfo[]>([]);

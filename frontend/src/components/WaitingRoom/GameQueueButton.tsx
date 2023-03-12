@@ -1,5 +1,6 @@
 import { ErrorAlert } from '../../util/Alert';
 import instance from '../../util/Axios';
+import { generateWavyText } from '../common/Animation';
 import { listenOnce } from '../../util/Socket';
 import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
@@ -16,8 +17,8 @@ export default function GameEnterQueueButton() {
           .then(() => {
             setHasEnteredQueue(true);
             listenOnce<NewGameMessage>('newGame').then(({ gameId }) => {
-              nav(`/game/${gameId}`);
               sessionStorage.setItem(`game-${gameId}-isPlayer`, 'true');
+              nav(`/game/${gameId}`);
             });
           })
           .catch(err => {
@@ -38,18 +39,6 @@ export default function GameEnterQueueButton() {
           });
   };
 
-  const generateWavyText = (text: string) => {
-    return (
-      <>
-        {text.split('').map((char, i) => (
-          <span key={i} style={{ '--i': i.toString() } as React.CSSProperties}>
-            {char === ' ' ? '\u00A0' : char}
-          </span>
-        ))}
-      </>
-    );
-  };
-
   return (
     <button
       className={
@@ -61,7 +50,7 @@ export default function GameEnterQueueButton() {
     >
       <p>
         {hasEnteredQueue ? 'Looking for an Opponent' : 'GAME START'}
-        {hasEnteredQueue && generateWavyText('...')}
+        {hasEnteredQueue && generateWavyText('...', '-1rem')}
       </p>
       {hasEnteredQueue && (
         <p className="large">

@@ -1,9 +1,8 @@
-import { useState } from 'react';
-import GameQueueButton from '../components/WaitingRoom/GameQueueButton';
 import GamesList from '../components/WaitingRoom/GamesList';
+import GameQueueButton from '../components/WaitingRoom/GameQueueButton';
 import { socket } from '../util/Socket';
-import '../style/WaitingRoom.css';
-import { useCurrentUi } from '../components/hooks/EmitCurrentUi';
+import { useCurrentUi } from '../components/hooks/CurrentUi';
+import { useState } from 'react';
 
 export default function WaitingRoom() {
   const [isConnected, setIsConnected] = useState(socket.connected);

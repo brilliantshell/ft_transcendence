@@ -78,12 +78,12 @@ export class GameInfo {
   constructor(
     leftId: UserId,
     rightId: UserId,
-    map: 1 | 2 | 3,
+    mode: 0 | 1 | 2,
     isRank: boolean,
   ) {
     this.leftId = leftId;
     this.rightId = rightId;
-    this.map = map;
+    this.mode = mode;
     this.isRank = isRank;
   }
 
@@ -92,7 +92,7 @@ export class GameInfo {
   leftNickname?: string;
   rightId: UserId;
   rightNickname?: string;
-  map: 1 | 2 | 3;
+  mode: 0 | 1 | 2;
   isStarted = false;
   gameData = new GameData();
 }

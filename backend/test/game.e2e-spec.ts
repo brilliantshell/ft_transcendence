@@ -143,7 +143,7 @@ describe('GameController (e2e)', () => {
           new GameInfo(
             usersEntities[i].userId,
             usersEntities[i + 1].userId,
-            1,
+            0,
             isRank,
           ),
         );
@@ -175,7 +175,7 @@ describe('GameController (e2e)', () => {
       const gameId = nanoid();
       await gameStorage.createGame(
         gameId,
-        new GameInfo(playerOne, playerTwo, 1, true),
+        new GameInfo(playerOne, playerTwo, 0, true),
       );
       const { status, body } = await request(app.getHttpServer())
         .get(`/game/list/${gameId}`)
@@ -185,7 +185,7 @@ describe('GameController (e2e)', () => {
         isRank: true,
         leftPlayer: users[0].nickname,
         rightPlayer: users[1].nickname,
-        map: 1,
+        mode: 0,
       });
       await waitForExpect(() => {
         expect(
@@ -202,7 +202,7 @@ describe('GameController (e2e)', () => {
       const gameId = nanoid();
       await gameStorage.createGame(
         gameId,
-        new GameInfo(playerOne, playerTwo, 1, false),
+        new GameInfo(playerOne, playerTwo, 0, false),
       );
       const { status, body } = await request(app.getHttpServer())
         .get(`/game/list/${gameId}`)
@@ -212,7 +212,7 @@ describe('GameController (e2e)', () => {
         isRank: false,
         leftPlayer: users[0].nickname,
         rightPlayer: users[1].nickname,
-        map: 1,
+        mode: 0,
       });
       await waitForExpect(() => {
         expect(
@@ -438,7 +438,7 @@ describe('GameController (e2e)', () => {
       const gameId = nanoid();
       await gameStorage.createGame(
         gameId,
-        new GameInfo(playerOne, playerTwo, 1, true),
+        new GameInfo(playerOne, playerTwo, 0, true),
       );
       const results = await Promise.all([
         request(app.getHttpServer())
@@ -497,7 +497,7 @@ describe('GameController (e2e)', () => {
    ****************************************************************************/
 
   describe('PATCH /game/:gameId/options', () => {
-    it('should change the map of a normal game (200)', async () => {
+    it('should change the mode of a normal game (200)', async () => {
       const [playerOne, playerTwo, spectator] = userIds;
       const gameId = nanoid();
       await gameStorage.createGame(
@@ -519,7 +519,7 @@ describe('GameController (e2e)', () => {
         request(app.getHttpServer())
           .patch(`/game/${gameId}/options`)
           .set('x-user-id', playerOne.toString())
-          .send({ map: 2 })
+          .send({ mode: 2 })
           .expect(204),
       ]);
       expect(wsError.status).toBe('rejected');
@@ -529,9 +529,9 @@ describe('GameController (e2e)', () => {
       ) {
         fail();
       }
-      expect(gameStorage.getGame(gameId).map).toBe(2);
-      expect(wsMessageOne.value.map).toBe(2);
-      expect(wsMessageTwo.value.map).toBe(2);
+      expect(gameStorage.getGame(gameId).mode).toBe(2);
+      expect(wsMessageOne.value.mode).toBe(2);
+      expect(wsMessageTwo.value.mode).toBe(2);
     });
 
     it('should throw BAD REQUEST if the user is not in the game UI (400)', async () => {
@@ -544,7 +544,7 @@ describe('GameController (e2e)', () => {
       await request(app.getHttpServer())
         .patch(`/game/${gameId}/options`)
         .set('x-user-id', playerOne.toString())
-        .send({ map: 2 })
+        .send({ mode: 2 })
         .expect(400);
     });
 
@@ -553,7 +553,7 @@ describe('GameController (e2e)', () => {
       const gameId = nanoid();
       await gameStorage.createGame(
         gameId,
-        new GameInfo(playerOne, playerTwo, 1, true),
+        new GameInfo(playerOne, playerTwo, 0, true),
       );
       clientSockets[0].emit('currentUi', { ui: `game-${gameId}` });
       clientSockets[1].emit('currentUi', { ui: `game-${gameId}` });
@@ -564,7 +564,7 @@ describe('GameController (e2e)', () => {
       await request(app.getHttpServer())
         .patch(`/game/${gameId}/options`)
         .set('x-user-id', playerOne.toString())
-        .send({ map: 2 })
+        .send({ mode: 2 })
         .expect(400);
     });
 
@@ -586,7 +586,7 @@ describe('GameController (e2e)', () => {
       await request(app.getHttpServer())
         .patch(`/game/${gameId}/options`)
         .set('x-user-id', spectator.toString())
-        .send({ map: 2 })
+        .send({ mode: 2 })
         .expect(403);
     });
 
@@ -606,7 +606,7 @@ describe('GameController (e2e)', () => {
       await request(app.getHttpServer())
         .patch(`/game/${gameId}/options`)
         .set('x-user-id', playerTwo.toString())
-        .send({ map: 2 })
+        .send({ mode: 2 })
         .expect(403);
     });
 
@@ -621,7 +621,7 @@ describe('GameController (e2e)', () => {
       await request(app.getHttpServer())
         .patch('/game/unknownGameunknownGam/options')
         .set('x-user-id', playerOne.toString())
-        .send({ map: 2 })
+        .send({ mode: 2 })
         .expect(404);
     });
   });

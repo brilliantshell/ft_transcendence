@@ -13,7 +13,7 @@ export interface NewGameDto {
 }
 
 export interface GameOptionDto {
-  map: 1 | 2 | 3;
+  mode: 0 | 1 | 2;
 }
 
 export interface GameStartedDto {

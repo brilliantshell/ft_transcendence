@@ -1,5 +1,5 @@
+import { Coordinates, HoverBox } from '../common/HoverBox';
 import { MouseEvent, useState } from 'react';
-import { HoverBox } from '../common/HoverBox';
 import { useNavigate } from 'react-router-dom';
 
 export default function GameInProgressButton({
@@ -25,8 +25,8 @@ export default function GameInProgressButton({
     setHoverInfoCoords({ x: e.clientX + 8, y: e.clientY + 20 });
 
   const handleClick = () => {
-    nav(`/game/${gameId}`);
     sessionStorage.setItem(`game-${gameId}-isPlayer`, 'false');
+    nav(`/game/${gameId}`);
   };
 
   return (
@@ -63,9 +63,4 @@ interface GameInProgressButtonProps {
   gameId: string;
   leftNickname: string;
   rightNickname: string;
-}
-
-interface Coordinates {
-  x: number;
-  y: number;
 }

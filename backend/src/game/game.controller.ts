@@ -13,7 +13,7 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 
-import { GameIdParamDto, GameMapDto } from './dto/game.dto';
+import { GameIdParamDto, GameModeDto } from './dto/game.dto';
 import { GameService } from './game.service';
 import { GameStartInterceptor } from './interceptor/game-start.interceptor';
 import { InGameUiGuard } from './guard/in-game-ui.guard';
@@ -78,12 +78,12 @@ export class GameController {
   @Patch(':gameId/options')
   @HttpCode(HttpStatus.NO_CONTENT)
   @UseGuards(InGameUiGuard)
-  updateMap(
+  updateMode(
     @Req() req: VerifiedRequest,
     @Param() { gameId }: GameIdParamDto,
-    @Body() { map }: GameMapDto,
+    @Body() { mode }: GameModeDto,
   ) {
-    this.gameService.changeMap(req.user.userId, gameId, map);
+    this.gameService.changeMode(req.user.userId, gameId, mode);
   }
 
   @Patch(':gameId/start')

@@ -28,9 +28,9 @@ export const ErrorAlert = (title: string, text: string) => {
 
 export const ConfirmAlert = (title: string, text: string) => {
   return ReactSwal.fire({
-    icon: 'warning',
+    icon: 'question',
     title,
-    text,
+    html: `<p>${text}</p>`,
     showCancelButton: true,
     confirmButtonText: '확인',
     cancelButtonText: '취소',
