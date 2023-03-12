@@ -172,20 +172,20 @@ export class ChatsGateway {
    * @param userId 메시지를 보낸 유저의 id
    * @param channelId 메시지를 보낸 채팅방의 id
    * @param messageId 메시지의 id
-   * @param content 메시지 내용
+   * @param contents 메시지 내용
    * @param sentAt 메시지 작성 시간
    */
   emitNewMessage(
     channelId: ChannelId,
     senderId: UserId,
     messageId: MessageId,
-    content: string,
+    contents: string,
     createdAt: DateTime,
   ) {
     this.server.in(`chatRooms-${channelId}-active`).emit('newMessage', {
       senderId,
       messageId,
-      content,
+      contents,
       createdAt: createdAt.toMillis(),
     });
     this.emitMessageArrived(channelId);
