@@ -205,7 +205,6 @@ export function useBannedEvent(
   setOtherChannels: React.Dispatch<React.SetStateAction<ChannelInfo[]>>,
 ) {
   const handleBanned = ({ channelId }: ChannelId) => {
-    let newChannel: ChannelInfo;
     setJoinedChannels(prev => {
       const bannedChannelIdx = prev.findIndex(
         channel => channel.channelId === channelId,
@@ -213,17 +212,44 @@ export function useBannedEvent(
       if (bannedChannelIdx === -1) {
         return prev;
       }
-      newChannel = prev[bannedChannelIdx];
+      const newChannel = prev[bannedChannelIdx];
+      setOtherChannels(prev => addToOtherChannels(prev, newChannel));
       return prev
         .slice(0, bannedChannelIdx)
         .concat(prev.slice(bannedChannelIdx + 1));
     });
-    setOtherChannels(prev => addToOtherChannels(prev, newChannel));
   };
   useEffect(() => {
     socket.on('banned', handleBanned);
     return () => {
       socket.off('banned');
+    };
+  }, []);
+}
+
+export function useChannelInvitedEvent(
+  setJoinedChannels: React.Dispatch<React.SetStateAction<ChannelInfo[]>>,
+  setOtherChannels: React.Dispatch<React.SetStateAction<ChannelInfo[]>>,
+) {
+  const handleChannelInvited = ({ channelId }: ChannelId) => {
+    setOtherChannels(prev => {
+      const invitedChannelIdx = prev.findIndex(c => c.channelId === channelId);
+      if (invitedChannelIdx === -1) {
+        return prev;
+      }
+      const newChannel = prev[invitedChannelIdx];
+      setJoinedChannels(prev =>
+        [{ ...newChannel, unseenCount: 0 } as ChannelInfo].concat(prev),
+      );
+      return prev
+        .slice(0, invitedChannelIdx)
+        .concat(prev.slice(invitedChannelIdx + 1));
+    });
+  };
+  useEffect(() => {
+    socket.on('channelInvited', handleChannelInvited);
+    return () => {
+      socket.off('channelInvited');
     };
   }, []);
 }

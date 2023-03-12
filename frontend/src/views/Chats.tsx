@@ -10,6 +10,7 @@ import {
   useChannelCreatedEvent,
   useChannelDeletedEvent,
   useChannelHiddenEvent,
+  useChannelInvitedEvent,
   useChannelShownEvent,
   useChannelUpdatedEvent,
   useMessageArrivedEvent,
@@ -44,6 +45,7 @@ function Chats() {
   useChannelHiddenEvent(joinedChannels, setOtherChannels);
   useChannelDeletedEvent(setJoinedChannels, setOtherChannels);
   useChannelUpdatedEvent(setJoinedChannels, setOtherChannels);
+  useChannelInvitedEvent(setJoinedChannels, setOtherChannels)
   useMessageArrivedEvent(setJoinedChannels);
   useBannedEvent(setJoinedChannels, setOtherChannels);
 
