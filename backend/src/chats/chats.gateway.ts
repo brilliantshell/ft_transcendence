@@ -252,13 +252,26 @@ export class ChatsGateway {
   /**
    * @description 멤버가 채팅방에서 ban 되었을 때, 해당 유저에게 알림
    *
-   * @param channelId  mute 된 채팅방의 id
+   * @param channelId  ban 된 채팅방의 id
    * @param bannedMember ban 된 멤버의 id
    */
   emitBanned(channelId: ChannelId, bannedMember: UserId) {
     const socketId = this.userSocketStorage.clients.get(bannedMember);
-    if (socketId) {
+    if (this.getRoomMembers('chats')?.has(socketId)) {
       this.server.in(socketId).emit('banned', { channelId });
+    }
+  }
+
+  /**
+   * @description 멤버가 채팅방에 초대 되었을 때, 해당 유저에게 알림
+   *
+   * @param channelId 초대된 채팅방의 id
+   * @param invitedMember 초대된 멤버의 id
+   */
+  emitChannelInvited(channelId: ChannelId, invitedMember: UserId) {
+    const socketId = this.userSocketStorage.clients.get(invitedMember);
+    if (this.getRoomMembers('chats')?.has(socketId)) {
+      this.server.in(socketId).emit('channelInvited', { channelId });
     }
   }
 

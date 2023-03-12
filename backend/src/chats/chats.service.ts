@@ -54,6 +54,7 @@ export class ChatsService {
   /**
    * @description 유저가 접속한 채널 목록 및 private 이 아닌 모든 채널 목록을 반환
    *              접속한 채널 목록은 modifiedAt 순으로 정렬, 나머지는 알파벳 순으로 정렬
+   *
    * @param userId 요청한 유저의 Id
    * @returns 채널 목록
    */
@@ -178,6 +179,7 @@ export class ChatsService {
     if (accessMode === 'public' || isInvited) {
       await this.channelStorage.addUserToChannel(channelId, userId);
       this.chatsGateway.emitMemberJoin(channelId, userId);
+      this.chatsGateway.emitChannelInvited(channelId, userId);
       return true;
     }
     if (accessMode === 'protected') {
