@@ -54,6 +54,7 @@ export class ChatsService {
   /**
    * @description 유저가 접속한 채널 목록 및 private 이 아닌 모든 채널 목록을 반환
    *              접속한 채널 목록은 modifiedAt 순으로 정렬, 나머지는 알파벳 순으로 정렬
+   *
    * @param userId 요청한 유저의 Id
    * @returns 채널 목록
    */
@@ -178,6 +179,7 @@ export class ChatsService {
     if (accessMode === 'public' || isInvited) {
       await this.channelStorage.addUserToChannel(channelId, userId);
       this.chatsGateway.emitMemberJoin(channelId, userId);
+      this.chatsGateway.emitChannelInvited(channelId, userId);
       return true;
     }
     if (accessMode === 'protected') {
@@ -235,11 +237,16 @@ export class ChatsService {
           order: { createdAt: 'DESC' as any },
           skip: offset,
           take: limit,
-          select: ['senderId', 'contents', 'createdAt'],
+          select: ['messageId', 'senderId', 'contents', 'createdAt'],
         })
       ).map((message) => {
-        const { senderId, contents, createdAt } = message;
-        return { senderId, contents, createdAt: createdAt.toMillis() };
+        const { messageId, senderId, contents, createdAt } = message;
+        return {
+          senderId,
+          messageId,
+          contents,
+          createdAt: createdAt.toMillis(),
+        };
       });
       return { messages };
     } catch (e) {
@@ -266,9 +273,10 @@ export class ChatsService {
     senderId: UserId,
     contents: string,
   ) {
+    let messageId: number;
     const createdAt = DateTime.now();
     try {
-      await this.channelStorage.updateChannelMessage(
+      messageId = await this.channelStorage.updateChannelMessage(
         channelId,
         senderId,
         contents,
@@ -278,7 +286,13 @@ export class ChatsService {
       this.logger.error(e);
       throw new InternalServerErrorException('Failed to create message');
     }
-    this.chatsGateway.emitNewMessage(channelId, senderId, contents, createdAt);
+    this.chatsGateway.emitNewMessage(
+      channelId,
+      senderId,
+      messageId,
+      contents,
+      createdAt,
+    );
     this.channelStorage.getChannel(channelId).userRoleMap.forEach((v, id) => {
       const currentUi = this.activityManager.getActivity(id);
       if (currentUi !== null && currentUi !== `chatRooms-${channelId}`) {

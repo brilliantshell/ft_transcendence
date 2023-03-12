@@ -15,7 +15,7 @@ import { Repository } from 'typeorm';
 import { ChannelId, UserId, VerifiedRequest } from '../../util/type';
 import { ChannelStorage } from '../../user-status/channel.storage';
 import { Users } from '../../entity/users.entity';
-import { UserRelationshipStorage } from 'src/user-status/user-relationship.storage';
+import { UserRelationshipStorage } from '../../user-status/user-relationship.storage';
 
 @Injectable()
 export class JoinChannelGuard implements CanActivate {
