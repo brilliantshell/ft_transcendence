@@ -26,11 +26,16 @@ export class MemberMessagingGuard implements CanActivate {
   }
 
   checkIsReadonly(channelId: ChannelId, userId: UserId) {
-    if (
-      this.channelStorage.getUser(userId).get(channelId).muteEndAt >
-      DateTime.now()
-    ) {
-      throw new ForbiddenException('This user is muted');
+    const muteEndAt = this.channelStorage
+      .getUser(userId)
+      .get(channelId).muteEndAt;
+    if (muteEndAt !== 'epoch' && muteEndAt > DateTime.now()) {
+      const remains = Math.round(
+        muteEndAt.diffNow().shiftTo('minutes').minutes,
+      );
+      throw new ForbiddenException(
+        `This user is muted, mute remains: ${remains} minutes`,
+      );
     }
     if (this.userRelationshipStorage.isBlockedDm(channelId) === true) {
       throw new ForbiddenException('Cannot send message to this user');
