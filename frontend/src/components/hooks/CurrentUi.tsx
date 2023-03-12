@@ -26,6 +26,12 @@ export function useCurrentUi(
   };
 
   useEffect(() => {
+    socket.io.on('error', (error: any) => {
+      if (error.description === 403) {
+        nav('/login');
+      }
+      socket.close();
+    });
     if (isConnected) {
       socket.emit('currentUi', { ui });
       if (!ui.startsWith('game-')) {
