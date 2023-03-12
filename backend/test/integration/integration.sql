@@ -259,7 +259,7 @@ ALTER SEQUENCE public.messages_message_id_seq OWNED BY public.messages.message_i
 CREATE TABLE public.users (
     user_id integer NOT NULL,
     nickname character varying(10) NOT NULL,
-    is_default_image boolean DEFAULT false NOT NULL,
+    is_default_image boolean DEFAULT true NOT NULL,
     auth_email character varying(320),
     ladder integer DEFAULT 0 NOT NULL,
     win_count integer DEFAULT 0 NOT NULL,
