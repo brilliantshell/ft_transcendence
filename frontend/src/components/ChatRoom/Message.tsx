@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { HoverBox } from '../common/HoverBox';
 
 interface Props {
   data: { senderId: number; contents: string; createdAt: number };

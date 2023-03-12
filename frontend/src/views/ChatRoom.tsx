@@ -42,7 +42,7 @@ function ChatRoom() {
       </div>
       <div className="chatRoomRight">
         <ChatList id={id ?? ''} />
-        <ChatInput />
+        <ChatInput id={id ?? ''} />
       </div>
     </div>
   );
