@@ -351,6 +351,11 @@ describe('ChatsService', () => {
       jest
         .spyOn(chatsGateway, 'joinChannelRoom')
         .mockImplementation(() => undefined);
+      jest
+        .spyOn(chatsGateway, 'getRoomMembers')
+        .mockImplementation((chatRoom: string) =>
+          new Set<string>().add(chatRoom),
+        );
     });
     it('should join user to the public channel', async () => {
       const userId = usersEntities[0].userId;
@@ -494,6 +499,11 @@ describe('ChatsService', () => {
       jest
         .spyOn(chatsGateway, 'joinChannelRoom')
         .mockImplementation(() => undefined);
+      jest
+        .spyOn(chatsGateway, 'getRoomMembers')
+        .mockImplementation((chatRoom: string) =>
+          new Set<string>().add(chatRoom),
+        );
     });
     it('should leave channel (not owner)', async () => {
       const userId = usersEntities[0].userId;
@@ -682,6 +692,12 @@ describe('ChatsService', () => {
       jest
         .spyOn(chatsGateway, 'joinChannelRoom')
         .mockImplementation(() => undefined);
+
+      jest
+        .spyOn(chatsGateway, 'getRoomMembers')
+        .mockImplementation((chatRoom: string) =>
+          new Set<string>().add(chatRoom),
+        );
     });
 
     it('should create message and then notify new message arrived', async () => {

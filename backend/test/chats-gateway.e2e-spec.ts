@@ -232,15 +232,15 @@ describe('ChatsGateway (e2e)', () => {
     const sentMsg: NewMessage = {
       senderId: users[0].userId,
       messageId: 4242,
-      content: 'nice to meet you',
       createdAt: DateTime.now(),
+      contents: 'nice to meet you',
     };
     await new Promise((resolve) => setTimeout(() => resolve('done'), 1000));
     chatsGateway.emitNewMessage(
       channel.channelId,
       sentMsg.senderId,
       4242,
-      sentMsg.content,
+      sentMsg.contents,
       sentMsg.createdAt,
     );
     const recvMsg = await Promise.all([
