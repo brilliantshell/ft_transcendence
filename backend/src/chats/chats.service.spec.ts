@@ -582,10 +582,15 @@ describe('ChatsService', () => {
       );
       await dataSource.getRepository(Messages).insert(messages);
       const messagesDto = messages
-        .sort((a, b) => a.createdAt.valueOf() - b.createdAt.valueOf())
+        .sort((a, b) => b.createdAt.valueOf() - a.createdAt.valueOf())
         .map((v) => {
-          const { createdAt, contents, senderId } = v;
-          return { senderId, contents, createdAt: createdAt.toMillis() };
+          const { messageId, createdAt, contents, senderId } = v;
+          return {
+            messageId,
+            senderId,
+            contents,
+            createdAt: createdAt.toMillis(),
+          };
         });
       const ret = await service.findChannelMessages(channelId, 0, 3);
       expect(ret).toEqual({ messages: [...messagesDto.slice(0, 3)] });
@@ -606,10 +611,15 @@ describe('ChatsService', () => {
       );
       await dataSource.getRepository(Messages).insert(messages);
       const messagesDto = messages
-        .sort((a, b) => a.createdAt.valueOf() - b.createdAt.valueOf())
+        .sort((a, b) => b.createdAt.valueOf() - a.createdAt.valueOf())
         .map((v) => {
-          const { createdAt, contents, senderId } = v;
-          return { senderId, contents, createdAt: createdAt.toMillis() };
+          const { messageId, createdAt, contents, senderId } = v;
+          return {
+            messageId,
+            senderId,
+            contents,
+            createdAt: createdAt.toMillis(),
+          };
         });
       const ret = await service.findChannelMessages(channelId, 0, 10001);
       expect(ret).toEqual({ messages: [...messagesDto] });
@@ -694,6 +704,7 @@ describe('ChatsService', () => {
       expect(newMessageSpy).toBeCalledWith(
         newChannelId,
         userId,
+        expect.any(Number),
         msg.message,
         expect.any(DateTime),
       );

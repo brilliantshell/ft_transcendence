@@ -8,6 +8,8 @@ export type UserId = number;
 
 export type ChannelId = number;
 
+export type MessageId = number;
+
 export type GameId = string;
 
 export type Friendship = 'friend' | 'pendingSender' | 'pendingReceiver';

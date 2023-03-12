@@ -235,11 +235,16 @@ export class ChatsService {
           order: { createdAt: 'DESC' as any },
           skip: offset,
           take: limit,
-          select: ['senderId', 'contents', 'createdAt'],
+          select: ['messageId', 'senderId', 'contents', 'createdAt'],
         })
       ).map((message) => {
-        const { senderId, contents, createdAt } = message;
-        return { senderId, contents, createdAt: createdAt.toMillis() };
+        const { messageId, senderId, contents, createdAt } = message;
+        return {
+          senderId,
+          messageId,
+          contents,
+          createdAt: createdAt.toMillis(),
+        };
       });
       return { messages };
     } catch (e) {
@@ -266,9 +271,10 @@ export class ChatsService {
     senderId: UserId,
     contents: string,
   ) {
+    let messageId: number;
     const createdAt = DateTime.now();
     try {
-      await this.channelStorage.updateChannelMessage(
+      messageId = await this.channelStorage.updateChannelMessage(
         channelId,
         senderId,
         contents,
@@ -278,7 +284,13 @@ export class ChatsService {
       this.logger.error(e);
       throw new InternalServerErrorException('Failed to create message');
     }
-    this.chatsGateway.emitNewMessage(channelId, senderId, contents, createdAt);
+    this.chatsGateway.emitNewMessage(
+      channelId,
+      senderId,
+      messageId,
+      contents,
+      createdAt,
+    );
     this.channelStorage.getChannel(channelId).userRoleMap.forEach((v, id) => {
       const currentUi = this.activityManager.getActivity(id);
       if (currentUi !== null && currentUi !== `chatRooms-${channelId}`) {
