@@ -32,6 +32,10 @@ import { UserStatusModule } from './user-status/user-status.module';
         index: false,
       },
     }),
+    ServeStaticModule.forRoot({
+      rootPath: join(__dirname, '..', 'frontend/dist'),
+      // exclude: ['/api*'],
+    }),
     TypeOrmModule.forRootAsync({
       imports: [ApiConfigModule],
       useFactory: (apiConfigService: ApiConfigService) =>
