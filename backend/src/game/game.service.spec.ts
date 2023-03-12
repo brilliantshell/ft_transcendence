@@ -81,11 +81,12 @@ describe('GameService', () => {
       .overrideProvider(GameGateway)
       .useValue({
         joinRoom: jest.fn((socketId: string, roomId: string) => undefined),
-        emitNewGame: jest.fn(
-          (gameId: GameId, inviterNickname: string | null = null) => undefined,
+        emitNewGame: jest.fn((gameId: GameId) => undefined),
+        emitNewNormalGame: jest.fn(
+          (gameId: GameId, inviterNickname: string) => undefined,
         ),
         emitGameOption: jest.fn(
-          (gameId: GameId, socketId: SocketId, map: number) => undefined,
+          (gameId: GameId, socketId: SocketId, mode: number) => undefined,
         ),
         emitGameStarted: jest.fn((gameStarted: GameStartedDto) => undefined),
         emitGameStatus: jest.fn((gameId: GameId) => undefined),
@@ -143,7 +144,7 @@ describe('GameService', () => {
           new GameInfo(
             usersEntities[i].userId,
             usersEntities[i + 1].userId,
-            1,
+            0,
             isRank,
           ),
         );
@@ -169,20 +170,20 @@ describe('GameService', () => {
         isRank: false,
         leftPlayer: playerOne.nickname,
         rightPlayer: playerTwo.nickname,
-        map: 1,
+        mode: 1,
       });
     });
 
     it('should return game information when a user tries to spectate a game (in progress)', async () => {
       await gameStorage.createGame(
         gameId,
-        new GameInfo(playerOne.userId, playerTwo.userId, 1, true),
+        new GameInfo(playerOne.userId, playerTwo.userId, 0, true),
       );
       expect(service.findGameInfo(spectatorOne.userId, gameId)).toEqual({
         isRank: true,
         leftPlayer: playerOne.nickname,
         rightPlayer: playerTwo.nickname,
-        map: 1,
+        mode: 0,
       });
     });
 
@@ -225,7 +226,7 @@ describe('GameService', () => {
       );
       await gameStorage.createGame(
         gameId,
-        new GameInfo(playerOne.userId, playerTwo.userId, 1, true),
+        new GameInfo(playerOne.userId, playerTwo.userId, 0, true),
       );
       expect(() =>
         service.findGameInfo(spectatorOne.userId, gameId),
@@ -244,10 +245,10 @@ describe('GameService', () => {
         leftNickname: playerOne.nickname,
         rightId: playerTwo.userId,
         rightNickname: playerTwo.nickname,
-        map: 1,
+        mode: 0,
         isRank: false,
       });
-      expect(gameGateway.emitNewGame).toHaveBeenCalledWith(
+      expect(gameGateway.emitNewNormalGame).toHaveBeenCalledWith(
         newGameId,
         playerOne.nickname,
       );
@@ -274,13 +275,13 @@ describe('GameService', () => {
   });
 
   describe('CHANGE MAP', () => {
-    it('should change the map of a game and let the opponent know the updated option', async () => {
+    it('should change the gameMod and let the opponent know the updated option', async () => {
       await gameStorage.createGame(
         gameId,
         new GameInfo(playerOne.userId, playerTwo.userId, 1, false),
       );
-      service.changeMap(playerOne.userId, gameId, 2);
-      expect(gameStorage.getGame(gameId).map).toBe(2);
+      service.changeMode(playerOne.userId, gameId, 2);
+      expect(gameStorage.getGame(gameId).mode).toBe(2);
       expect(gameGateway.emitGameOption).toHaveBeenCalledWith(
         gameId,
         userSocketStorage.clients.get(playerOne.userId),
@@ -289,9 +290,9 @@ describe('GameService', () => {
     });
 
     it('should throw NOT FOUND when the game does not exist', () => {
-      expect(() => service.changeMap(playerOne.userId, gameId, 2)).toThrowError(
-        NotFoundException,
-      );
+      expect(() =>
+        service.changeMode(playerOne.userId, gameId, 2),
+      ).toThrowError(NotFoundException);
       expect(gameGateway.emitGameOption).not.toHaveBeenCalled();
     });
 
@@ -301,7 +302,7 @@ describe('GameService', () => {
         new GameInfo(playerOne.userId, playerTwo.userId, 1, false),
       );
       expect(() =>
-        service.changeMap(spectatorOne.userId, gameId, 2),
+        service.changeMode(spectatorOne.userId, gameId, 2),
       ).toThrowError(ForbiddenException);
       expect(gameGateway.emitGameOption).not.toHaveBeenCalled();
     });
@@ -311,20 +312,20 @@ describe('GameService', () => {
         gameId,
         new GameInfo(playerOne.userId, playerTwo.userId, 1, false),
       );
-      expect(() => service.changeMap(playerTwo.userId, gameId, 2)).toThrowError(
-        ForbiddenException,
-      );
+      expect(() =>
+        service.changeMode(playerTwo.userId, gameId, 2),
+      ).toThrowError(ForbiddenException);
       expect(gameGateway.emitGameOption).not.toHaveBeenCalled();
     });
 
     it('should throw BAD REQUEST when the game is a ladder game', async () => {
       await gameStorage.createGame(
         gameId,
-        new GameInfo(playerOne.userId, playerTwo.userId, 1, true),
+        new GameInfo(playerOne.userId, playerTwo.userId, 0, true),
       );
-      expect(() => service.changeMap(playerOne.userId, gameId, 2)).toThrowError(
-        BadRequestException,
-      );
+      expect(() =>
+        service.changeMode(playerOne.userId, gameId, 2),
+      ).toThrowError(BadRequestException);
       expect(gameGateway.emitGameOption).not.toHaveBeenCalled();
     });
   });
@@ -348,7 +349,7 @@ describe('GameService', () => {
     it("should return ladder game pleyers' info and on which side they are", async () => {
       await gameStorage.createGame(
         gameId,
-        new GameInfo(playerOne.userId, playerTwo.userId, 1, true),
+        new GameInfo(playerOne.userId, playerTwo.userId, 0, true),
       );
       expect(service.findPlayers(playerTwo.userId, gameId)).toEqual({
         isRank: true,

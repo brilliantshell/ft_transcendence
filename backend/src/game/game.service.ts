@@ -57,7 +57,7 @@ export class GameService {
    */
   findGameInfo(spectatorId: UserId, gameId: GameId) {
     const gameInfo = this.getExistingGame(spectatorId, gameId);
-    const { leftId, leftNickname, rightId, rightNickname, map, isRank } =
+    const { leftId, leftNickname, rightId, rightNickname, mode, isRank } =
       gameInfo;
     const [leftRelationship, rightRelationship] = [
       this.userRelationshipStorage.getRelationship(spectatorId, leftId),
@@ -80,7 +80,7 @@ export class GameService {
       isRank,
       leftPlayer: leftNickname,
       rightPlayer: rightNickname,
-      map,
+      mode,
     };
   }
 
@@ -125,13 +125,13 @@ export class GameService {
     const gameId = nanoid();
     await this.gameStorage.createGame(
       gameId,
-      new GameInfo(inviterId, invitedId, 1, false),
+      new GameInfo(inviterId, invitedId, 0, false),
     );
     this.gameGateway.joinRoom(
       this.userSocketStorage.clients.get(invitedId),
       `game-${gameId}`,
     );
-    this.gameGateway.emitNewGame(
+    this.gameGateway.emitNewNormalGame(
       gameId,
       this.gameStorage.getGame(gameId).leftNickname,
     );
@@ -151,7 +151,7 @@ export class GameService {
     const gameId = nanoid();
     await this.gameStorage.createGame(
       gameId,
-      new GameInfo(players[0], players[1], 1, true),
+      new GameInfo(players[0], players[1], 0, true),
     );
     players.forEach((userId) =>
       this.gameGateway.joinRoom(
@@ -167,9 +167,9 @@ export class GameService {
    *
    * @param requesterId 요청자 id
    * @param gameId 게임 id
-   * @param map 변경할 맵
+   * @param mode 게임 모드
    */
-  changeMap(requesterId: UserId, gameId: GameId, map: 1 | 2 | 3) {
+  changeMode(requesterId: UserId, gameId: GameId, mode: 0 | 1 | 2) {
     const gameInfo = this.getExistingGame(requesterId, gameId);
     if (gameInfo.leftId !== requesterId && gameInfo.rightId !== requesterId) {
       throw new ForbiddenException(
@@ -178,7 +178,7 @@ export class GameService {
     }
     if (gameInfo.isRank) {
       throw new BadRequestException(
-        `The requester(${requesterId}) cannot change map of a ladder game`,
+        `The requester(${requesterId}) cannot change mode of a ladder game`,
       );
     }
     if (gameInfo.leftId !== requesterId) {
@@ -186,11 +186,11 @@ export class GameService {
         `The invited player(${requesterId}) cannot change game options`,
       );
     }
-    gameInfo.map = map;
+    gameInfo.mode = mode;
     this.gameGateway.emitGameOption(
       gameId,
       this.userSocketStorage.clients.get(gameInfo.leftId),
-      map,
+      mode,
     );
   }
 

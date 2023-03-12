@@ -20,3 +20,8 @@ interface HoverBoxProps {
   coords: { x: number; y: number };
   content: string;
 }
+
+export interface Coordinates {
+  x: number;
+  y: number;
+}

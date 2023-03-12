@@ -14,8 +14,9 @@ input {
   background-color: rgba(0, 0, 0, 0.6);
   border-radius: 0.5rem;
   color: var(--secondary_light);
-  padding: 1rem 1rem;
   max-width: 7rem;
+  padding: 1rem 1rem;
+  word-break: keep-all;
 }
 
 .hidden {

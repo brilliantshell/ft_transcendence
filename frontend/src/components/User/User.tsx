@@ -1,7 +1,6 @@
-import UserBase from './UserBase';
-import { memo, ReactNode } from 'react';
-import { relationshipData } from '../hooks/SocketOnHooks';
 import Dropdown from './Dropdown';
+import UserBase from './UserBase';
+import { ReactNode, memo } from 'react';
 
 interface Props {
   userId: number;

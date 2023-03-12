@@ -43,23 +43,6 @@
   margin-bottom: 0.5rem;
 }
 
-.gameQueueButtonClicked span {
-  display: inline-block;
-  animation: wave 1.5s infinite ease-in-out;
-  animation-delay: calc(0.25s * var(--i));
-}
-
-@keyframes wave {
-  0%,
-  40%,
-  100% {
-    transform: translateY(0);
-  }
-  20% {
-    transform: translateY(-1rem);
-  }
-}
-
 .gameQueueButtonText {
   animation: wave 1.5s infinite ease-in-out;
   animation-delay: 0.5s;

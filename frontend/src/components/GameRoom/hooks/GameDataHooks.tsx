@@ -12,7 +12,6 @@ export function useRequestGame(isConnected: boolean, gameId: string) {
   const listenGameAbortedOnce = (isLeft: boolean | null = null) => {
     listenOnce<{ abortedSide: 'left' | 'right' }>('gameAborted').then(
       ({ abortedSide }) => {
-        console.log('isLeft', isLeft);
         const message =
           isLeft !== null
             ? (isLeft && abortedSide === 'right') ||
@@ -49,21 +48,21 @@ export function useRequestGame(isConnected: boolean, gameId: string) {
       nav('/waiting-room');
       return;
     }
-    try {
-      listenOnce('gameCancelled').then(() => {
-        ErrorAlert(
-          '게임 취소',
-          '상대방이 게임에 접속하지 않아 취소되었습니다.',
-        );
-        nav('/waiting-room'); // NOTE : 일반 게임일 때도?
-      });
-      await instance.patch(`/game/${gameId}/start`);
-      if (isRank) {
+    if (isRank) {
+      try {
+        listenOnce('gameCancelled').then(() => {
+          ErrorAlert(
+            '게임 취소',
+            '상대방이 게임에 접속하지 않아 취소되었습니다.',
+          );
+          nav('/waiting-room'); // NOTE : 일반 게임일 때도?
+        });
+        await instance.patch(`/game/${gameId}/start`);
         sessionStorage.setItem(`game-${gameId}-isStarted`, 'true');
+      } catch (e) {
+        ErrorAlert('게임 시작', '게임을 시작하는데 실패했습니다.');
+        nav('/waiting-room');
       }
-    } catch (e) {
-      ErrorAlert('게임 시작', '게임을 시작하는데 실패했습니다.');
-      nav('/waiting-room');
     }
   };
 

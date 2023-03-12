@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 import { myIdState } from '../util/Recoils';
 import { socket } from '../util/Socket';
-import { useCurrentUi } from '../components/hooks/EmitCurrentUi';
+import { useCurrentUi } from '../components/hooks/CurrentUi';
 import { useSocketOn } from '../components/hooks/SocketOnHooks';
 import instance from '../util/Axios';
 import User from '../components/User/User';
