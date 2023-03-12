@@ -14,6 +14,7 @@ async function bootstrap() {
         exposedHeaders: 'location',
         origin: 'http://localhost:5173',
       });
+  app.setGlobalPrefix('api');
   app.use(cookieParser());
   app.useGlobalPipes(
     new ValidationPipe({
@@ -22,6 +23,7 @@ async function bootstrap() {
       whitelist: true,
     }),
   );
+
   await app.listen(3000);
 }
 bootstrap();

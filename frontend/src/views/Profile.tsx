@@ -18,8 +18,8 @@ export interface ProfileDataForm {
   achievements: Array<{ id: number; title: string; about: string }>;
   winLossTotal: Array<number>;
   matchHistory: Array<{
-    winner: string;
-    loser: string;
+    winner: { userId: number; nickname: string; isDefaultImage: boolean };
+    loser: { userId: number; nickname: string; isDefaultImage: boolean };
     score: Array<number>;
     isRank: boolean;
   }>;
