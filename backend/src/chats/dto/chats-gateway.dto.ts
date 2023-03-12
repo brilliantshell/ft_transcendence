@@ -9,8 +9,8 @@ export interface MemberJoinedMessage {
 export interface NewMessage {
   senderId: UserId;
   messageId: MessageId;
-  content: string;
   createdAt: DateTime;
+  contents: string;
 }
 
 export interface LeftMessage {
