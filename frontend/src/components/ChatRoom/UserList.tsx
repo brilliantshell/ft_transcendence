@@ -56,8 +56,8 @@ function UserList(props: Props) {
           );
         });
         socket.on('roleChanged', data => {
-          let copy = [...channelMembers];
-          let index = copy.findIndex(
+          const copy = [...channelMembers];
+          const index = copy.findIndex(
             member => member.id === data.changedMember,
           );
           copy[index].role = data.newRole;
