@@ -3,6 +3,7 @@
 @import './presets/reset.css';
 @import './presets/general.css';
 @import './presets/animation.css';
+@import './presets/Alert.css';
 
 @import './App.css';
 @import './UserBase.css';
