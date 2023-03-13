@@ -13,14 +13,17 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 
+import { ExistingGameGuard } from './guard/existing-game.guard';
 import { GameIdParamDto, GameModeDto } from './dto/game.dto';
+import { GameRequest } from '../util/type';
 import { GameService } from './game.service';
 import { GameStartInterceptor } from './interceptor/game-start.interceptor';
 import { InGameUiGuard } from './guard/in-game-ui.guard';
 import { InPlayGuard } from './guard/in-play.guard';
+import { IsPlayerGuard } from './guard/is-player.guard';
 import { LadderQueueInterceptor } from './interceptor/ladder-queue.interceptor';
+import { LadderRestrictionGuard } from './guard/ladder-restriction.guard';
 import { MockAuthGuard } from '../guard/mock-auth.guard';
-import { VerifiedRequest } from '../util/type';
 
 // FIXME: AuthGuard 구현 후 변경
 @UseGuards(MockAuthGuard)
@@ -40,11 +43,9 @@ export class GameController {
   }
 
   @Get('list/:gameId')
-  findGameInfo(
-    @Req() req: VerifiedRequest,
-    @Param() { gameId }: GameIdParamDto,
-  ) {
-    return this.gameService.findGameInfo(req.user.userId, gameId);
+  @UseGuards(ExistingGameGuard)
+  findGameInfo(@Req() req: GameRequest, @Param() { gameId }: GameIdParamDto) {
+    return this.gameService.findGameInfo(req.user.userId, gameId, req.gameInfo);
   }
 
   @Post('queue')
@@ -68,27 +69,37 @@ export class GameController {
    ****************************************************************************/
 
   @Get(':gameId')
-  findPlayers(
-    @Req() req: VerifiedRequest,
-    @Param() { gameId }: GameIdParamDto,
-  ) {
-    return this.gameService.findPlayers(req.user.userId, gameId);
+  @UseGuards(ExistingGameGuard, IsPlayerGuard)
+  findPlayers(@Req() req: GameRequest, @Param() { gameId }: GameIdParamDto) {
+    return this.gameService.findPlayers(req.user.userId, gameId, req.gameInfo);
+  }
+
+  @Delete(':gameId')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @UseGuards(ExistingGameGuard, IsPlayerGuard, LadderRestrictionGuard)
+  deleteNormalGame(@Param() { gameId }: GameIdParamDto) {
+    this.gameService.deleteCancelledGame(gameId);
   }
 
   @Patch(':gameId/options')
   @HttpCode(HttpStatus.NO_CONTENT)
-  @UseGuards(InGameUiGuard)
+  @UseGuards(
+    InGameUiGuard,
+    ExistingGameGuard,
+    IsPlayerGuard,
+    LadderRestrictionGuard,
+  )
   updateMode(
-    @Req() req: VerifiedRequest,
+    @Req() req: GameRequest,
     @Param() { gameId }: GameIdParamDto,
     @Body() { mode }: GameModeDto,
   ) {
-    this.gameService.changeMode(req.user.userId, gameId, mode);
+    this.gameService.changeMode(req.user.userId, gameId, req.gameInfo, mode);
   }
 
   @Patch(':gameId/start')
   @HttpCode(HttpStatus.NO_CONTENT)
-  @UseGuards(InGameUiGuard)
+  @UseGuards(InGameUiGuard, ExistingGameGuard, IsPlayerGuard)
   @UseInterceptors(GameStartInterceptor)
   startGame() {
     return;

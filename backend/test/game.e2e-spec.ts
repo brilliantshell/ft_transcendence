@@ -629,11 +629,10 @@ describe('GameController (e2e)', () => {
   /*****************************************************************************
    *                                                                           *
    * ANCHOR : PATCH /game/:gameId/start                                        *
-   * NOTE : SKIPPED                                                            *
    *                                                                           *
    ****************************************************************************/
 
-  describe.skip('PATCH /game/:gameId/start', () => {
+  describe('PATCH /game/:gameId/start', () => {
     it('should start the game when the both players sends the request (200)', async () => {
       const [playerOne, playerTwo, spectator, waitingRoom] = userIds;
       const gameId = nanoid();
@@ -795,5 +794,92 @@ describe('GameController (e2e)', () => {
         .set('x-user-id', playerTwo.toString())
         .expect(404);
     });
+  });
+
+  /*****************************************************************************
+   *                                                                           *
+   * ANCHOR : DELETE /game/:gameId                                             *
+   *                                                                           *
+   ****************************************************************************/
+
+  describe('DELETE /game/:gameId', () => {
+    it('should throw BAD REQUEST when the game id is invalid', () => {
+      const [playerOne] = userIds;
+      return request(app.getHttpServer())
+        .delete('/game/invalidGameId')
+        .set('x-user-id', playerOne.toString())
+        .expect(400);
+    });
+
+    it('should throw NOT FOUND when the game does not exist', () => {
+      const [playerOne] = userIds;
+      return request(app.getHttpServer())
+        .delete('/game/abcdefghijklmnopqrstu')
+        .set('x-user-id', playerOne.toString())
+        .expect(404);
+    });
+
+    it('should throw FORBIDDEN when the requester is not a player', async () => {
+      const [playerOne, playerTwo, spectator] = userIds;
+      const gameId = nanoid();
+      gameStorage.createGame(
+        gameId,
+        new GameInfo(playerOne, playerTwo, 1, false),
+      );
+      clientSockets[0].emit('currentUi', { ui: `game-${gameId}` });
+      clientSockets[1].emit('currentUi', { ui: `game-${gameId}` });
+      clientSockets[2].emit('currentUi', { ui: `game-${gameId}` });
+      await waitForExpect(() => {
+        expect(activityManager.getActivity(playerOne)).toBe(`game-${gameId}`);
+        expect(activityManager.getActivity(playerTwo)).toBe(`game-${gameId}`);
+        expect(activityManager.getActivity(spectator)).toBe(`game-${gameId}`);
+      });
+      const response = await request(app.getHttpServer())
+        .delete(`/game/${gameId}`)
+        .set('x-user-id', spectator.toString());
+      expect(response.status).toBe(403);
+    });
+
+    it('should throw BAD REQUEST when a player tries to delete a ladder game', async () => {
+      const [playerOne, playerTwo] = userIds;
+      const gameId = nanoid();
+      gameStorage.createGame(
+        gameId,
+        new GameInfo(playerOne, playerTwo, 0, true),
+      );
+      clientSockets[0].emit('currentUi', { ui: `game-${gameId}` });
+      clientSockets[1].emit('currentUi', { ui: `game-${gameId}` });
+      await waitForExpect(() => {
+        expect(activityManager.getActivity(playerOne)).toBe(`game-${gameId}`);
+        expect(activityManager.getActivity(playerTwo)).toBe(`game-${gameId}`);
+      });
+      const response = await request(app.getHttpServer())
+        .delete(`/game/${gameId}`)
+        .set('x-user-id', playerOne.toString());
+      expect(response.status).toBe(400);
+    });
+  });
+
+  it('should delete the game when the invited user declines the invitation', async () => {
+    const [playerOne, playerTwo] = userIds;
+    const gameId = nanoid();
+    gameStorage.createGame(
+      gameId,
+      new GameInfo(playerOne, playerTwo, 1, false),
+    );
+    clientSockets[0].emit('currentUi', { ui: `game-${gameId}` });
+    clientSockets[1].emit('currentUi', { ui: `game-${gameId}` });
+    await waitForExpect(() => {
+      expect(activityManager.getActivity(playerOne)).toBe(`game-${gameId}`);
+      expect(activityManager.getActivity(playerTwo)).toBe(`game-${gameId}`);
+    });
+    await request(app.getHttpServer())
+      .delete(`/game/${gameId}`)
+      .set('x-user-id', playerTwo.toString())
+      .expect(204);
+    await request(app.getHttpServer())
+      .get(`/game/${gameId}`)
+      .set('x-user-id', playerOne.toString())
+      .expect(404);
   });
 });

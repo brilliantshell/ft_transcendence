@@ -161,14 +161,15 @@ describe('GameGateway (e2e)', () => {
 
   /*****************************************************************************
    *                                                                           *
-   * SECTION : newGame emitter                                                 *
+   * SECTION : newGame & newNormalGame emitter                                 *
    *                                                                           *
    ****************************************************************************/
   /**
-   * 게임이 매칭되었을 때, 초대 시 초대 받은 유저에게, 래더 시 두 유저에게 이벤트를 보낸다
+   * 게임이 매칭되었을 때, 초대 시 초대 받은 유저에게 newNormalGame 을
+   * 래더 시 두 유저에게 newGame 이벤트를 보낸다
    */
 
-  describe('newGame', () => {
+  describe('newGame & newNormalGame', () => {
     it('should notify both users when a new game is matched (ladder)', async () => {
       const [playerOne, playerTwo] = clientSockets;
       gateway.joinRoom(
@@ -195,8 +196,8 @@ describe('GameGateway (e2e)', () => {
         `game-${gameId}`,
       );
       const [wsMessageOne, wsError] = await Promise.allSettled([
-        listenPromise(playerOne, 'newGame'),
-        timeout(1000, listenPromise(playerTwo, 'newGame')),
+        listenPromise(playerOne, 'newNormalGame'),
+        timeout(1000, listenPromise(playerTwo, 'newNormalGame')),
         gateway.emitNewNormalGame(gameId, users[0].nickname),
       ]);
       if (wsMessageOne.status === 'rejected') {
