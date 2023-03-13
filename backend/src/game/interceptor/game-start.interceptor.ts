@@ -3,16 +3,13 @@ import {
   CallHandler,
   ConflictException,
   ExecutionContext,
-  ForbiddenException,
   Injectable,
   NestInterceptor,
-  NotFoundException,
 } from '@nestjs/common';
 import { Observable, ReplaySubject, bufferCount, tap, timeout } from 'rxjs';
 
-import { GameId, GameInfo, UserId, VerifiedRequest } from '../../util/type';
+import { GameId, GameInfo, GameRequest, UserId } from '../../util/type';
 import { GameService } from '../game.service';
-import { GameStorage } from '../game.storage';
 
 const START_QUEUE_TIMEOUT =
   process.env.NODE_ENV !== 'production' ? 2000 : 10000;
@@ -23,18 +20,19 @@ export class GameStartInterceptor implements NestInterceptor {
     new Map();
   private readonly waitingPlayers: Set<UserId> = new Set();
 
-  constructor(
-    private readonly gameService: GameService,
-    private readonly gameStorage: GameStorage,
-  ) {}
+  constructor(private readonly gameService: GameService) {}
 
   intercept(context: ExecutionContext, next: CallHandler): Observable<void> {
     const {
       user: { userId },
       params: { gameId },
-    } = context.switchToHttp().getRequest<VerifiedRequest>();
-    const gameInfo = this.gameStorage.getGame(gameId);
-    this.checkGameInfo(userId, gameId, gameInfo);
+      gameInfo,
+    } = context.switchToHttp().getRequest<GameRequest>();
+    if (gameInfo.isStarted) {
+      throw new BadRequestException(
+        `The game(${gameId}) has already been started`,
+      );
+    }
     if (this.waitingPlayers.has(userId)) {
       throw new ConflictException(
         `The user(${userId}) has already entered the game start queue`,
@@ -49,27 +47,6 @@ export class GameStartInterceptor implements NestInterceptor {
           : queue.next(userId);
       }),
     );
-  }
-
-  private checkGameInfo(
-    requesterId: UserId,
-    gameId: GameId,
-    gameInfo: GameInfo,
-  ) {
-    if (gameInfo === undefined) {
-      throw new NotFoundException(`The game(${gameId}) does not exist`);
-    }
-    const { leftId, rightId, isStarted } = gameInfo;
-    if (leftId !== requesterId && rightId !== requesterId) {
-      throw new ForbiddenException(
-        `The user(${requesterId}) is not a player of the game(${gameId})`,
-      );
-    }
-    if (isStarted) {
-      throw new BadRequestException(
-        `The game(${gameId}) has already been started`,
-      );
-    }
   }
 
   private createGameStartQueue(

@@ -115,6 +115,10 @@ export interface VerifiedRequest extends Request {
   user: { userId: UserId };
 }
 
+export interface GameRequest extends VerifiedRequest {
+  gameInfo: GameInfo;
+}
+
 export interface RelationshipRequest extends VerifiedRequest {
   relationship: Relationship | null;
   targetId: UserId;

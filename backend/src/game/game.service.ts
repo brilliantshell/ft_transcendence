@@ -1,9 +1,7 @@
 import {
-  BadRequestException,
   ForbiddenException,
   Inject,
   Injectable,
-  NotFoundException,
   forwardRef,
 } from '@nestjs/common';
 import { nanoid } from 'nanoid';
@@ -53,10 +51,10 @@ export class GameService {
    *
    * @param spectatorId 관전자 id
    * @param gameId 게임 id
+   * @param gameInfo 게임 정보
    * @returns 게임의 기본 정보
    */
-  findGameInfo(spectatorId: UserId, gameId: GameId) {
-    const gameInfo = this.getExistingGame(spectatorId, gameId);
+  findGameInfo(spectatorId: UserId, gameId: GameId, gameInfo: GameInfo) {
     const { leftId, leftNickname, rightId, rightNickname, mode, isRank } =
       gameInfo;
     const [leftRelationship, rightRelationship] = [
@@ -84,22 +82,16 @@ export class GameService {
     };
   }
 
-  // TODO : interceptor 로 두 플레이어 모두 해당 요청에 응답 보냈을 때 게임 시작 event emit
   /**
    * @description 게임에 참여하는 유저에게 게임의 기본 정보 제공
    *
    * @param playerId 요청을 보낸 플레이어 id
    * @param gameId 게임 id
+   * @param gameInfo 게임 정보
    * @returns 게임의 기본 정보
    */
-  findPlayers(playerId: UserId, gameId: GameId) {
-    const gameInfo = this.getExistingGame(playerId, gameId);
+  findPlayers(playerId: UserId, gameId: GameId, gameInfo: GameInfo) {
     const { isRank, leftId, leftNickname, rightId, rightNickname } = gameInfo;
-    if (leftId !== playerId && rightId !== playerId) {
-      throw new ForbiddenException(
-        `The requester(${playerId}) is not a participant of the game`,
-      );
-    }
     const isLeft = leftId === playerId;
     const [playerNickname, opponentId, opponentNickname] = isLeft
       ? [leftNickname, rightId, rightNickname]
@@ -167,20 +159,15 @@ export class GameService {
    *
    * @param requesterId 요청자 id
    * @param gameId 게임 id
+   * @param gameInfo 게임 정보
    * @param mode 게임 모드
    */
-  changeMode(requesterId: UserId, gameId: GameId, mode: 0 | 1 | 2) {
-    const gameInfo = this.getExistingGame(requesterId, gameId);
-    if (gameInfo.leftId !== requesterId && gameInfo.rightId !== requesterId) {
-      throw new ForbiddenException(
-        `The requester(${requesterId}) is not a participant of the game`,
-      );
-    }
-    if (gameInfo.isRank) {
-      throw new BadRequestException(
-        `The requester(${requesterId}) cannot change mode of a ladder game`,
-      );
-    }
+  changeMode(
+    requesterId: UserId,
+    gameId: GameId,
+    gameInfo: GameInfo,
+    mode: 0 | 1 | 2,
+  ) {
     if (gameInfo.leftId !== requesterId) {
       throw new ForbiddenException(
         `The invited player(${requesterId}) cannot change game options`,
@@ -221,28 +208,5 @@ export class GameService {
   deleteCancelledGame(gameId: GameId) {
     this.gameGateway.emitGameCancelled(gameId);
     this.gameStorage.deleteGame(gameId);
-  }
-
-  /*****************************************************************************
-   *                                                                           *
-   * SECTION : Private methods                                                 *
-   *                                                                           *
-   ****************************************************************************/
-
-  /**
-   * @description 게임 존재 여부 확인 및 gameId 로 특정되는 게임 정보 반환
-   *
-   * @param requesterId 요청자 id
-   * @param gameId 게임 id
-   * @returns 게임 정보
-   */
-  private getExistingGame(requesterId: UserId, gameId: GameId) {
-    const gameInfo = this.gameStorage.getGame(gameId);
-    if (gameInfo === undefined) {
-      throw new NotFoundException(
-        `The game(${gameId}) requested by ${requesterId} does not exist`,
-      );
-    }
-    return gameInfo;
   }
 }
