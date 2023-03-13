@@ -1,8 +1,13 @@
 import axios from 'axios';
 
-const instance = axios.create({
-  baseURL: 'http://localhost:3000/api',
-});
+const instance =
+  import.meta.env.DEV === true
+    ? axios.create({
+        baseURL: 'http://localhost:3000/api',
+      })
+    : axios.create({
+        baseURL: '/api',
+      });
 
 // FIXME : x-user-id 보내기
 instance.defaults.headers.common['x-user-id'] =

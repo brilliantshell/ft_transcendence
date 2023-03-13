@@ -4,14 +4,21 @@ import {
 } from '../components/hooks/SocketOnHooks';
 import { atom, atomFamily, selector } from 'recoil';
 import instance from './Axios';
+import { ErrorAlert } from './Alert';
 
 export const myIdState = atom<number>({
   key: 'myIdState',
   default: selector({
     key: 'myId/Default',
     get: async () => {
-      const data = await instance.get('/user/id');
-      return data.data.userId;
+      try {
+        const data = await instance.get('/user/id');
+        return data.data.userId;
+      } catch (e) {
+        ErrorAlert('로그인이 필요합니다.', '로그인 페이지로 이동합니다.').then(
+          () => (window.location.href = '/login'),
+        );
+      }
     },
   }),
 });
