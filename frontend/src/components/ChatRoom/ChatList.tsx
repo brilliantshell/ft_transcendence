@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { ErrorAlert } from '../../util/Alert';
 import { socket } from '../../util/Socket';
 import instance from '../../util/Axios';
 import Message from './Message';
@@ -25,11 +24,7 @@ function ChatList(props: Props) {
         .then(result => {
           setContents(result.data.messages.reverse());
         })
-        .catch(err => {
-          if (err.response.status === 403) {
-            ErrorAlert('입장 불가한 채팅방입니다.', err.response.data.message);
-          }
-        });
+        .catch(() => {});
     },
     [
       // TODO :스크롤 끝으로 갔을 때의 상태 넣을 예정

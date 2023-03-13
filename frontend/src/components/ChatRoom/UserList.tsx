@@ -66,7 +66,8 @@ function UserList(props: Props) {
       })
       .catch(err => {
         if (err.response.status === 403) {
-          ErrorAlert('입장 불가한 채팅방입니다.', err.response.data.message);
+          ErrorAlert('입장 불가한 채팅방입니다.', '권한이 없는 유저입니다.');
+          navigate('/chats');
         }
       });
 
