@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { HoverBox } from '../common/HoverBox';
 
 interface Props {
   data: { senderId: number; contents: string; createdAt: number };
@@ -29,15 +28,14 @@ function Message({ data }: Props) {
 
   return (
     <div className="message">
-      <img className="chatProfileImage" src="/assets/defaultProfile.svg" />
-      {/* <img
-          className="profileImage"
-          src={
-			  user?.isDefaultImage
-              ? '/assets/defaultProfile'
-              : '`localhost:3000/asset/profileImages/${props.userId}`'
-			}
-        /> */}
+      <img
+        className="chatProfileImage"
+        src={
+          user.isDefaultImage
+            ? '/assets/defaultProfile.svg'
+            `/assets/profile-image/${props.userId}` 
+        }
+      />
 
       <div className="messageWrap">
         <div className="messageNick">{user.nickname} </div>

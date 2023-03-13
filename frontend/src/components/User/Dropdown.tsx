@@ -21,11 +21,7 @@ function Dropdown({ userId }: Props) {
       .then(result => {
         navigate(result.headers.location);
       })
-      .catch(err => {
-        if (err.response.status === 400) {
-          ErrorAlert('DM을 보낼 수 없습니다.', err.response.data.message);
-        }
-      });
+      .catch(() => {});
   };
 
   return (
