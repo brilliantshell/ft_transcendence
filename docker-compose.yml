@@ -2,11 +2,10 @@
 
 version: "3.8"
 
-name: "ft_transcendence"
-
 # SECTION : SERVICES
 services:
   app:
+    image: app_prod_con:v1
     container_name: app_prod_con
     build:
       context: ./
@@ -14,13 +13,15 @@ services:
     depends_on:
       database:
         condition: service_healthy
+    environment:
+     HOST: ${HOST:-localhost}
     env_file:
       - .env.production
     expose:
       - "3000"
     init: true
     networks:
-      development:
+      production:
         ipv4_address: 172.18.0.3
     ports:
       - "3000:3000"
@@ -28,17 +29,20 @@ services:
     mem_limit: 16g
 
   database:
+    image: db_prod_con:v1
     container_name: db_prod_con
     build:
       context: ./database
       dockerfile: Dockerfile
+    environment:
+     HOST: ${HOST:-localhost}
     env_file:
       - .env.production
     expose:
       - "5432"
     init: true
     networks:
-      development:
+      production:
         ipv4_address: 172.18.0.2
     volumes:
       # Database Volume
@@ -46,7 +50,7 @@ services:
 
 # SECTION : NETWORKS
 networks:
-  development:
+  production:
     ipam:
       config:
         - subnet: 172.18.0.0/24
