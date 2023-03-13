@@ -1,3 +1,4 @@
+# Build Frontend
 FROM node:18.15-bullseye-slim AS frontend-builder
 
 COPY ./frontend/package.json /frontend/package.json
@@ -12,6 +13,7 @@ COPY ./frontend /frontend
 
 RUN npm run build
 
+# Build Backend
 FROM node:18.15-bullseye-slim AS backend-builder
 
 COPY ./backend/package.json /backend/package.json
@@ -26,23 +28,25 @@ COPY ./backend /backend
 
 RUN npm run build
 
+# Build Production Image
 FROM node:18.15-bullseye-slim
+
+COPY --from=backend-builder /backend/package.json /app/package.json
 
 WORKDIR /app
 
-COPY --from=backend-builder /backend/package.json /app/package.json
-
 RUN npm install -g npm@9
 
-COPY --from=frontend-builder /frontend/dist /app/frontend/dist
+RUN npm install
+
+COPY --from=frontend-builder /frontend/dist /app/public
+
+COPY --from=backend-builder /backend/asset/ /app/public/assets/
+
 COPY --from=backend-builder /backend/dist /app/dist
-COPY --from=backend-builder /backend/node_modules /app/node_modules
-COPY --from=backend-builder /backend/package.json /app/package.json
 
 EXPOSE 3000
 
 ENV NODE_ENV=production
-
-ENV HOST=${HOST}
 
 CMD [ "npm", "run", "start:prod" ]
