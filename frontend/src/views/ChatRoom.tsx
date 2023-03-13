@@ -13,12 +13,8 @@ function ChatRoom() {
   const [isConnected, setIsConnected] = useState<boolean>(socket.connected);
 
   useCurrentUi(isConnected, setIsConnected, `chatRooms-${id}`);
-  //   GET /chats/{:channelId} ⇒ 200 || 403 (Forbidden) - 맴버 정보 / 맴버가 아니면 403!
-  //   GET /chats/{:channelId}/message?range=n,m ⇒ 200 || 403 - 메시지
-  // POST /chats/{:channelId}/message ⇒ 201 || 403 - 메시지 전송
-  //   DELETE /chats/{:channelId}/user ⇒ 204 || 403 - 나가기
 
-  // PUT /chats/{:channelId}/user/{:userId} ⇒ 201 || 204 || 403 - 멤버 추가  -- 줄레님이 해주실 예정...!
+  //   DELETE /chats/{:channelId}/user ⇒ 204 || 403 - 나가기
 
   useEffect(() => {
     if (id === undefined || !/^[1-9]\d{0,9}$/.test(id)) {

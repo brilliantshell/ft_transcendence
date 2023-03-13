@@ -1,21 +1,18 @@
 import { useEffect, useState } from 'react';
 import { ErrorAlert } from '../../util/Alert';
-import { listenOnce, socket } from '../../util/Socket';
+import { socket } from '../../util/Socket';
 import instance from '../../util/Axios';
 import Message from './Message';
-
-//   GET /chats/{:channelId}/message?range=n,m ⇒ 200 || 403 - 메시지
-// TODO : 스크롤이 끝으로 갔을 때 데이터 추가로 get
-// socket on newMessage
 
 interface Props {
   id: string;
 }
 
 interface MessageData {
-  senderId: number;
   contents: string;
   createdAt: number;
+  messageId: number;
+  senderId: number;
 }
 
 function ChatList(props: Props) {
@@ -26,7 +23,7 @@ function ChatList(props: Props) {
       instance
         .get(`/chats/${props.id}/message?range=0,20`)
         .then(result => {
-          setContents(result.data.messages);
+          setContents(result.data.messages.reverse());
         })
         .catch(err => {
           if (err.response.status === 403) {
@@ -35,14 +32,13 @@ function ChatList(props: Props) {
         });
     },
     [
-      // 스크롤 끝으로 갔을 때의 상태 넣을 예정
+      // TODO :스크롤 끝으로 갔을 때의 상태 넣을 예정
     ],
   );
-
   useEffect(() => {
-    listenOnce<MessageData>('newMessage').then(data => {
-      console.log(data);
-      setContents(contents => [...contents, data]);
+    socket.on('newMessage', (data: MessageData) => {
+      setContents(prev => [...prev, data]);
+      //   TODO :메시지 오면 스크롤 제일 밑으로 이동
     });
 
     return () => {
@@ -52,13 +48,8 @@ function ChatList(props: Props) {
 
   return (
     <div className="chatList">
-      {contents.reverse().map((data, index) => (
-        // {myId === data.senderId && <div>hhh</div>}
-        // 만약에 년월일이 다르면 년월일 출력!
-        // message 컴포넌트로!
-
-        <Message key={index} data={data} />
-        // 배열의 순서가 바뀌거나 index가 바뀌는게 아닐때는 index를 써도 괜찮다.
+      {contents.map(data => (
+        <Message key={data.messageId} data={data} />
       ))}
     </div>
   );

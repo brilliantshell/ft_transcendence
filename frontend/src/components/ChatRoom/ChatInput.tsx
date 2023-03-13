@@ -23,15 +23,21 @@ function ChatInput(props: Props) {
       return;
     }
     if (message === '/help') {
-      return ErrorAlert('명령어', '/help, /exit, /invite, /kick, /ban, /unban');
+      ErrorAlert(
+        '명령어 목록',
+        '역할 변경<br>/role nickname admin<br/>' +
+          '/role nickname member<br/>' +
+          '벤 하기<br/>/ban nickname [min]<br/>' +
+          '입막기<br/>/mute nickname [min]<br/>' +
+          '강퇴하기(엄청나게 긴 시간입니다. 신중히...)<br/>/kick nickname',
+      );
+      return;
     }
     instance
       .post(`/chats/${props.id}/message`, { message: message })
       .catch(err => {
         if (err.response.status === 400) {
           ErrorAlert('잘못된 명령어입니다.', '/help로 명령어를 확인하세요.');
-          // 명령어를 실행했는데 권한이 없는 상황
-          //   You don't have permission to do this
         } else if (err.response.status === 403) {
           ErrorAlert('권한이 없는 유저입니다.', err.response.data.message);
         } else if (err.response.status === 404) {
@@ -47,7 +53,13 @@ function ChatInput(props: Props) {
         ref={inputRef}
         autoFocus={true}
         onKeyDown={e => {
-          if (e.key === 'Enter') sendMessage();
+          if (e.nativeEvent.isComposing) {
+            return;
+          }
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            sendMessage();
+          }
         }}
       ></input>
       <button className="chatRoomInputButton" onClick={sendMessage}>

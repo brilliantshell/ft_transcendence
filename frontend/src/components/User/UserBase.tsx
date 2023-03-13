@@ -51,8 +51,6 @@ function UserBase(props: Props) {
     return activityMap.get(props.userId)?.activity !== 'offline';
   };
 
-  // TODO : user?.isDefault 체크하는 걸로 수정
-
   return (
     <div className="userBase">
       <div className="profileDiv">
@@ -61,15 +59,14 @@ function UserBase(props: Props) {
         ) : (
           <div style={{ background: 'var(--offline)' }} />
         )}
-        {/* <img
+        <img
           className="profileImage"
           src={
             user?.isDefaultImage
-              ? '/assets/defaultProfile'
+              ? '/assets/defaultProfile.svg'
               : '`localhost:3000/asset/profileImages/${props.userId}`'
           }
-        /> */}
-        <img className="profileImage" src="/assets/defaultProfile.svg" />
+        />
       </div>
       <Link to={`/profile/${props.userId}`} className="userNickname">
         {user.nickname}

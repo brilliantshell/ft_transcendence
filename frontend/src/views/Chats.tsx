@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
-import { ChannelInfo, Channels } from '../components/Chats/interface';
-import ChatsFrame from '../components/Chats/ChatsFrame';
-import ChatsBody from '../components/Chats/ChatsBody';
+import { ChannelInfo, Channels } from '../components/chats/interface';
+import ChatsFrame from '../components/chats/ChatsFrame';
+import ChatsBody from '../components/chats/ChatsBody';
 import instance from '../util/Axios';
 import { ErrorAlert } from '../util/Alert';
 import { socket } from '../util/Socket';
@@ -14,7 +14,7 @@ import {
   useChannelShownEvent,
   useChannelUpdatedEvent,
   useMessageArrivedEvent,
-} from '../components/Chats/hooks/ChannelHooks';
+} from '../components/chats/hooks/ChannelHooks';
 import { useCurrentUi } from '../components/hooks/CurrentUi';
 
 function Chats() {
@@ -45,7 +45,7 @@ function Chats() {
   useChannelHiddenEvent(joinedChannels, setOtherChannels);
   useChannelDeletedEvent(setJoinedChannels, setOtherChannels);
   useChannelUpdatedEvent(setJoinedChannels, setOtherChannels);
-  useChannelInvitedEvent(setJoinedChannels, setOtherChannels)
+  useChannelInvitedEvent(setJoinedChannels, setOtherChannels);
   useMessageArrivedEvent(setJoinedChannels);
   useBannedEvent(setJoinedChannels, setOtherChannels);
 
