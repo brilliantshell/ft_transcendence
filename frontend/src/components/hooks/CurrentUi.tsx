@@ -48,8 +48,7 @@ export function useCurrentUi(
       }
     } else {
       listenOnce('connect').then(() => {
-        socket.emit('currentUi', { ui });
-        setIsConnected(true);
+        socket.emit('currentUi', { ui }, ()=> setIsConnected(true));
       });
     }
     return () => {
