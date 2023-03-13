@@ -66,7 +66,7 @@ function MyRank({ myRankInfo, setMyRankInfo }: MyRankProps) {
       <p className="myRankNickname xxlarge selectNone">{userData.nickname}</p>
       <p className="myRankDetail">
         당신은
-        {myRank < limit
+        {myRank <= limit
           ? ` ${myRank} 등 입니다.`
           : ` ${limit} 위 안에 들지 못했습니다!`}
       </p>
