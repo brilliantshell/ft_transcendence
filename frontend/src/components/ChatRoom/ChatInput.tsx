@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { ErrorAlert } from '../../util/Alert';
+import { ErrorAlert, InfoAlert } from '../../util/Alert';
 import instance from '../../util/Axios';
 
 interface Props {
@@ -23,13 +23,15 @@ function ChatInput(props: Props) {
       return;
     }
     if (message === '/help') {
-      ErrorAlert(
+      InfoAlert(
         '명령어 목록',
-        '역할 변경<br>/role nickname admin<br/>' +
-          '/role nickname member<br/>' +
-          '벤 하기<br/>/ban nickname [min]<br/>' +
-          '입막기<br/>/mute nickname [min]<br/>' +
-          '강퇴하기(엄청나게 긴 시간입니다. 신중히...)<br/>/kick nickname',
+        '<div class=xlarge>*역할 변경*</div>' +
+          '/role nickname admin<br/>' +
+          '/role nickname member<br/><br/>' +
+          '<div class=xlarge>*벤 하기*</div>/ban nickname [min]<br/><br/>' +
+          '<div class=xlarge>*입막기*</div>/mute nickname [min]<br/><br/>' +
+          '<div class=xlarge>*강퇴하기*</div>' +
+          '<div class=large>(엄청나게 긴 시간입니다. 신중히...)</div>/kick nickname',
       );
       return;
     }

@@ -36,3 +36,12 @@ export const ConfirmAlert = (title: string, text: string) => {
     cancelButtonText: '취소',
   });
 };
+
+export const InfoAlert = (title: string, text: string) => {
+  return ReactSwal.fire({
+    icon: 'info',
+    title,
+    html: `${text}`,
+    // text: `${text}`,
+  });
+};
