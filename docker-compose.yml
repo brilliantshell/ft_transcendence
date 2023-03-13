@@ -5,7 +5,7 @@ version: "3.8"
 # SECTION : SERVICES
 services:
   app:
-    image: app_prod_con:v1
+    image: app_prod_image:v1
     container_name: app_prod_con
     build:
       context: ./
@@ -13,8 +13,6 @@ services:
     depends_on:
       database:
         condition: service_healthy
-    environment:
-     HOST: ${HOST:-localhost}
     env_file:
       - .env.production
     expose:
@@ -22,20 +20,16 @@ services:
     init: true
     networks:
       production:
-        ipv4_address: 172.18.0.3
+        ipv4_address: 172.19.0.3
     ports:
       - "3000:3000"
-    cpu_count: 8
-    mem_limit: 16g
 
   database:
-    image: db_prod_con:v1
+    image: db_prod_image:v1
     container_name: db_prod_con
     build:
       context: ./database
       dockerfile: Dockerfile
-    environment:
-     HOST: ${HOST:-localhost}
     env_file:
       - .env.production
     expose:
@@ -43,7 +37,7 @@ services:
     init: true
     networks:
       production:
-        ipv4_address: 172.18.0.2
+        ipv4_address: 172.19.0.2
     volumes:
       # Database Volume
       - pgdata_prod:/var/lib/postgresql/data/
@@ -53,8 +47,8 @@ networks:
   production:
     ipam:
       config:
-        - subnet: 172.18.0.0/24
-          gateway: 172.18.0.1
+        - subnet: 172.19.0.0/24
+          gateway: 172.19.0.1
 
 volumes:
   pgdata_prod:
