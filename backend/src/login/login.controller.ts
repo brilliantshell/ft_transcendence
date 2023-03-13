@@ -26,9 +26,7 @@ import { SkipJwtAuthGuard } from '../decorator/skip-auth.decorator';
 import { multerOptions } from '../profile/option/profile.upload-options';
 
 const URL =
-  process.env.NODE_ENV === 'production'
-    ? 'http://localhost:3000/'
-    : 'http://localhost:5173/';
+  process.env.NODE_ENV === 'production' ? '/' : 'http://localhost:5173/';
 
 @Controller('login')
 export class LoginController {
