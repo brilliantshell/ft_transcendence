@@ -766,8 +766,8 @@ describe('ChatsService', () => {
         'admin',
       );
       expect(roleChangedSpy).toBeCalledWith(
-        anotherUserId,
         newChannelId,
+        anotherUserId,
         'admin',
       );
       await service.executeCommand(newChannelId, ownerId, [
@@ -779,8 +779,8 @@ describe('ChatsService', () => {
         'member',
       );
       expect(roleChangedSpy).toBeCalledWith(
-        anotherUserId,
         newChannelId,
+        anotherUserId,
         'member',
       );
     });
@@ -807,7 +807,7 @@ describe('ChatsService', () => {
         'admin',
       ]);
       expect(channelStorage.getUserRole(newChannelId, adminId)).toBe('admin');
-      expect(roleChangedSpy).toBeCalledWith(adminId, newChannelId, 'admin');
+      expect(roleChangedSpy).toBeCalledWith(newChannelId, adminId, 'admin');
 
       await service.executeCommand(newChannelId, adminId, [
         'role',
@@ -815,7 +815,7 @@ describe('ChatsService', () => {
         'admin',
       ]);
       expect(channelStorage.getUserRole(newChannelId, memberId)).toBe('admin');
-      expect(roleChangedSpy).toBeCalledWith(memberId, newChannelId, 'admin');
+      expect(roleChangedSpy).toBeCalledWith(newChannelId, memberId, 'admin');
     });
 
     it('should not execute role command (executor : member)', async () => {
@@ -840,7 +840,7 @@ describe('ChatsService', () => {
         'admin',
       ]);
       expect(channelStorage.getUserRole(newChannelId, adminId)).toBe('admin');
-      expect(roleChangedSpy).toBeCalledWith(adminId, newChannelId, 'admin');
+      expect(roleChangedSpy).toBeCalledWith(newChannelId, adminId, 'admin');
 
       expect(
         async () =>
@@ -935,7 +935,7 @@ describe('ChatsService', () => {
         'admin',
       ]);
       expect(channelStorage.getUserRole(newChannelId, adminId)).toBe('admin');
-      expect(roleChangedSpy).toBeCalledWith(adminId, newChannelId, 'admin');
+      expect(roleChangedSpy).toBeCalledWith(newChannelId, adminId, 'admin');
 
       await service.executeCommand(newChannelId, ownerId, [
         'mute',
@@ -954,8 +954,8 @@ describe('ChatsService', () => {
         ),
       ).toBe(-5);
       expect(mutedSpy).toBeCalledWith(
-        memberId,
         newChannelId,
+        memberId,
         expect.any(DateTime),
       );
     });
@@ -982,7 +982,7 @@ describe('ChatsService', () => {
         'admin',
       ]);
       expect(channelStorage.getUserRole(newChannelId, adminId)).toBe('admin');
-      expect(roleChangedSpy).toBeCalledWith(adminId, newChannelId, 'admin');
+      expect(roleChangedSpy).toBeCalledWith(newChannelId, adminId, 'admin');
 
       expect(
         async () =>
@@ -1016,7 +1016,7 @@ describe('ChatsService', () => {
         'admin',
       ]);
       expect(channelStorage.getUserRole(newChannelId, adminId)).toBe('admin');
-      expect(roleChangedSpy).toBeCalledWith(adminId, newChannelId, 'admin');
+      expect(roleChangedSpy).toBeCalledWith(newChannelId, adminId, 'admin');
 
       await service.executeCommand(newChannelId, adminId, [
         'ban',
