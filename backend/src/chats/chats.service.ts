@@ -455,7 +455,8 @@ export class ChatsService {
       !senderRole ||
       !targetRole ||
       senderRole === 'member' ||
-      userRoles[senderRole] <= userRoles[targetRole]
+      userRoles[senderRole] <= userRoles[targetRole] ||
+      this.userRelationshipStorage.isBlockedDm(channelId) !== undefined
     ) {
       throw new ForbiddenException(`You don't have permission to do this`);
     }
