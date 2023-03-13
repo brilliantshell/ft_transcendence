@@ -33,7 +33,7 @@ function Message({ data }: Props) {
         src={
           user.isDefaultImage
             ? '/assets/defaultProfile.svg'
-            : '`localhost:3000/asset/profileImages/${props.userId}`'
+            `/assets/profile-image/${props.userId}` 
         }
       />
 
