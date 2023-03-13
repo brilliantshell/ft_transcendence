@@ -14,7 +14,7 @@ import {
   useChannelShownEvent,
   useChannelUpdatedEvent,
   useMessageArrivedEvent,
-} from '../components/chats/hooks/ChannelHooks';
+} from '../components/Chats/hooks/ChannelHooks';
 import { useCurrentUi } from '../components/hooks/CurrentUi';
 
 function Chats() {
