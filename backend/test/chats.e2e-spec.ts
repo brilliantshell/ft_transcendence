@@ -11,6 +11,7 @@ import { BlockedUsers } from '../src/entity/blocked-users.entity';
 import { ChannelMembers } from '../src/entity/channel-members.entity';
 import { ChannelStorage } from '../src/user-status/channel.storage';
 import { Channels } from '../src/entity/channels.entity';
+import { DateTime } from 'luxon';
 import { Friends } from '../src/entity/friends.entity';
 import { Messages } from '../src/entity/messages.entity';
 import { UserRelationshipStorage } from '../src/user-status/user-relationship.storage';
@@ -921,10 +922,12 @@ describe('UserController (e2e)', () => {
     });
 
     it('POST /chats/:channelId/message (valid DTO), muted member', async () => {
-      const channel = channelsEntities.find((c) => c.dmPeerId !== null);
+      const channel = channelsEntities.find((c) => c.dmPeerId === null);
       const member = channelMembersEntities.find(
         (c) =>
-          c.channelId === channel.channelId && c.memberId !== channel.ownerId,
+          c.channelId === channel.channelId &&
+          c.memberId !== channel.ownerId &&
+          c.muteEndAt < DateTime.now(),
       );
       const memberNickname = usersEntities.find(
         (u) => u.userId === member.memberId,

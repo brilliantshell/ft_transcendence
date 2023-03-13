@@ -324,11 +324,11 @@ export class ChatsService {
     if (kind === 'role') {
       const role = arg as 'admin' | 'member';
       await this.channelStorage.updateUserRole(channelId, targetId, role);
-      return this.chatsGateway.emitRoleChanged(targetId, channelId, role);
+      return this.chatsGateway.emitRoleChanged(channelId, targetId, role);
     } else if (kind === 'mute') {
       const minutes = now.plus({ minutes: Number(arg) });
       await this.channelStorage.updateMuteStatus(channelId, targetId, minutes);
-      return this.chatsGateway.emitMuted(targetId, channelId, minutes);
+      return this.chatsGateway.emitMuted(channelId, targetId, minutes);
     } else {
       const minutes = arg
         ? now.plus({ minutes: Number(arg) })
@@ -455,7 +455,8 @@ export class ChatsService {
       !senderRole ||
       !targetRole ||
       senderRole === 'member' ||
-      userRoles[senderRole] <= userRoles[targetRole]
+      userRoles[senderRole] <= userRoles[targetRole] ||
+      this.userRelationshipStorage.isBlockedDm(channelId) !== undefined
     ) {
       throw new ForbiddenException(`You don't have permission to do this`);
     }

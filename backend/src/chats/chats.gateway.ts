@@ -245,7 +245,7 @@ export class ChatsGateway {
    */
   emitMuted(channelId: ChannelId, mutedMember: UserId, muteEndAt: DateTime) {
     const socketId = this.userSocketStorage.clients.get(mutedMember);
-    if (socketId) {
+    if (this.getRoomMembers(`chatRooms-${channelId}-active`)?.has(socketId)) {
       this.server.in(socketId).emit('muted', {
         mutedMember,
         channelId,
@@ -280,11 +280,12 @@ export class ChatsGateway {
     }
   }
 
-  /*****************************************************************************
-   *                                                                           *
-   * NOTE : test Only (maybe)                                                  *
-   *                                                                           *
-   ****************************************************************************/
+  /**
+   * @description socket Room 에 있는 모든 멤버의 socket id 를 반환
+   *
+   * @param chatRoom socket Room 의 이름
+   * @returns socket Room 에 있는 모든 멤버의 socket id
+   */
   getRoomMembers(chatRoom: string) {
     return this.server.sockets.adapter.rooms.get(chatRoom);
   }
