@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
-import { ChannelInfo, Channels } from '../components/chats/interface';
-import ChatsFrame from '../components/chats/ChatsFrame';
-import ChatsBody from '../components/chats/ChatsBody';
+import { ChannelInfo, Channels } from '../components/Chats/interface';
+import ChatsFrame from '../components/Chats/ChatsFrame';
+import ChatsBody from '../components/Chats/ChatsBody';
 import instance from '../util/Axios';
 import { ErrorAlert } from '../util/Alert';
 import { socket } from '../util/Socket';
