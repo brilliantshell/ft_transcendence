@@ -117,12 +117,13 @@ describe('ProfileService', () => {
         where: [{ userOneId: user.userId }, { userTwoId: user.userId }],
         relations: ['userOne', 'userTwo'],
         select: {
+          matchId: true,
           userOneScore: true,
           userTwoScore: true,
           endAt: true as any,
           isRank: true,
-          userOne: { nickname: true },
-          userTwo: { nickname: true },
+          userOne: { nickname: true, isDefaultImage: true, userId: true },
+          userTwo: { nickname: true, isDefaultImage: true, userId: true },
         },
       })
     ).sort((a, b) => b.endAt.valueOf() - a.endAt.valueOf());
@@ -137,14 +138,16 @@ describe('ProfileService', () => {
     const matchHistory = matchHistoryRaw.map((e) => {
       return e.userOneScore > e.userTwoScore
         ? {
-            winner: e.userOne.nickname,
-            loser: e.userTwo.nickname,
+            matchId: e.matchId,
+            winner: e.userOne,
+            loser: e.userTwo,
             score: [e.userOneScore, e.userTwoScore],
             isRank: e.isRank,
           }
         : {
-            winner: e.userTwo.nickname,
-            loser: e.userOne.nickname,
+            matchId: e.matchId,
+            winner: e.userTwo,
+            loser: e.userOne,
             score: [e.userTwoScore, e.userOneScore],
             isRank: e.isRank,
           };
@@ -198,14 +201,14 @@ describe('ProfileService', () => {
     const matchHistory = matchHistoryRaw.map((e) => {
       return e.userOneScore > e.userTwoScore
         ? {
-            winner: e.userOne.nickname,
-            loser: e.userTwo.nickname,
+            winner: e.userOne,
+            loser: e.userTwo,
             score: [e.userOneScore, e.userTwoScore],
             isRank: e.isRank,
           }
         : {
-            winner: e.userTwo.nickname,
-            loser: e.userOne.nickname,
+            winner: e.userTwo,
+            loser: e.userOne,
             score: [e.userTwoScore, e.userOneScore],
             isRank: e.isRank,
           };
