@@ -25,13 +25,7 @@ import { UserStatusModule } from './user-status/user-status.module';
     ConfigModule.forRoot({
       envFilePath: './.env',
     }),
-    ServeStaticModule.forRoot({
-      rootPath: join(__dirname, '..', 'asset'),
-      serveRoot: '/asset/',
-      serveStaticOptions: {
-        index: false,
-      },
-    }),
+    ServeStaticModule.forRoot({ rootPath: join(__dirname, '..', 'public') }),
     TypeOrmModule.forRootAsync({
       imports: [ApiConfigModule],
       useFactory: (apiConfigService: ApiConfigService) =>

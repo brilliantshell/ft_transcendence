@@ -2,7 +2,7 @@ import { useCallback, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { ErrorAlert, SuccessAlert } from '../../util/Alert';
 import instance from '../../util/Axios';
-import SearchModal from '../search/SearchModal';
+import SearchModal from '../Search/SearchModal';
 
 interface InvitationButtonProps {
   channelId: string;

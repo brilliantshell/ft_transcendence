@@ -17,7 +17,7 @@ export class Users {
 
   @Column({
     type: 'boolean',
-    default: false,
+    default: true,
     name: 'is_default_image',
   })
   isDefaultImage: boolean;

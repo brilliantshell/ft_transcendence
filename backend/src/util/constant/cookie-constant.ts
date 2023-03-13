@@ -1,10 +1,16 @@
 import { CookieOptions } from 'express';
 
-export const COOKIE_OPTIONS: CookieOptions = {
-  httpOnly: true,
-  sameSite: 'lax',
-  secure: true,
-};
+export const COOKIE_OPTIONS: CookieOptions =
+  process.env.NODE_ENV === 'production'
+    ? {
+        httpOnly: true,
+        sameSite: 'strict',
+      }
+    : {
+        httpOnly: true,
+        sameSite: 'lax',
+        secure: true,
+      };
 
 export const ACCESS_TOKEN_COOKIE_OPTIONS: CookieOptions = {
   ...COOKIE_OPTIONS,

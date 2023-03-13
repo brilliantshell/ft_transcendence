@@ -21,15 +21,14 @@ export class JwtAuthGuard implements CanActivate {
   ) {}
 
   async canActivate(context: ExecutionContext) {
-    if (this.reflector.get<boolean>('skipAuth', context.getHandler())) {
+    if (
+      this.reflector.get<boolean>('skipAuth', context.getHandler()) ||
+      process.env.NODE_ENV === 'development'
+    ) {
       return true;
     }
     const req = context.switchToHttp().getRequest<Request>();
 
-    // FIXME: skip guard for test
-    if (req.headers['x-user-id'] !== undefined) {
-      return true;
-    }
     const { accessToken, refreshToken } = req.cookies;
 
     const res = context.switchToHttp().getResponse<Response>();

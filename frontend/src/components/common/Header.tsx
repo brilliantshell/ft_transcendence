@@ -1,4 +1,4 @@
-import Search from "../search/Search";
+import Search from "../Search/Search";
 
 function Header() {
   return (

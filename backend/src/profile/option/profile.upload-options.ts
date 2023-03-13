@@ -4,7 +4,11 @@ import { diskStorage } from 'multer';
 
 import { VerifiedRequest } from '../../util/type';
 
-const PROFILE_IMAGE_PATH = 'asset/profile-image/';
+const PROFILE_IMAGE_PATH =
+  process.env.NODE_ENV === 'production'
+    ? 'public/assets/profile-image/'
+    : 'asset/profile-image/';
+
 const PROFILE_IMAGE_MAX_SIZE = 4194304; // 4MB
 const ALLOWED_MIME_TYPES = [
   'image/apng',
@@ -12,7 +16,6 @@ const ALLOWED_MIME_TYPES = [
   'image/gif',
   'image/jpeg',
   'image/png',
-  'image/svg+xml',
   'image/webp',
 ];
 

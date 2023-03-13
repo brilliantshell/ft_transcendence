@@ -3,6 +3,12 @@ import { listenOnce, socket } from '../../util/Socket';
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
+interface WebSocketConnectError extends Error {
+  description?: number;
+  context?: Object;
+  type?: string;
+}
+
 export function useCurrentUi(
   isConnected: boolean,
   setIsConnected: React.Dispatch<React.SetStateAction<boolean>>,
@@ -26,6 +32,15 @@ export function useCurrentUi(
   };
 
   useEffect(() => {
+    socket.once('connect_error', (error: WebSocketConnectError) => {
+      socket.close();
+      if (error.description === 403) {
+        nav('/login');
+      }
+    });
+  }, [socket.connected]);
+
+  useEffect(() => {
     if (isConnected) {
       socket.emit('currentUi', { ui });
       if (!ui.startsWith('game-')) {
@@ -33,8 +48,7 @@ export function useCurrentUi(
       }
     } else {
       listenOnce('connect').then(() => {
-        socket.emit('currentUi', { ui });
-        setIsConnected(true);
+        socket.emit('currentUi', { ui }, ()=> setIsConnected(true));
       });
     }
     return () => {

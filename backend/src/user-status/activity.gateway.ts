@@ -132,6 +132,7 @@ export class ActivityGateway
       ? this.leaveRooms(clientSocket.id, userId, prevUi)
       : this.emitUserActivity(userId);
     this.joinRooms(clientSocket.id, userId, ui);
+    return 'OK';
   }
 
   /**
