@@ -12,7 +12,6 @@ function FriendsList() {
   const btnOnClick = () => {
     setIsClicked(!isClicked);
   };
-  const location = useLocation();
 
   useEffect(() => {
     socket.emit(isClicked ? 'friendListOpened' : 'friendListClosed');
@@ -28,11 +27,6 @@ function FriendsList() {
       setRequestCount(null);
     }
   }, [isClicked]);
-
-  if (location.pathname === '/login') {
-    return <></>;
-  }
-
   return (
     <div className="friendsList">
       <button className="friendsListBtn" onClick={btnOnClick}>
