@@ -84,6 +84,7 @@ function Navigation() {
       </ul>
       <button
         className="logoutButton"
+        type="button"
         onClick={() => {
           instance
             .delete('logout')

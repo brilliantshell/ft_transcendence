@@ -51,6 +51,7 @@
 
 .logoutButton {
   background: none;
+  color: var(--primary_dark);
   position: sticky;
   top: 96%;
 }
