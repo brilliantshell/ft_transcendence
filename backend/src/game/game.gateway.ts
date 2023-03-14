@@ -111,6 +111,15 @@ export class GameGateway {
   }
 
   /**
+   * @description 일반 게임 초대가 수락되었다고 초대한 유저에게 알림
+   *
+   * @param inviterSocketId 초대한 유저의 socket id
+   */
+  emitGameInvitedJoined(inviterSocketId: SocketId) {
+    this.server.to(inviterSocketId).emit('gameInvitedJoined');
+  }
+
+  /**
    * @description 게임 시작 시, waitingRoom UI 에 있는 유저들에게 새 게임 정보 전송
    *
    * @param room waitingRoom UI 에 있는 유저들
@@ -136,16 +145,18 @@ export class GameGateway {
     }
     const {
       gameData: { paddlePositions },
+      mode,
     } = gameInfo;
     const { leftY, rightY } = paddlePositions;
+    const bottomLimit = mode === 2 ? 0.88889 : 0.83333;
     if (isLeft) {
       paddlePositions.leftY = isUp
         ? Math.max(0, leftY - 0.048)
-        : Math.min(0.83333, leftY + 0.048);
+        : Math.min(bottomLimit, leftY + 0.048);
     } else {
       paddlePositions.rightY = isUp
         ? Math.max(0, rightY - 0.048)
-        : Math.min(0.83333, rightY + 0.048);
+        : Math.min(bottomLimit, rightY + 0.048);
     }
   }
 
@@ -159,7 +170,7 @@ export class GameGateway {
     const gameInfo = this.gameStorage.getGame(gameId);
     if (
       gameInfo === undefined ||
-      (userId !== gameInfo.leftId && userId !== gameInfo.rightId)
+      this.gameStorage.players.get(userId) !== gameId
     ) {
       return;
     }
