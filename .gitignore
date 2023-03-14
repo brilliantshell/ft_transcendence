@@ -107,3 +107,6 @@ dist
 
 # MacOS
 .DS_Store
+
+# frontend build files
+public/

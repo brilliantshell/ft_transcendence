@@ -480,6 +480,12 @@ export class ChannelStorage implements OnModuleInit {
   updateUnseenCount(channelId: ChannelId, userId: UserId, isReset = false) {
     const userChannelStatus = this.getUser(userId)?.get(channelId);
     if (userChannelStatus) {
+      if (isReset) {
+        this.channelMembersRepository.update(
+          { channelId, memberId: userId },
+          { viewedAt: DateTime.now() },
+        );
+      }
       userChannelStatus.unseenCount = isReset
         ? 0
         : userChannelStatus.unseenCount + 1;
