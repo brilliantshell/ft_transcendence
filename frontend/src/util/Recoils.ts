@@ -4,7 +4,6 @@ import {
 } from '../components/hooks/SocketOnHooks';
 import { atom, atomFamily, selector } from 'recoil';
 import instance from './Axios';
-import { ErrorAlert } from './Alert';
 
 export const myIdState = atom<number>({
   key: 'myIdState',

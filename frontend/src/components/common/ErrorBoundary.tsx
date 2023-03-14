@@ -1,6 +1,4 @@
-import { AxiosError } from 'axios';
 import { Component, ErrorInfo, ReactNode } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { ErrorAlert } from '../../util/Alert';
 
 interface Props {
@@ -22,17 +20,26 @@ class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidMount() {
-    window.onunhandledrejection = error => {
-      this.setState({ hasError: true });
-    };
+    window.addEventListener(
+      'unhandledrejection',
+      (error: PromiseRejectionEvent) => {
+        this.setState({ hasError: true });
+        error.preventDefault();
+      },
+    );
 
-    window.onerror = error => {
+    window.addEventListener('error', (error: ErrorEvent) => {
       this.setState({ hasError: true });
-    };
+      error.preventDefault();
+    });
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    ErrorAlert('오류가 발생하였습니다.', '잠시 후 다시 시도해주세요.');
+    ErrorAlert('오류가 발생하였습니다.', '잠시 후 다시 시도해주세요.').then(
+      () => {
+        this.setState({ hasError: false });
+      },
+    );
   }
 
   render() {
