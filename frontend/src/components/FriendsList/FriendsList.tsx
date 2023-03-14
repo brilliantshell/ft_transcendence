@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { socket } from '../../util/Socket';
 import Content from './Content';
 // TODO :친구 요청 component 만들기
@@ -11,6 +12,7 @@ function FriendsList() {
   const btnOnClick = () => {
     setIsClicked(!isClicked);
   };
+  const location = useLocation();
 
   useEffect(() => {
     socket.emit(isClicked ? 'friendListOpened' : 'friendListClosed');
@@ -26,6 +28,11 @@ function FriendsList() {
       setRequestCount(null);
     }
   }, [isClicked]);
+
+  if (location.pathname === '/login') {
+    return <></>;
+  }
+
   return (
     <div className="friendsList">
       <button className="friendsListBtn" onClick={btnOnClick}>
