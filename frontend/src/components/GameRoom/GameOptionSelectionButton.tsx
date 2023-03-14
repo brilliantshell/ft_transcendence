@@ -43,8 +43,8 @@ export default function GameOptionSelectionButton({
 // SECTION : Interfaces
 
 interface GameOptionSelectionButtonProps {
-  optionId: number;
+  optionId: 0 | 1 | 2;
   text: string;
   currentOption: number;
-  setOption: React.Dispatch<React.SetStateAction<number>>;
+  setOption: React.Dispatch<React.SetStateAction<0 | 1 | 2>>;
 }

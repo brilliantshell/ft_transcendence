@@ -15,7 +15,7 @@ export default function GameRoom() {
     return <></>;
   }
   const [isConnected, setIsConnected] = useState(socket.connected);
-  const isSubmitted = useRecoilValue(isOptionSubmittedState);
+  const isOptionSubmitted = useRecoilValue(isOptionSubmittedState);
 
   useCurrentUi(isConnected, setIsConnected, `game-${gameId}`);
   const { gameInfo, players } = useRequestGame(isConnected, gameId);
@@ -33,7 +33,7 @@ export default function GameRoom() {
         rightPlayer={players[1]}
       />
       <GamePlay
-        gameInfo={{ id: gameId, isRank: isRank, players }}
+        gameInfo={{ id: gameId, isRank, players }}
         controllerType={{
           isLeft: isLeft,
           isPlayer:
@@ -43,7 +43,7 @@ export default function GameRoom() {
       <GameMenu
         gameId={gameId}
         isRank={isRank}
-        isOptionSubmitted={isSubmitted}
+        isOptionSubmitted={isOptionSubmitted}
       />
     </div>
   );

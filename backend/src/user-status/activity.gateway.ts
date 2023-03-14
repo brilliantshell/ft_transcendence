@@ -89,8 +89,9 @@ export class ActivityGateway
     }
     const pendingRequestCount =
       this.userRelationshipStorage.countPendingRequests(userId);
-    pendingRequestCount !== -1 &&
+    if (pendingRequestCount !== -1) {
       this.userGateway.emitFriendRequestDiff(socketId, pendingRequestCount);
+    }
     clientSocket.on('disconnecting', () =>
       this.handleDisconnecting(clientSocket.id, clientSocket.rooms),
     );
@@ -237,11 +238,12 @@ export class ActivityGateway
    * @param rooms 유저의 socket 이 속한 room 목록
    */
   handleDisconnecting(socketId: SocketId, rooms: Set<string>) {
+    const userId = this.userSocketStorage.sockets.get(socketId);
+    this.gameStorage.matchedPair.length = 0;
+    this.gameStorage.deleteUserFromLadderQueue(userId);
     for (const room of rooms) {
       if (room.startsWith('game-')) {
-        const userId = this.userSocketStorage.sockets.get(socketId);
-        const gameId = room.replace('game-', '');
-        this.gameGateway.abortIfPlayerLeave(gameId, userId);
+        this.gameGateway.abortIfPlayerLeave(room.replace('game-', ''), userId);
         break;
       }
     }
@@ -258,6 +260,8 @@ export class ActivityGateway
     if (prevUi === 'chats') {
       this.chatsGateway.leaveRoom(socketId, prevUi);
     } else if (prevUi === 'waitingRoom') {
+      this.gameStorage.matchedPair.length = 0;
+      this.gameStorage.deleteUserFromLadderQueue(userId);
       this.gameGateway.leaveRoom(socketId, 'waitingRoom');
     } else if (prevUi.startsWith('game-')) {
       this.gameGateway.abortIfPlayerLeave(prevUi.replace('game-', ''), userId);

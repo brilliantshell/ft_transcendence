@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { nanoid } from 'nanoid';
 
+import { ActivityGateway } from '../user-status/activity.gateway';
 import { GameEngine } from './game.engine';
 import { GameGateway } from './game.gateway';
 import { GameId, GameInfo, UserId } from '../util/type';
@@ -16,6 +17,7 @@ import { UserSocketStorage } from '../user-status/user-socket.storage';
 @Injectable()
 export class GameService {
   constructor(
+    private readonly activityGateway: ActivityGateway,
     private readonly gameEngine: GameEngine,
     @Inject(forwardRef(() => GameGateway))
     private readonly gameGateway: GameGateway,
@@ -96,6 +98,15 @@ export class GameService {
     const [playerNickname, opponentId, opponentNickname] = isLeft
       ? [leftNickname, rightId, rightNickname]
       : [rightNickname, leftId, leftNickname];
+    if (
+      !isRank &&
+      rightId === playerId &&
+      this.gameStorage.players.get(playerId) === gameId
+    ) {
+      this.gameGateway.emitGameInvitedJoined(
+        this.userSocketStorage.clients.get(leftId),
+      );
+    }
     return {
       isRank,
       isLeft,
@@ -188,9 +199,19 @@ export class GameService {
    * @param gameInfo 게임 정보
    */
   startGame(gameId: GameId, gameInfo: GameInfo) {
-    const { gameData, leftNickname, rightNickname } = gameInfo;
-    if (!gameInfo.isStarted) {
-      this.gameEngine.startGame(gameId, gameData);
+    const {
+      isStarted,
+      gameData,
+      leftNickname,
+      rightNickname,
+      mode,
+      leftId,
+      rightId,
+    } = gameInfo;
+    if (!isStarted) {
+      this.gameEngine.startGame(gameId, gameData, mode);
+      this.activityGateway.emitUserActivity(leftId);
+      this.activityGateway.emitUserActivity(rightId);
     }
     gameInfo.isStarted = true;
     this.gameGateway.emitGameStarted({

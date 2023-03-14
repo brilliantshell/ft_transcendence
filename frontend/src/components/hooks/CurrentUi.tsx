@@ -1,4 +1,5 @@
 import { ConfirmAlert, ErrorAlert } from '../../util/Alert';
+import instance from '../../util/Axios';
 import { listenOnce, socket } from '../../util/Socket';
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -23,10 +24,12 @@ export function useCurrentUi(
     ConfirmAlert(
       '게임 초대',
       `${inviterNickname}님이 게임에 초대했습니다.<br/>응하시겠습니다?`,
-    ).then(({ isConfirmed }) => {
+    ).then(({ isConfirmed, isDismissed }) => {
       if (isConfirmed) {
         sessionStorage.setItem(`game-${gameId}-isPlayer`, 'true');
         nav(`/game/${gameId}`);
+      } else if (isDismissed) {
+        instance.delete(`/game/${gameId}`);
       }
     });
   };

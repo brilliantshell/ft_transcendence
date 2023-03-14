@@ -26,10 +26,6 @@ export default function GameMenu({
     if (!isOptionSubmitted) {
       return;
     }
-    listenOnce('gameCancelled').then(() => {
-      ErrorAlert('게임 취소', '상대방이 게임에 접속하지 않아 취소되었습니다.');
-      nav(-1); // NOTE : 일반 게임일 때도?
-    });
     instance
       .patch(`/game/${gameId}/start`)
       .then(() => {

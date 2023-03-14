@@ -1,15 +1,12 @@
-import {
-  BadRequestException,
-  ForbiddenException,
-  NotFoundException,
-} from '@nestjs/common';
 import { DataSource } from 'typeorm';
+import { ForbiddenException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { faker } from '@faker-js/faker';
 import { nanoid } from 'nanoid';
 import waitForExpect from 'wait-for-expect';
 
+import { ActivityGateway } from '../user-status/activity.gateway';
 import { BlockedUsers } from '../entity/blocked-users.entity';
 import { Channels } from '../entity/channels.entity';
 import { Friends } from '../entity/friends.entity';
@@ -22,6 +19,7 @@ import { GameStorage } from './game.storage';
 import { RanksGateway } from '../ranks/ranks.gateway';
 import { UserRelationshipStorage } from '../user-status/user-relationship.storage';
 import { UserSocketStorage } from '../user-status/user-socket.storage';
+import { UserStatusModule } from '../user-status/user-status.module';
 import { Users } from '../entity/users.entity';
 import {
   TYPEORM_SHARED_CONFIG,
@@ -67,6 +65,7 @@ describe('GameService', () => {
           database: TEST_DB,
         }),
         TypeOrmModule.forFeature([BlockedUsers, Channels, Friends, Users]),
+        UserStatusModule,
       ],
       providers: [
         GameEngine,
@@ -74,8 +73,6 @@ describe('GameService', () => {
         GameService,
         GameStorage,
         RanksGateway,
-        UserRelationshipStorage,
-        UserSocketStorage,
       ],
     })
       .overrideProvider(GameGateway)
@@ -95,6 +92,10 @@ describe('GameService', () => {
       .overrideProvider(GameEngine)
       .useValue({
         startGame: jest.fn((gameId: GameId, gameData: GameData) => undefined),
+      })
+      .overrideProvider(ActivityGateway)
+      .useValue({
+        emitUserActivity: jest.fn((userId: string) => undefined),
       })
       .compile();
     service = module.get<GameService>(GameService);

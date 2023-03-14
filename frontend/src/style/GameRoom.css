@@ -99,7 +99,6 @@
   display: grid;
   grid-template-rows: 1fr 30%;
   height: 100%;
-  width: 100%;
 }
 
 .gameOptionSelections {
@@ -248,10 +247,10 @@
   border: none;
   border-radius: 0.5em;
   font-family: inherit;
-  height: 3em;
-  margin: 0 2.5% 0 0;
+  height: 68%;
+  margin: 0 5% 3% 0;
   transition: 0.7s;
-  width: 15%;
+  width: 18%;
 }
 
 .gameStartButton:hover {
