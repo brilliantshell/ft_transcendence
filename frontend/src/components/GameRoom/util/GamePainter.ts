@@ -19,9 +19,15 @@ export class GamePainter {
     private readonly controllerType: ControllerType,
     private readonly dimension: { w: number; h: number },
     private readonly nav: NavigateFunction,
+    gameMode: 0 | 1 | 2,
   ) {
     this.context.font = '4rem DungGeunMo';
     this.metaData = new GameMetaData(dimension);
+    if (gameMode > 0) {
+      gameMode === 1
+        ? (this.metaData.radius *= 3)
+        : (this.metaData.paddleW *= 2 / 3);
+    }
   }
 
   /*****************************************************************************
@@ -31,6 +37,16 @@ export class GamePainter {
    ****************************************************************************/
 
   drawGame() {
+    this.drawWaitMessage();
+    if (!this.controllerType.isPlayer) {
+      socket.once('gameData', ({ mode }) => {
+        if (mode > 0) {
+          mode === 1
+            ? (this.metaData.radius *= 3)
+            : (this.metaData.paddleW *= 2 / 3);
+        }
+      });
+    }
     socket.on(
       'gameData',
       ({ ballCoords, paddlePositions, scores }: GameDataMessage) => {
@@ -63,6 +79,22 @@ export class GamePainter {
    *                                                                           *
    ****************************************************************************/
 
+  private drawWaitMessage() {
+    this.context.fillStyle = '#ccadac';
+    this.context.font = '1.5rem DungGeunMo';
+    this.context.fillText(
+      this.controllerType.isPlayer
+        ? '상대가 접속하기를 기다리는 중입니다...'
+        : '플레이어들이 접속하기를 기다리는 중입니다...',
+      this.dimension.w / 2 -
+        this.context.measureText('상대가 접속하기를 기다리는 중입니다...')
+          .width /
+          2,
+      this.dimension.h / 2,
+    );
+    this.context.font = '4rem DungGeunMo';
+  }
+
   private drawLine() {
     const { midX } = this.metaData;
     this.context.beginPath();
@@ -84,18 +116,18 @@ export class GamePainter {
 
   private drawPaddles(paddlePositions: PaddlePositions) {
     const { h } = this.dimension;
-    const { radius, paddleW, paddleH } = this.metaData;
+    const { paddleW, paddleH, paddleLeftEnd, paddleRightEnd } = this.metaData;
     const { leftY, rightY } = paddlePositions;
     this.context.beginPath();
     this.context.roundRect(
-      radius * 2,
+      paddleLeftEnd,
       leftY * h,
       paddleH,
       paddleW,
       paddleH / 2,
     );
     this.context.roundRect(
-      this.dimension.w - paddleH - radius * 2,
+      paddleRightEnd - paddleH,
       rightY * h,
       paddleH,
       paddleW,
