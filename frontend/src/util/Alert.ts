@@ -45,3 +45,24 @@ export const InfoAlert = (title: string, text: string) => {
     // text: `${text}`,
   });
 };
+
+export const InputAlert = (title: string, label: string) => {
+  return ReactSwal.fire({
+    title: `${title}`,
+    input: 'text',
+    inputLabel: `${label}`,
+    showCancelButton: true,
+  });
+};
+
+export const FileAlert = (title: string) => {
+  return ReactSwal.fire({
+    title: `${title}`,
+    input: 'file',
+    showCancelButton: true,
+    inputAttributes: {
+      accept: 'image/*',
+      'aria-label': 'Upload your profile picture',
+    },
+  });
+};
