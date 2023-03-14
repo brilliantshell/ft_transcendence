@@ -9,15 +9,17 @@ import {
 import { Observable, ReplaySubject, tap } from 'rxjs';
 
 import { GameService } from '../game.service';
+import { GameStorage } from '../game.storage';
 import { UserId, VerifiedRequest } from '../../util/type';
 
 @Injectable()
 export class LadderQueueInterceptor implements NestInterceptor {
-  private readonly usersInQueue: Set<UserId> = new Set();
   private readonly waitingQueue: ReplaySubject<UserId> = new ReplaySubject();
-  private matchedPair: UserId[] = [];
 
-  constructor(private readonly gameService: GameService) {
+  constructor(
+    private readonly gameService: GameService,
+    private readonly gameStorage: GameStorage,
+  ) {
     this.waitingQueue.subscribe(this.matchMakePlayers.bind(this));
   }
 
@@ -27,19 +29,19 @@ export class LadderQueueInterceptor implements NestInterceptor {
       user: { userId },
     } = context.switchToHttp().getRequest<VerifiedRequest>();
     if (method === 'POST') {
-      if (this.usersInQueue.has(userId)) {
+      if (this.gameStorage.isInLadderQueue(userId)) {
         throw new ConflictException(
           `The user(${userId}) has already entered the queue`,
         );
       }
-      this.usersInQueue.add(userId);
+      this.gameStorage.addUserToLadderQueue(userId);
     } else {
-      if (!this.usersInQueue.has(userId)) {
+      if (!this.gameStorage.isInLadderQueue(userId)) {
         throw new NotFoundException(`The user(${userId}) is not in the queue`);
       }
-      this.usersInQueue.delete(userId);
-      if (this.matchedPair[0] === userId) {
-        this.matchedPair.length = 0;
+      this.gameStorage.deleteUserFromLadderQueue(userId);
+      if (this.gameStorage.matchedPair[0] === userId) {
+        this.gameStorage.matchedPair.length = 0;
       }
     }
     return next
@@ -48,19 +50,21 @@ export class LadderQueueInterceptor implements NestInterceptor {
   }
 
   private matchMakePlayers(playerId: UserId) {
-    this.matchedPair.push(playerId);
-    if (this.matchedPair.length === 2) {
-      this.matchedPair = this.matchedPair.filter((id) =>
-        this.usersInQueue.has(id),
+    this.gameStorage.matchedPair.push(playerId);
+    if (this.gameStorage.matchedPair.length === 2) {
+      this.gameStorage.matchedPair = this.gameStorage.matchedPair.filter((id) =>
+        this.gameStorage.isInLadderQueue(id),
       );
-      if (this.matchedPair.length !== 2) {
+      if (this.gameStorage.matchedPair.length !== 2) {
         return;
       }
       this.gameService
-        .createLadderGame(this.matchedPair as [UserId, UserId])
+        .createLadderGame(this.gameStorage.matchedPair as [UserId, UserId])
         .finally(() => {
-          this.matchedPair.forEach((id) => this.usersInQueue.delete(id));
-          this.matchedPair.length = 0;
+          this.gameStorage.matchedPair.forEach((id) =>
+            this.gameStorage.deleteUserFromLadderQueue(id),
+          );
+          this.gameStorage.matchedPair.length = 0;
         });
     }
   }

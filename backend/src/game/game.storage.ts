@@ -15,6 +15,8 @@ import { Users } from '../entity/users.entity';
 export class GameStorage {
   readonly players = new Map<UserId, GameId>();
   private readonly games = new Map<GameId, Required<GameInfo>>();
+  private readonly usersInQueue = new Set<UserId>();
+  matchedPair: UserId[] = [];
   private readonly logger = new Logger(GameStorage.name);
 
   constructor(
@@ -115,6 +117,35 @@ export class GameStorage {
       );
     }
     return isRank ? { winnerId, ladder } : null;
+  }
+
+  /**
+   * @description ladder 게임 대기 큐에 유저가 있는지 확인
+   *
+   * @param userId 유저 id
+   * @returns 유저가 대기 큐에 있는지 여부
+   */
+  isInLadderQueue(userId: UserId) {
+    return this.usersInQueue.has(userId);
+  }
+
+  /**
+   * @description ladder 게임 대기 큐에 유저 추가
+   *
+   * @param userId 유저 id
+   */
+  addUserToLadderQueue(userId: UserId) {
+    this.usersInQueue.add(userId);
+  }
+
+  /**
+   * @description ladder 게임 대기 큐에서 유저 삭제
+   *
+   * @param userId 유저 id
+   * @returns 유저가 대기 큐에 있었는지 여부
+   */
+  deleteUserFromLadderQueue(userId: UserId) {
+    return this.usersInQueue.delete(userId);
   }
 
   /*****************************************************************************
