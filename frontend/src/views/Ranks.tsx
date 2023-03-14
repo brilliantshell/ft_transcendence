@@ -24,9 +24,11 @@ function Ranks() {
           </div>
         }
       >
-        <MyRank myRankInfo={myRankInfo} setMyRankInfo={setMyRankInfo} />
+        {isConnected && (
+          <MyRank myRankInfo={myRankInfo} setMyRankInfo={setMyRankInfo} />
+        )}
       </Suspense>
-      <RanksList setMyRankInfo={setMyRankInfo} />
+      {isConnected && <RanksList setMyRankInfo={setMyRankInfo} />}
     </div>
   );
 }

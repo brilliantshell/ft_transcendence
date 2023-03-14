@@ -1,4 +1,4 @@
-import { ConfirmAlert } from '../../util/Alert';
+import { ConfirmAlert, ErrorAlert } from '../../util/Alert';
 import instance from '../../util/Axios';
 import { listenOnce, socket } from '../../util/Socket';
 import { useEffect } from 'react';
@@ -36,9 +36,13 @@ export function useCurrentUi(
 
   useEffect(() => {
     socket.once('connect_error', (error: WebSocketConnectError) => {
+      socket.off();
       socket.close();
       if (error.description === 403) {
+        ErrorAlert('로그인이 필요합니다.', '로그인 페이지로 이동합니다.');
         nav('/login');
+      } else {
+        ErrorAlert('서버와 연결할 수 없습니다.', '잠시 후 다시 시도해주세요.');
       }
     });
   }, [socket.connected]);

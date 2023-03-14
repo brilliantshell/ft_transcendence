@@ -224,7 +224,7 @@ export class ProfileService {
    */
   async updateProfileImage(userId: UserId) {
     try {
-      await this.usersRepository.update(userId, { isDefaultImage: true });
+      await this.usersRepository.update(userId, { isDefaultImage: false });
     } catch (e) {
       this.logger.error(e);
       throw new InternalServerErrorException(
@@ -240,7 +240,7 @@ export class ProfileService {
    */
   async deleteProfileImage(userId: UserId) {
     try {
-      await this.usersRepository.update(userId, { isDefaultImage: false });
+      await this.usersRepository.update(userId, { isDefaultImage: true });
       rmSync(join(__dirname, `../../asset/profile-image/${userId}`), {
         force: true,
       });
