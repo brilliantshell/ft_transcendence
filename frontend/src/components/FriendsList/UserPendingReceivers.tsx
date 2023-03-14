@@ -24,7 +24,6 @@ function UserPendingReceivers(props: Props) {
         });
       })
       .catch(err => {
-        console.error(err.response.data);
         if (err.response.status === 403) {
           ErrorAlert('차단된 사용자', '차단된 사용자입니다!');
         }

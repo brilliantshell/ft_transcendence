@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react';
+import { useRecoilValue } from 'recoil';
+import { myIdState } from '../../util/Recoils';
 
 interface Props {
   data: { senderId: number; contents: string; createdAt: number };
@@ -6,6 +8,7 @@ interface Props {
 
 function Message({ data }: Props) {
   const date = new Date(data.createdAt);
+  const myId = useRecoilValue(myIdState);
 
   const [user, setUser] = useState<{
     nickname: string;
@@ -26,19 +29,22 @@ function Message({ data }: Props) {
     }, 200);
   }, []);
 
+  const isMyMessage = data.senderId === myId;
   return (
-    <div className="message">
+    <div className={isMyMessage ? 'message myMessage' : 'message'}>
       <img
         className="chatProfileImage"
         src={
           user.isDefaultImage
             ? '/assets/defaultProfile.svg'
-            `/assets/profile-image/${props.userId}` 
+            : `/assets/profile-image/${data.senderId}`
         }
       />
 
       <div className="messageWrap">
-        <div className="messageNick">{user.nickname} </div>
+        <div className={isMyMessage ? 'myMessageNick' : 'messageNick'}>
+          {user.nickname}
+        </div>
         <div className="messageContents">{data.contents}</div>
       </div>
       <div className="messageTime xsmall">{date.toLocaleString()}</div>

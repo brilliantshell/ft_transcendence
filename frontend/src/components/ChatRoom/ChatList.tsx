@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { socket } from '../../util/Socket';
 import instance from '../../util/Axios';
 import Message from './Message';
@@ -16,33 +16,68 @@ interface MessageData {
 
 function ChatList(props: Props) {
   const [contents, setContents] = useState<MessageData[]>([]);
+  const chatListDivRef = useRef<HTMLDivElement>(null);
 
-  useEffect(
-    () => {
-      instance
-        .get(`/chats/${props.id}/message?range=0,20`)
-        .then(result => {
-          setContents(result.data.messages.reverse());
-        })
-        .catch(() => {});
-    },
-    [
-      // TODO :스크롤 끝으로 갔을 때의 상태 넣을 예정
-    ],
-  );
+  const [isMoreMessage, setIsMoreMessage] = useState<boolean>(true);
+  const [isClick, setIsClick] = useState<boolean>(false);
+  const [currentHeight, setCurrentHeight] = useState<number>(0);
+
+  const dataFetch = () => {
+    instance
+      .get(`/chats/${props.id}/message?range=${contents.length},100`)
+      .then(result => {
+        const arr = result.data.messages.reverse();
+        setContents(prev => [...arr, ...prev]);
+        if (result.data.messages.length < 100) {
+          setIsMoreMessage(false);
+        } else {
+          setIsMoreMessage(true);
+        }
+      })
+      .catch(() => {
+        setIsMoreMessage(false);
+      });
+  };
+
+  const clickHandler = () => {
+    if (chatListDivRef.current) {
+      setCurrentHeight(chatListDivRef.current.scrollHeight);
+    }
+    dataFetch();
+    setIsClick(true);
+  };
+
+  useEffect(() => {
+    dataFetch();
+  }, []);
+
   useEffect(() => {
     socket.on('newMessage', (data: MessageData) => {
       setContents(prev => [...prev, data]);
-      //   TODO :메시지 오면 스크롤 제일 밑으로 이동
     });
-
     return () => {
       socket.off('newMessage');
     };
   }, []);
 
+  useEffect(() => {
+    if (isClick) {
+      if (chatListDivRef.current) {
+        chatListDivRef.current.scrollTop =
+          chatListDivRef.current.scrollHeight - currentHeight;
+      }
+      setIsClick(false);
+      return;
+    }
+    if (chatListDivRef.current) {
+      const { scrollHeight, clientHeight } = chatListDivRef.current;
+      chatListDivRef.current.scrollTop = scrollHeight - clientHeight;
+    }
+  }, [contents]);
+
   return (
-    <div className="chatList">
+    <div className="chatList" ref={chatListDivRef}>
+      {isMoreMessage && <button onClick={clickHandler}>더 보기</button>}
       {contents.map(data => (
         <Message key={data.messageId} data={data} />
       ))}
