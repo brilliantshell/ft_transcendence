@@ -1,32 +1,32 @@
 .profileContainer {
   display: grid;
-  grid-template-columns: 25rem 40rem;
-  grid-template-rows: repeat(5, minmax(6rem, auto));
-  grid-gap: 1.5rem;
   place-content: center;
   place-items: center;
   align-content: center;
+  grid-template-columns: 25rem 40rem;
+  grid-template-rows: repeat(4, minmax(6rem, auto));
+  grid-gap: 1.5rem;
 }
 
 .profileItem {
-  justify-content: center;
-  align-items: center;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  place-content: center;
+  place-items: center;
   width: 25rem;
   height: 6rem;
   background-color: var(--primary);
   border-radius: 20px;
+  color: white;
   background: #6a7ba2;
   box-shadow: 13px 13px 26px #4b5773, -13px -13px 26px #899fd1;
-  color: white;
-  place-content: center;
-  place-items: center;
   font-size: large;
 }
 
 .profileItem:nth-child(1) {
   grid-column: 1;
   grid-row: 1 / 2;
-  display: flex;
 }
 
 .profileItem:nth-child(2) {
@@ -53,5 +53,5 @@
   width: 40rem;
   height: 36rem;
   grid-column: 2;
-  grid-row: 1 / 6;
+  grid-row: 1 / 6 span;
 }

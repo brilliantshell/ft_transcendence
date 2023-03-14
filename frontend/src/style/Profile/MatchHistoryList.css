@@ -39,11 +39,11 @@
   box-shadow: 10px 10px 20px #4b5773, -10px -10px 20px #899fd1;
 }
 
-/* .matchHistoryList .matchHistoryItem {
+.matchHistoryList .matchHistoryItem {
   place-self: stretch;
   place-items: stretch;
   place-content: stretch;
-} */
+}
 
 .matchHistoryItem:nth-child(1) {
   grid-column: 1;

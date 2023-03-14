@@ -1,6 +1,7 @@
 function MatchHistory(props: {
   history:
     | {
+        matchId: number;
         winner: { userId: number; nickname: string; isDefaultImage: boolean };
         loser: { userId: number; nickname: string; isDefaultImage: boolean };
         score: Array<number>;
@@ -32,6 +33,7 @@ function MatchHistory(props: {
 function MatchHistoryList(props: {
   history:
     | Array<{
+        matchId: number;
         winner: { userId: number; nickname: string; isDefaultImage: boolean };
         loser: { userId: number; nickname: string; isDefaultImage: boolean };
         score: Array<number>;
@@ -40,10 +42,9 @@ function MatchHistoryList(props: {
     | undefined;
 }) {
   return (
-    /* TODO - MatchHistory의 ID까지 받아 동작하도록 수정 */
     <div className="profileItem matchHistoryList">
-      {props.history?.map((matchLog, index) => (
-        <MatchHistory history={matchLog} key={index} />
+      {props.history?.map(matchLog => (
+        <MatchHistory history={matchLog} key={matchLog.matchId} />
       ))}
     </div>
   );
