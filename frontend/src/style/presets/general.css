@@ -17,6 +17,7 @@ input {
   max-width: 7rem;
   padding: 1rem 1rem;
   word-break: keep-all;
+  z-index: 99;
 }
 
 .hidden {

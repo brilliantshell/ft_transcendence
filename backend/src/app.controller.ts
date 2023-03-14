@@ -1,10 +1,20 @@
-import { Controller, Delete, Get, HttpStatus, Req, Res } from '@nestjs/common';
+import {
+  Controller,
+  Delete,
+  Get,
+  HttpStatus,
+  Req,
+  Res,
+  UseGuards,
+} from '@nestjs/common';
 import { Response } from 'express';
 
 import { AppService } from './app.service';
 import { AuthService } from './auth/auth.service';
+import { MockAuthGuard } from './guard/mock-auth.guard';
 import { VerifiedRequest } from './util/type';
 
+@UseGuards(MockAuthGuard)
 @Controller()
 export class AppController {
   constructor(

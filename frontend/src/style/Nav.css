@@ -1,0 +1,56 @@
+.logo {
+  margin: 0.5rem;
+  transition: 0.3s;
+  width: 60px;
+}
+
+.logo:hover {
+  animation: logo 1s forwards;
+}
+
+@keyframes logo {
+  0% {
+    transform: rotate(0deg);
+  }
+  50% {
+    transform: rotate(360deg);
+  }
+  100% {
+    transform: rotate(0deg);
+  }
+}
+
+.navButton {
+  background-color: var(--secondary);
+  border-radius: 50%;
+  box-shadow: 3px 3px var(--secondary_dark);
+  height: 60px;
+  line-height: 60px;
+  margin: 1.5rem 0.5rem;
+  transition: 0.5s;
+  vertical-align: center;
+  width: 60px;
+}
+
+.navButton:first-of-type {
+  margin-top: 0.5rem;
+}
+
+.navButton:hover {
+  animation: navButton 1s forwards;
+  background-color: var(--secondary_light);
+}
+
+.navButton .material-symbols-outlined {
+  vertical-align: middle;
+}
+
+.currentNav {
+  background-color: var(--secondary_light);
+}
+
+.logoutButton {
+  background: none;
+  position: sticky;
+  top: 96%;
+}
