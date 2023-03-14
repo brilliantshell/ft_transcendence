@@ -16,8 +16,6 @@ interface RanksListProps {
 
 function RanksList({ setMyRankInfo }: RanksListProps) {
   const myId = useRecoilValue(myIdState);
-  const activityMap = useRecoilValue(userActivity);
-  const relationshipMap = useRecoilValue(userRelationship);
   const [rankData, setRankData] = useState<Array<RankData>>([]);
   const [isEmpty, setIsEmpty] = useState(false);
 
@@ -27,7 +25,7 @@ function RanksList({ setMyRankInfo }: RanksListProps) {
       .get('/ranks?range=0,50')
       .then(({ data }) => setRankData(data.users))
       .catch(err => {
-        err.response.status === 404
+        err?.response?.status === 404
           ? setIsEmpty(true)
           : ErrorAlert(
               '랭킹을 불러오는데 실패했습니다.',

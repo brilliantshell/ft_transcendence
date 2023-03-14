@@ -1,6 +1,6 @@
 import { ErrorAlert } from '../../../util/Alert';
 import instance from '../../../util/Axios';
-import { listenOnce } from '../../../util/Socket';
+import { listenOnce, socket } from '../../../util/Socket';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -35,6 +35,7 @@ export function useRequestGame(isConnected: boolean, gameId: string) {
       const { data }: { data: GameInfoData } = await instance.get(
         `/game/${gameId}`,
       );
+      listenGameAbortedOnce(data.isLeft);
       isRank = data.isRank;
       setGameInfo(data);
       setPlayers(
@@ -42,7 +43,6 @@ export function useRequestGame(isConnected: boolean, gameId: string) {
           ? [data.playerNickname, data.opponentNickname]
           : [data.opponentNickname, data.playerNickname],
       );
-      listenGameAbortedOnce(data.isLeft);
     } catch (e) {
       ErrorAlert('게임 정보 요청', '게임 정보를 가져오는데 실패했습니다.');
       nav('/waiting-room');
@@ -71,13 +71,11 @@ export function useRequestGame(isConnected: boolean, gameId: string) {
       const { data } = await instance.get(`/game/list/${gameId}`);
       setGameInfo(data);
       setPlayers([data.leftPlayer, data.rightPlayer]);
-      if (data.isRank) {
-        sessionStorage.setItem(`game-${gameId}-isStarted`, 'true');
-      }
+      sessionStorage.setItem(`game-${gameId}-isStarted`, 'true');
       listenGameAbortedOnce();
     } catch (e) {
       ErrorAlert('관전 요청', '관전 요청이 실패했습니다.');
-      nav('/waiting-room');
+      nav(-1);
     }
   };
 
@@ -88,6 +86,8 @@ export function useRequestGame(isConnected: boolean, gameId: string) {
         : requestSpectate();
     }
     return () => {
+      socket.off('gameAborted');
+      socket.off('gameCancelled');
       setTimeout(() => {
         sessionStorage.removeItem(`game-${gameId}-isStarted`);
         sessionStorage.removeItem(`game-${gameId}-isPlayer`);
