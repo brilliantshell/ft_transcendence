@@ -23,6 +23,8 @@ services:
         ipv4_address: 172.19.0.3
     ports:
       - "3000:3000"
+    volumes:
+      - assets_prod:/app/public/assets
 
   database:
     image: db_prod_image:v1
@@ -52,5 +54,4 @@ networks:
 
 volumes:
   pgdata_prod:
-# SECTION : VOLUMES
-# volumes:
+  assets_prod:
