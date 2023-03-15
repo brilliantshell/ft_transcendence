@@ -7,7 +7,6 @@ function AchievementElement(props: {
     about: string;
   };
 }) {
-  console.log(IMG_PATH + props.achievement.id + '.png');
   return (
     <div className="achievementElement">
       <img

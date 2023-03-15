@@ -22,7 +22,6 @@
   display: grid;
   width: 28rem;
   height: 16rem;
-  justify-content: stretch;
   scroll-snap-align: center;
   grid-template-columns: 12rem 3rem 12rem;
   grid-template-rows: repeat(3, minmax(3rem, auto));
@@ -55,6 +54,12 @@
   place-self: stretch;
   place-items: stretch;
   place-content: stretch;
+}
+
+.matchProfileImg {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
 }
 
 .matchHistoryItem:nth-child(1) {

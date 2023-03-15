@@ -27,7 +27,7 @@ function MatchHistory(props: {
         TYPE: {props.history?.isRank ? 'LADDER' : 'RANDOM'}
       </div>
       <img
-        className="matchHistoryItem"
+        className="matchHistoryItem matchProfileImg"
         src={
           props.history?.winner.isDefaultImage
             ? '/assets/defaultProfile.svg'
@@ -35,7 +35,7 @@ function MatchHistory(props: {
         }
       ></img>
       <img
-        className="matchHistoryItem"
+        className="matchHistoryItem matchProfileImg"
         src={
           props.history?.loser.isDefaultImage
             ? '/assets/defaultProfile.svg'
