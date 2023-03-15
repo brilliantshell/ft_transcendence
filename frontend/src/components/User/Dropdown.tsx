@@ -1,5 +1,4 @@
 import BlockButton from './BlockButton';
-import { ErrorAlert } from '../../util/Alert';
 import FriendButton from './FriendButton';
 import GameButton from './GameButton';
 import instance from '../../util/Axios';
@@ -27,18 +26,18 @@ function Dropdown({ userId }: Props) {
   return (
     <div className="dropdown">
       <img className="dropdownImage" src="/assets/dropdown.svg" />
-      <div className="dropdown-content" onClick={e => e.stopPropagation()}>
-        {userId === myId ? (
-          <div> 본인입니다!!!! </div>
-        ) : (
-          <>
-            <button onClick={dmOnclick}>DM</button>
-            <GameButton userId={userId} />
-            <BlockButton userId={userId} />
-            <FriendButton userId={userId} />
-          </>
-        )}
-      </div>
+      {userId === myId ? (
+        <div className="dropdownSelf xsmall">본인입니다!!!!</div>
+      ) : (
+        <div className="dropdownContent" onClick={e => e.stopPropagation()}>
+          <button className="xsmall" onClick={dmOnclick}>
+            DM
+          </button>
+          <GameButton userId={userId} />
+          <BlockButton userId={userId} />
+          <FriendButton userId={userId} />
+        </div>
+      )}
     </div>
   );
 }

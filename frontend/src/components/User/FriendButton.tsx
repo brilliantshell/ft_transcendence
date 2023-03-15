@@ -51,12 +51,24 @@ function FriendButton(props: Props) {
     <>
       {
         {
-          friend: <button onClick={friendDelete}>친구 삭제</button>,
+          friend: (
+            <button className="xsmall" onClick={friendDelete}>
+              친구 삭제
+            </button>
+          ),
           blocked: <></>,
           blocker: <></>,
-          normal: <button onClick={friendPut}>친구 추가</button>,
-          pendingSender: <button onClick={friendDelete}>요청 취소</button>,
-          pendingReceiver: <button>친구 대기</button>,
+          normal: (
+            <button className="xsmall" onClick={friendPut}>
+              친구 추가
+            </button>
+          ),
+          pendingSender: (
+            <button className="xsmall" onClick={friendDelete}>
+              요청 취소
+            </button>
+          ),
+          pendingReceiver: <button className="xsmall">친구 대기</button>,
         }[relationshipMap.get(props.userId)?.relationship ?? 'normal']
       }
     </>
