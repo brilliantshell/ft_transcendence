@@ -33,8 +33,8 @@ function Dropdown({ userId }: Props) {
           <button className="xsmall" onClick={dmOnclick}>
             DM
           </button>
-          <GameButton userId={userId} />
           <BlockButton userId={userId} />
+          <GameButton userId={userId} />
           <FriendButton userId={userId} />
         </div>
       )}
