@@ -3,6 +3,8 @@ import { socket } from '../../util/Socket';
 import instance from '../../util/Axios';
 import Message from './Message';
 
+const BUTTON_IMG_PATH = '/assets/arrow-up-circle.png';
+
 interface Props {
   id: string;
 }
@@ -77,7 +79,11 @@ function ChatList(props: Props) {
 
   return (
     <div className="chatList" ref={chatListDivRef}>
-      {isMoreMessage && <button onClick={clickHandler}>더 보기</button>}
+      {isMoreMessage && (
+        <button onClick={clickHandler}>
+          <img className="upButtonImage" src={BUTTON_IMG_PATH}></img>
+        </button>
+      )}
       {contents.map(data => (
         <Message key={data.messageId} data={data} />
       ))}
