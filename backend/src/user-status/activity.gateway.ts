@@ -122,7 +122,7 @@ export class ActivityGateway
    * @param { userId, ui } 유저 아이디, UI 이름
    */
   @SubscribeMessage('currentUi')
-  handleCurrentUi(
+  async handleCurrentUi(
     @ConnectedSocket() clientSocket: VerifiedSocket,
     @MessageBody() { ui }: CurrentUiDto,
   ) {
@@ -133,9 +133,9 @@ export class ActivityGateway
     const prevUi = this.activityManager.getActivity(userId);
     this.activityManager.setActivity(userId, ui);
     prevUi
-      ? this.leaveRooms(clientSocket.id, userId, prevUi)
+      ? await this.leaveRooms(clientSocket.id, userId, prevUi)
       : this.emitUserActivity(userId);
-    this.joinRooms(clientSocket.id, userId, ui);
+    await this.joinRooms(clientSocket.id, userId, ui);
     return 'OK';
   }
 
@@ -259,7 +259,11 @@ export class ActivityGateway
    * @param userId 유저의 id
    * @param prevUi 이전 UI
    */
-  private leaveRooms(socketId: SocketId, userId: UserId, prevUi: CurrentUi) {
+  private async leaveRooms(
+    socketId: SocketId,
+    userId: UserId,
+    prevUi: CurrentUi,
+  ) {
     if (prevUi === 'chats') {
       this.chatsGateway.leaveRoom(socketId, prevUi);
     } else if (prevUi === 'waitingRoom') {
@@ -276,7 +280,7 @@ export class ActivityGateway
           socketId,
           (prevUi + '-active') as `chatRooms-${ChannelId}-active`,
         );
-        this.channelStorage.updateUnseenCount(
+        await this.channelStorage.updateUnseenCount(
           Math.floor(Number(prevUi.split('-')[1])),
           userId,
           true,
@@ -298,11 +302,11 @@ export class ActivityGateway
    * @param userId 유저의 id
    * @param ui 새로운 UI
    */
-  private joinRooms(socketId: SocketId, userId: UserId, ui: CurrentUi) {
+  private async joinRooms(socketId: SocketId, userId: UserId, ui: CurrentUi) {
     if (ui === 'chats') {
       this.chatsGateway.joinRoom(socketId, ui);
     } else if (ui.startsWith('chatRooms-')) {
-      this.channelStorage.updateUnseenCount(
+      await this.channelStorage.updateUnseenCount(
         Number(ui.split('-')[1]),
         userId,
         true,

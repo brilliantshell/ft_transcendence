@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import { useLocation } from 'react-router-dom';
 import ErrorBoundary from './components/common/ErrorBoundary';
 import Header from './components/common/Header';
@@ -23,7 +24,15 @@ function AppWrapper() {
           </ErrorBoundary>
           <Navigation />
           <ErrorBoundary fallback={<main> 에러가 발생했어요~ </main>}>
-            <Main />
+            <Suspense
+              fallback={
+                <main>
+                  <div className="spin"></div>
+                </main>
+              }
+            >
+              <Main />
+            </Suspense>
           </ErrorBoundary>
         </>
       )}

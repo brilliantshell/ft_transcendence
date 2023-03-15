@@ -15,12 +15,16 @@ instance.interceptors.response.use(
     return response;
   },
   async error => {
-    if (error?.response?.status === 401) {
+    const status = error?.response?.status;
+    if (status === undefined || status >= 500) {
+      await ErrorAlert('오류가 발생하였습니다.', '잠시 후 다시 시도해주세요.');
+    } else if (error?.response?.status === 401) {
       await ErrorAlert('로그인이 필요합니다.', '로그인 페이지로 이동합니다.');
       window.location.href = '/login';
-      return new Promise(() => {});
+    } else {
+      return Promise.reject(error);
     }
-    return Promise.reject(error);
+    return new Promise(() => {});
   },
 );
 

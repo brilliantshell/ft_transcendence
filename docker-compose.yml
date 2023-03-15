@@ -24,7 +24,7 @@ services:
     ports:
       - "3000:3000"
     volumes:
-      - assets_prod:/app/public/assets
+      - assets_prod:/app/public/assets/profile-image
 
   database:
     image: db_prod_image:v1

@@ -477,11 +477,15 @@ export class ChannelStorage implements OnModuleInit {
    * @param userId 유저 id
    * @param isReset 읽지 않은 메시지 수를 0으로 초기화할지 여부
    */
-  updateUnseenCount(channelId: ChannelId, userId: UserId, isReset = false) {
+  async updateUnseenCount(
+    channelId: ChannelId,
+    userId: UserId,
+    isReset = false,
+  ) {
     const userChannelStatus = this.getUser(userId)?.get(channelId);
     if (userChannelStatus) {
       if (isReset) {
-        this.channelMembersRepository.update(
+        await this.channelMembersRepository.update(
           { channelId, memberId: userId },
           { viewedAt: DateTime.now() },
         );
