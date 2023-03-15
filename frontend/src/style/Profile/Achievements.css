@@ -2,7 +2,7 @@
   height: 5rem;
   width: 100%;
   display: inline-flex;
-  list-style: none;
+  /* list-style: none; */
   justify-content: center;
 }
 
