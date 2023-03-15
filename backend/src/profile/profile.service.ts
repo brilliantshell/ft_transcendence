@@ -7,13 +7,16 @@ import {
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
-import { EntityNotFoundError, Repository } from 'typeorm';
+import { EntityNotFoundError, In, MoreThan, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { join } from 'path';
 import { rmSync } from 'fs';
 
+import { Achievements } from '../entity/achievements.entity';
 import { Achievers } from '../entity/achievers.entity';
 import { AuthService } from '../auth/auth.service';
+import { ChannelMembers } from '../entity/channel-members.entity';
+import { Friends } from '../entity/friends.entity';
 import { MatchHistory } from '../entity/match-history.entity';
 import { Users } from '../entity/users.entity';
 import { UserId } from '../util/type';
@@ -25,7 +28,13 @@ export class ProfileService {
   constructor(
     @InjectRepository(Achievers)
     private readonly achieversRepository: Repository<Achievers>,
+    @InjectRepository(Achievements)
+    private readonly achievementsRepository: Repository<Achievements>,
     private readonly authService: AuthService,
+    @InjectRepository(ChannelMembers)
+    private readonly channelMembersRepository: Repository<ChannelMembers>,
+    @InjectRepository(Friends)
+    private readonly friendsRepository: Repository<Friends>,
     @InjectRepository(MatchHistory)
     private readonly matchHistoryRepository: Repository<MatchHistory>,
     @InjectRepository(Users)
@@ -57,12 +66,21 @@ export class ProfileService {
           where: { userId: targetId },
           select: ['ladder', 'winCount', 'lossCount'],
         });
-      const achievement = (
+      const achievedId = (
         await this.achieversRepository.find({
           where: { userId: targetId },
-          relations: { achievement: true },
+          select: { achievementId: true },
         })
-      ).map((e) => e.achievement);
+      ).map(({ achievementId }) => achievementId);
+      const updatedIds = await this.updateAchievements(
+        targetId,
+        winCount,
+        ladder,
+        achievedId,
+      );
+      const achievement = await this.achievementsRepository.findBy({
+        id: In(updatedIds),
+      });
       const matchHistory = await this.findMatchHistory(targetId);
       return {
         ladder,
@@ -251,6 +269,7 @@ export class ProfileService {
       );
     }
   }
+
   /*****************************************************************************
    *                                                                           *
    * SECTION : Private Methods                                                 *
@@ -305,5 +324,106 @@ export class ProfileService {
               isRank,
             };
       });
+  }
+
+  /*****************************************************************************
+   *                                                                           *
+   * SECTION : update achievements                                             *
+   *                                                                           *
+   ****************************************************************************/
+
+  private async updateAchievements(
+    targetId: UserId,
+    winCount: number,
+    ladder: number,
+    achievedIds: number[],
+  ) {
+    const achievementsList: Array<[number, () => Promise<boolean>]> = [
+      [1, this.updateFirstWin.bind(this, targetId, winCount)],
+      [2, this.updateTopPlayer.bind(this, targetId, ladder)],
+      [3, this.updateTenFriends.bind(this, targetId)],
+      [5, this.updateFiveJoinedChats.bind(this, targetId)],
+    ];
+    const toUpdate = achievementsList.filter(([a]) => !achievedIds.includes(a));
+    await Promise.all(
+      toUpdate.map(([i, func]) =>
+        func().then((updated) => {
+          updated && achievedIds.push(i);
+        }),
+      ),
+    );
+    return achievedIds.sort((a, b) => a - b);
+  }
+
+  private async updateFirstWin(targetId: UserId, winCount: number) {
+    try {
+      if (winCount >= 1) {
+        await this.achieversRepository.insert({
+          userId: targetId,
+          achievementId: 1,
+        });
+        return true;
+      }
+      return false;
+    } catch (e) {
+      this.logger.error(e);
+      throw new InternalServerErrorException('Failed to update achievement #1');
+    }
+  }
+  private async updateTopPlayer(targetId: UserId, ladder: number) {
+    try {
+      if (
+        (await this.usersRepository.countBy({ ladder: MoreThan(ladder) })) === 0
+      ) {
+        await this.achieversRepository.insert({
+          userId: targetId,
+          achievementId: 2,
+        });
+        return true;
+      }
+      return false;
+    } catch (e) {
+      this.logger.error(e);
+      throw new InternalServerErrorException('Failed to update achievement #2');
+    }
+  }
+  private async updateTenFriends(targetId: UserId) {
+    try {
+      if (
+        (await this.friendsRepository.countBy([
+          { senderId: targetId, isAccepted: true },
+          { receiverId: targetId, isAccepted: true },
+        ])) >= 10
+      ) {
+        this.achieversRepository.insert({
+          userId: targetId,
+          achievementId: 3,
+        });
+        return true;
+      }
+      return false;
+    } catch (e) {
+      this.logger.error(e);
+      throw new InternalServerErrorException('Failed to update achievement #3');
+    }
+  }
+
+  private async updateFiveJoinedChats(targetId: UserId) {
+    try {
+      if (
+        (await this.channelMembersRepository.countBy({ memberId: targetId })) >=
+        5
+      ) {
+        await this.achieversRepository.insert({
+          userId: targetId,
+          achievementId: 5,
+        });
+        return true;
+      }
+      return false;
+    } catch (e) {
+      this.logger.error(e);
+      throw new InternalServerErrorException('Failed to update achievement #5');
+    }
   }
 }

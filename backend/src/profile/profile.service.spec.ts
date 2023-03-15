@@ -17,10 +17,13 @@ import {
   generateUsers,
   updateUsersFromMatchHistory,
 } from '../../test/util/generate-mock-data';
+import { AccessMode, Channels } from '../entity/channels.entity';
 import { Achievements } from '../entity/achievements.entity';
 import { Achievers } from '../entity/achievers.entity';
 import { AppModule } from '../app.module';
 import { AuthService } from '../auth/auth.service';
+import { ChannelMembers } from '../entity/channel-members.entity';
+import { Friends } from '../entity/friends.entity';
 import { MatchHistory } from '../entity/match-history.entity';
 import { ProfileService } from './profile.service';
 import {
@@ -32,7 +35,15 @@ import { TwoFactorAuthData } from 'src/util/type';
 import { Users } from '../entity/users.entity';
 
 const TEST_DB = 'test_db_profile_service';
-const ENTITIES = [Achievements, Achievers, MatchHistory, Users];
+const ENTITIES = [
+  Achievements,
+  Achievers,
+  ChannelMembers,
+  Channels,
+  Friends,
+  MatchHistory,
+  Users,
+];
 
 describe('ProfileService', () => {
   let dataSource: DataSource;
@@ -342,5 +353,55 @@ describe('ProfileService', () => {
     const user = usersEntities[0];
     await service.deleteTwoFactorEmail(user.userId);
     await service.deleteTwoFactorEmail(user.userId);
+  });
+
+  it('should update Achievements 1, 2, 3, 5', async () => {
+    const user = await dataSource.getRepository(Users).save({
+      userId: 4242,
+      nickname: 'test',
+      ladder: 10000,
+      winCount: 10000,
+    });
+    for (let i = 0; i < 5; ++i) {
+      const a = await dataSource.getRepository(Channels).save({
+        name: `test${i}`,
+        ownerId: user.userId,
+        accessMode: AccessMode.PUBLIC,
+        memberCount: 1,
+        modifiedAt: DateTime.now(),
+      });
+      await dataSource.getRepository(ChannelMembers).save({
+        channelId: a.channelId,
+        memberId: user.userId,
+        viewedAt: DateTime.now(),
+        muteEndAt: DateTime.now(),
+      });
+    }
+    for (let i = 0; i < 10; ++i) {
+      await dataSource.getRepository(Friends).save({
+        senderId: user.userId,
+        receiverId: usersEntities[i].userId,
+        isAccepted: true,
+      });
+    }
+    expect(
+      (
+        await dataSource
+          .getRepository(Achievers)
+          .find({ where: { userId: user.userId }, relations: ['achievement'] })
+      ).map((a) => a.achievement),
+    ).toEqual([]);
+
+    const ret = await service.findProfile(user.userId);
+
+    expect(ret.achievement.length).toEqual(4);
+
+    expect(
+      (
+        await dataSource
+          .getRepository(Achievers)
+          .find({ where: { userId: user.userId }, relations: ['achievement'] })
+      ).map((a) => a.achievement),
+    ).toEqual(ret.achievement);
   });
 });

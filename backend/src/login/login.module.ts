@@ -3,6 +3,7 @@ import { Module, forwardRef } from '@nestjs/common';
 import { PassportModule } from '@nestjs/passport';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
+import { Achievers } from '../entity/achievers.entity';
 import { ApiConfigModule } from '../config/api-config.module';
 import { FortyTwoStrategy } from './forty-two.strategy';
 import { LoginController } from './login.controller';
@@ -15,7 +16,7 @@ import { Users } from '../entity/users.entity';
       timeout: 5000,
       timeoutErrorMessage: 'Timeout has occurred In 42 API',
     }),
-    TypeOrmModule.forFeature([Users]),
+    TypeOrmModule.forFeature([Achievers, Users]),
     forwardRef(() => ApiConfigModule),
     PassportModule,
   ],
