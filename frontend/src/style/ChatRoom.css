@@ -33,6 +33,10 @@
   margin: 10px;
 }
 
+.myMessage {
+  flex-direction: row-reverse;
+}
+
 .chatProfileImage {
   height: 50px;
   border-radius: 50%;
@@ -40,8 +44,13 @@
 }
 
 .messageNick {
-  width: 6rem;
+  width: 100%;
   text-align: left;
+}
+
+.myMessageNick {
+  width: 100%;
+  text-align: right;
 }
 
 .messageWrap {

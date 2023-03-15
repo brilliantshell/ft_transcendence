@@ -64,7 +64,7 @@ function UserBase(props: Props) {
           src={
             user?.isDefaultImage
               ? '/assets/defaultProfile.svg'
-              : '`localhost:3000/asset/profileImages/${props.userId}`'
+              : `/assets/profile-image/${props.userId}`
           }
         />
       </div>
