@@ -27,7 +27,6 @@ export interface ProfileDataForm {
   }>;
 }
 
-/* TODO - uri의 id가 존재하지 않는 케이스 따로 처리, ALERT 사용하기 */
 function Profile() {
   const [isConnected, setIsConnected] = useState(socket.connected);
 
@@ -44,14 +43,13 @@ function Profile() {
       .then(result => {
         setProfileData(result.data);
       })
-      .catch(err => {
+      .catch(() => {
         ErrorAlert(
           '해당 ID에 대한 프로필 로드에 실패했습니다.',
           'ID가 유효하지 않습니다.',
         );
-        console.log(err);
       });
-  }, [id, myId]);
+  }, [id]);
 
   return (
     profileData && (

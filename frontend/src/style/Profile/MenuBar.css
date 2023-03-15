@@ -182,6 +182,13 @@
   color: white;
 }
 
+.deleteTwoFAButton:hover,
+.deleteTwoFAButton:hover .menuTooltip,
+.deleteTwoFAButton:hover .menuTooltip::before {
+  background: #e30a36;
+  color: white;
+}
+
 .profileModal {
   position: absolute;
   top: 0;

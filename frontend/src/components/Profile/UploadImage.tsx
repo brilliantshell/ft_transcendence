@@ -5,9 +5,18 @@ function UploadImage() {
   const onClick = () => {
     FileAlert('프로필 사진을 바꿀까요?').then(res => {
       if (res.isConfirmed && res.value) {
-        // instance.put(`/profile/image`, { res.value }).then().catch();
+        const formData = new FormData();
+        formData.append('profileImage', res.value);
+        instance
+          .put(`/profile/image`, formData)
+          .then(() => {
+            // console.log('aa')
+          })
+          .catch(() => {
+            // console.log('bb');
+          });
         // console.log(res.value);
-        console.log('aaaa');
+        // console.log('aaaa');
       }
     });
   };
