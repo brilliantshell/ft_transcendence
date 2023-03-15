@@ -104,7 +104,7 @@ function SignUp() {
             placeholder="닉네임을 입력해주세요."
           />
           <p className="signUpNicknameError selectNone small">
-            {error || '닉네임은 4 ~ 10자의 영문자로 입력해주세요.'}
+            {error && '닉네임은 4 ~ 10자의 영문자로 입력해주세요.'}
           </p>
         </label>
         <button className="signUpButton" type="submit">
