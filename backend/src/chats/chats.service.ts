@@ -172,7 +172,7 @@ export class ChatsService {
     password: string = null,
   ) {
     if (this.channelStorage.getUserRole(channelId, userId) !== null) {
-      this.channelStorage.updateUnseenCount(channelId, userId, true);
+      await this.channelStorage.updateUnseenCount(channelId, userId, true);
       return false;
     }
     const { accessMode } = this.channelStorage.getChannel(channelId);
@@ -293,12 +293,12 @@ export class ChatsService {
       contents,
       createdAt,
     );
-    this.channelStorage.getChannel(channelId).userRoleMap.forEach((v, id) => {
+    for (const [id] of this.channelStorage.getChannel(channelId).userRoleMap) {
       const currentUi = this.activityManager.getActivity(id);
       if (currentUi !== null && currentUi !== `chatRooms-${channelId}`) {
-        this.channelStorage.updateUnseenCount(channelId, id);
+        await this.channelStorage.updateUnseenCount(channelId, id);
       }
-    });
+    }
   }
 
   /**
