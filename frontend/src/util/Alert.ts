@@ -42,7 +42,6 @@ export const InfoAlert = (title: string, text: string) => {
     icon: 'info',
     title,
     html: `${text}`,
-    // text: `${text}`,
   });
 };
 

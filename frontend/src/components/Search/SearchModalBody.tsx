@@ -7,10 +7,7 @@ interface SearchModalBodyProps {
   searchAction: (targetId: number) => void;
 }
 
-function SearchModalBody({
-  searchResult,
-  searchAction,
-}: SearchModalBodyProps) {
+function SearchModalBody({ searchResult, searchAction }: SearchModalBodyProps) {
   const downPressed = useKeyPress('ArrowDown');
   const upPressed = useKeyPress('ArrowUp');
   const enterPressed = useKeyPress('Enter');
@@ -52,10 +49,13 @@ function SearchModalBody({
             onClick={() => searchAction(user.userId)}
           >
             <img
-              src="http://localhost:5173/assets/defaultProfile.svg"
+              src={
+                user.isDefaultImage
+                  ? '/assets/defaultProfile'
+                  : `/asset/profile-image/${user.userId}`
+              }
               className="searchResultImage selectNone"
             />
-            {/* FIXME: <img src={user.isDefaultImage ? 'http://localhost:5173/assets/defaultProfile'  : `http://localhost:3000/asset/profile-image/${user.userId}`}/> */}
             <span className="textBold">{user.nickname}</span>
           </div>
         );

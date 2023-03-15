@@ -41,7 +41,11 @@ function ChatInput(props: Props) {
         if (err.response.status === 400) {
           ErrorAlert('잘못된 명령어입니다.', '/help로 명령어를 확인하세요.');
         } else if (err.response.status === 403) {
-          ErrorAlert('권한이 없는 유저입니다.', err.response.data.message);
+          const time = err.response.data.message.match(/(\d+)/)[0];
+          ErrorAlert(
+            '권한이 없는 유저입니다.',
+            `입력 제한 시간 ${time}분 남았습니다.`,
+          );
         } else if (err.response.status === 404) {
           ErrorAlert('존재하지 않는 유저 입니다.', '유저 닉네임을 확인하세요.');
         }

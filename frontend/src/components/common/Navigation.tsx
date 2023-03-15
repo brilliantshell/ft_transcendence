@@ -14,7 +14,6 @@ function NavigationButton({
   const [isCurrent, setIsCurrent] = useState(false);
 
   useEffect(() => {
-    console.log(window.location.pathname);
     setIsCurrent(window.location.pathname === path);
   }, [window.location.pathname]);
 
@@ -63,7 +62,7 @@ function Navigation() {
 
   return (
     <nav>
-      <img className="logo" src="../../public/assets/logo.png" />
+      <img className="logo" src="/assets/logo.png" />
       <ul>
         {navInfo.map(({ path, hoverContent, iconName }) => (
           <NavigationButton
