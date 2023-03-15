@@ -5,17 +5,21 @@
   grid-template-columns: 0.3fr 1fr;
   background-color: var(--primary_dark);
   padding: 1rem;
+  border-radius: 20px;
 }
 
 .chatRoomUserList {
   height: 95%;
+  border-radius: 10px;
   overflow-y: scroll;
   background-color: var(--primary);
+  margin: 0 1rem;
 }
 
 .chatList {
-  border: 1px solid;
-  height: 100%;
+  /* border: 1px solid; */
+  border-radius: 10px;
+  height: 95%;
   overflow-y: scroll;
   background-color: var(--primary);
 }
@@ -78,4 +82,16 @@
 
 .chatRoomInput {
   height: 1rem;
+}
+
+.upButton {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+}
+
+.upButtonImage {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
 }

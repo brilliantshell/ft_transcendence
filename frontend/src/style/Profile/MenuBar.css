@@ -1,100 +1,3 @@
-/* .menuBar {
-  display: inline-flex;
-  list-style: none;
-  height: 5rem;
-  width: 100%;
-  justify-content: center;
-}
-
-.menuBar .menuButton {
-  display: flex;
-  position: relative;
-  background: var(--primary_dark);
-  border-radius: 50%;
-  margin: 1rem;
-  width: 3rem;
-  height: 3rem;
-  justify-content: center;
-  align-items: center;
-  flex-direction: column;
-  box-shadow: 0 10px 10px rgba(0, 0, 0, 0.1);
-  cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-}
-
-.menuBar .menuTooltip {
-  position: absolute;
-  top: 0;
-  font-size: 14px;
-  background: #fff;
-  color: #fff;
-  padding: 5px 8px;
-  border-radius: 5px;
-  box-shadow: 0 10px 10px rgba(0, 0, 0, 0.1);
-  opacity: 0;
-  pointer-events: none;
-  transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-}
-
-.menuBar .menuTooltip::before {
-  position: absolute;
-  content: '';
-  height: 8px;
-  width: 8px;
-  background: #fff;
-  bottom: -3px;
-  left: 50%;
-  transform: translate(-50%) rotate(45deg);
-  transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-}
-
-.menuBar .menuButton:hover .menuTooltip {
-  top: -45px;
-  opacity: 1;
-  visibility: visible;
-  pointer-events: auto;
-}
-
-.menuBar .menuButton:hover span,
-.menuBar .menuButton:hover .menuTooltip {
-  text-shadow: 0px -1px 0px rgba(0, 0, 0, 0.1);
-}
-
-.menuBar .changeNickButton:hover,
-.menuBar .changeNickButton:hover .menuTooltip,
-.menuBar .changeNickButton:hover .menuTooltip::before {
-  background: #e4405f;
-  color: white;
-}
-
-.menuBar .uploadProfileImageButton:hover,
-.menuBar .uploadProfileImageButton:hover .menuTooltip,
-.menuBar .uploadProfileImageButton:hover .menuTooltip::before {
-  background: #f08700;
-  color: white;
-}
-
-.menuBar .deleteProfileImageButton:hover,
-.menuBar .deleteProfileImageButton:hover .menuTooltip,
-.menuBar .deleteProfileImageButton:hover .menuTooltip::before {
-  background: #00a6a6;
-  color: white;
-}
-
-.menuBar .setTwoFAButton:hover,
-.menuBar .setTwoFAButton:hover .menuTooltip,
-.menuBar .setTwoFAButton:hover .menuTooltip::before {
-  background: #1da1f2;
-  color: white;
-} */
-
-/* .menuBar {
-  display: inline-flex;
-  height: 6rem;
-  width: 100%;
-  justify-content: center;
-} */
-
 .menuBar {
   display: flex;
   justify-content: center;
@@ -105,7 +8,7 @@
   position: relative;
   background: var(--primary_dark);
   border-radius: 50%;
-  margin: 1rem;
+  margin: 0.5rem;
   width: 1.5rem;
   height: 1.5rem;
   justify-content: center;
@@ -148,11 +51,6 @@
   visibility: visible;
   pointer-events: auto;
 }
-
-/* .menuBar .menuButton:hover span,
-.menuBar .menuButton:hover .menuTooltip {
-  text-shadow: -2px -2px 0px rgba(0, 0, 0, 0.1);
-} */
 
 .changeNicknameButton:hover,
 .changeNicknameButton:hover .menuTooltip,

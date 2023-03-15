@@ -3,6 +3,7 @@
   left: 100%;
   margin-right: 2rem;
   position: sticky;
+  z-index: 3;
 }
 
 .friendsListBtn {
