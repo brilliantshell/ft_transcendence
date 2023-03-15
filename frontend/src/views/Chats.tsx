@@ -16,6 +16,7 @@ import {
   useMessageArrivedEvent,
 } from '../components/Chats/hooks/ChannelHooks';
 import { useCurrentUi } from '../components/hooks/CurrentUi';
+import ChannelCreate from '../components/Chats/ChannelCreate';
 
 function Chats() {
   const [joinedChannels, setJoinedChannels] = useState<ChannelInfo[]>([]);
@@ -64,6 +65,7 @@ function Chats() {
           isJoined={false}
           isEmpty={isEmpty[1]}
         />
+        <ChannelCreate />
       </ChatsFrame>
     </div>
   );

@@ -1,5 +1,4 @@
 import { lazy, Suspense } from 'react';
-import ChannelCreate from './ChannelCreate';
 import { ChannelInfo } from './interface';
 
 const Channel = lazy(() => import('./Channel'));
@@ -26,7 +25,6 @@ function ChatsBody({ channels, isJoined, isEmpty }: ChatsJoinedProps) {
           ))
         )}
       </Suspense>
-      {isJoined === false && <ChannelCreate />}
     </div>
   );
 }

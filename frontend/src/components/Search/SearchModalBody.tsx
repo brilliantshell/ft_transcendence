@@ -52,7 +52,7 @@ function SearchModalBody({ searchResult, searchAction }: SearchModalBodyProps) {
               src={
                 user.isDefaultImage
                   ? '/assets/defaultProfile'
-                  : `/asset/profile-image/${user.userId}`
+                  : `/assets/profile-image/${user.userId}`
               }
               className="searchResultImage selectNone"
             />
