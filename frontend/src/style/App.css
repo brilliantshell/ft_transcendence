@@ -26,6 +26,8 @@ main {
   align-items: center;
   background-color: var(--primary_light);
   display: grid;
+  grid-template-rows: 1fr;
+  height: calc(100vh- 50px);
   justify-items: center;
   position: relative;
 }

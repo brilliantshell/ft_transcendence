@@ -60,8 +60,16 @@ function GameButton({ userId }: Props) {
     <>
       {
         {
-          online: <button onClick={inviteGame}>게임 초대</button>,
-          inGame: <button onClick={watchingGame}>게임 관전</button>,
+          online: (
+            <button className="xsmall" onClick={inviteGame}>
+              게임 초대
+            </button>
+          ),
+          inGame: (
+            <button className="xsmall" onClick={watchingGame}>
+              게임 관전
+            </button>
+          ),
         }[activityData.activity]
       }
     </>

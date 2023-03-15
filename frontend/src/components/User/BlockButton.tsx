@@ -51,11 +51,19 @@ function BlockButton(props: Props) {
   };
 
   if (relationshipMap.get(props.userId)?.relationship === 'blocker') {
-    return <button onClick={blockDelete}>차단 해제</button>;
+    return (
+      <button className="xsmall" onClick={blockDelete}>
+        차단 해제
+      </button>
+    );
   } else if (relationshipMap.get(props.userId)?.relationship === 'blocked') {
     return <></>;
   }
-  return <button onClick={blockPut}>차단</button>;
+  return (
+    <button className="xsmall" onClick={blockPut}>
+      차단
+    </button>
+  );
 }
 
 export default BlockButton;

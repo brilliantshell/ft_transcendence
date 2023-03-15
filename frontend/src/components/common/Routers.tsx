@@ -1,10 +1,11 @@
-import { Routes, Route } from 'react-router-dom';
+import ChatRoom from '../../views/ChatRoom';
+import Chats from '../../views/Chats';
 import GameRoom from '../../views/GameRoom';
+import { NotFoundComponent } from './NotFoundComponent';
 import Profile from '../../views/Profile';
 import Ranks from '../../views/Ranks';
-import Chats from '../../views/Chats';
+import { Routes, Route } from 'react-router-dom';
 import WaitingRoom from '../../views/WaitingRoom';
-import ChatRoom from '../../views/ChatRoom';
 
 function Routers() {
   return (
@@ -16,6 +17,7 @@ function Routers() {
       <Route path="/game/:gameId" element={<GameRoom />} />
       <Route path="/waiting-room" element={<WaitingRoom />} />
       <Route path="/chats/:id" element={<ChatRoom />} />
+      <Route path="*" element={<NotFoundComponent />} />
     </Routes>
   );
 }

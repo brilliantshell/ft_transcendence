@@ -55,9 +55,15 @@ function UserBase(props: Props) {
     <div className="userBase">
       <div className="profileDiv">
         {onlineFunc() ? (
-          <div style={{ background: 'var(--online)' }} />
+          <div
+            className="activityDot"
+            style={{ background: 'var(--online)' }}
+          />
         ) : (
-          <div style={{ background: 'var(--offline)' }} />
+          <div
+            className="activityDot"
+            style={{ background: 'var(--offline)' }}
+          />
         )}
         <img
           className="profileImage"
@@ -68,10 +74,10 @@ function UserBase(props: Props) {
           }
         />
       </div>
-      <Link to={`/profile/${props.userId}`} className="userNickname">
+      <Link to={`/profile/${props.userId}`} className="userNickname regular">
         {user.nickname}
       </Link>
-      {props.rightChild && <div className="rightChild">{props.rightChild}</div>}
+      {props.rightChild && props.rightChild}
       {props.downChild && <div className="downChild">{props.downChild}</div>}
     </div>
   );

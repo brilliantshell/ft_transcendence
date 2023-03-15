@@ -1,43 +1,64 @@
-div.friendsList {
+.friendsList {
+  bottom: 2rem;
+  left: 100%;
+  margin-right: 2rem;
   position: sticky;
-  bottom: 5%;
-  left: 90%;
 }
 
 .friendsListBtn {
-  background-color: #3498db;
+  background-color: var(--secondary);
+  border-radius: 50%;
   color: white;
-  cursor: pointer;
-  padding: 16px;
-  font-size: 16px;
-  border: none;
+  height: 4rem;
+  width: 4rem;
+}
+
+.friendsListBtn .material-symbols-outlined {
+  color: var(--primary);
 }
 
 .friendsListContent {
+  align-items: center;
+  background-color: var(--primary);
+  border-radius: 0.5rem;
+  bottom: 4.8rem;
   display: flex;
   flex-direction: column;
   position: absolute;
-  background-color: var(--secondary);
   right: 0;
-  bottom: 50px;
-  width: 10rem;
-  border-radius: 0.5rem;
+  width: 12rem;
 }
 
 .friendCategory {
-  padding: 0.1rem 0;
-  background-color: var(--secondary_dark);
+  background-color: var(--primary_dark);
+  color: var(--secondary);
+  height: 2.5rem;
+  line-height: 2.5rem;
+  vertical-align: middle;
+  width: 100%;
+}
+
+.friendCategory:first-of-type {
+  border-radius: 0.5rem 0.5rem 0 0;
 }
 
 .friendListMap {
-  max-height: 10rem;
+  max-height: 15rem;
+  min-height: 4rem;
   padding-bottom: 50px;
   overflow-y: scroll;
 }
 
-/* Hide scrollbar for Chrome, Safari and Opera */
 .friendListMap::-webkit-scrollbar {
   display: none;
 }
 
-/* FIXME : 윗부분 css가 둥글게 안되는...ㅠㅠㅠ */
+.friendListMapEmpty {
+  color: var(--primary_dark);
+  height: 4rem;
+  line-height: 4rem;
+  text-align: center;
+  text-decoration: opacity 0.5s;
+  vertical-align: middle;
+  width: 100%;
+}

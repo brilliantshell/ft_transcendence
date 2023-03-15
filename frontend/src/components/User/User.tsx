@@ -14,7 +14,7 @@ function User(props: Props) {
       userId={props.userId}
       downChild={props.downChild}
       session={props.session}
-      rightChild={<Dropdown userId={props.userId}></Dropdown>}
+      rightChild={<Dropdown userId={props.userId} />}
     />
   );
 }
