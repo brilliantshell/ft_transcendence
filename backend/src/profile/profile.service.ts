@@ -332,6 +332,15 @@ export class ProfileService {
    *                                                                           *
    ****************************************************************************/
 
+  /**
+   * @description 프로필을 조회할 때 업적 업데이트
+   *
+   * @param targetId 조회 대상 유저의 ID
+   * @param winCount 조회 대상 유저의 승리 횟수
+   * @param ladder 조회 대상 유저의 래더
+   * @param achievedIds 조회 대상 유저가 이미 달성한 업적의 ID
+   * @returns
+   */
   private async updateAchievements(
     targetId: UserId,
     winCount: number,
@@ -355,6 +364,13 @@ export class ProfileService {
     return achievedIds.sort((a, b) => a - b);
   }
 
+  /**
+   * @description 업적 #1 달성 여부 업데이트
+   *
+   * @param targetId 조회 대상 유저의 ID
+   * @param winCount 조회 대상 유저의 승리 횟수
+   * @returns
+   */
   private async updateFirstWin(targetId: UserId, winCount: number) {
     try {
       if (winCount >= 1) {
@@ -370,6 +386,14 @@ export class ProfileService {
       throw new InternalServerErrorException('Failed to update achievement #1');
     }
   }
+
+  /**
+   * @description 업적 #2 달성 여부 업데이트
+   *
+   * @param targetId 조회 대상 유저의 ID
+   * @param ladder 조회 대상 유저의 래더
+   * @returns 업데이트 여부
+   */
   private async updateTopPlayer(targetId: UserId, ladder: number) {
     try {
       if (
@@ -387,6 +411,13 @@ export class ProfileService {
       throw new InternalServerErrorException('Failed to update achievement #2');
     }
   }
+
+  /**
+   * @description 업적 #3 달성 여부 업데이트
+   *
+   * @param targetId 조회 대상 유저의 ID
+   * @returns 업데이트 여부
+   */
   private async updateTenFriends(targetId: UserId) {
     try {
       if (
@@ -408,6 +439,12 @@ export class ProfileService {
     }
   }
 
+  /**
+   * @description 업적 #5 달성 여부 업데이트
+   *
+   * @param targetId 조회 대상 유저의 ID
+   * @returns 업데이트 여부
+   */
   private async updateFiveJoinedChats(targetId: UserId) {
     try {
       if (
