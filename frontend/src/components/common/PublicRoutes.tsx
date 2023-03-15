@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { Route, Routes, useNavigate } from 'react-router-dom';
 import { ErrorAlert } from '../../util/Alert';
 import { socket } from '../../util/Socket';
@@ -25,7 +25,6 @@ function PublicRoutes() {
         ErrorAlert('오류가 발생했습니다.', '잠시 후 다시 시도해주세요.');
       }
     })();
-
     socket.off();
   }, []);
 
