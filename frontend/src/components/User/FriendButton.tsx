@@ -1,5 +1,4 @@
 import { useRecoilState } from 'recoil';
-import { ErrorAlert } from '../../util/Alert';
 import instance from '../../util/Axios';
 import { userRelationship } from '../../util/Recoils';
 
@@ -24,14 +23,7 @@ function FriendButton(props: Props) {
           return copy;
         });
       })
-      .catch(err => {
-        // TODO :400 | 403(차단된 사용자 접근)
-        if (err.response.status === 400) {
-          ErrorAlert('', '');
-        } else if (err.response.status === 403) {
-          ErrorAlert('', '');
-        }
-      });
+      .catch(() => {});
   };
 
   const friendDelete = () => {

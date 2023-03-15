@@ -64,7 +64,8 @@ export const FileAlert = (title: string) => {
     confirmButtonText: '확인',
     cancelButtonText: '취소',
     inputAttributes: {
-      accept: 'image/*',
+      accept:
+        'image/jpeg, image/png, image/apng, image/avif, image/gif, image/webp',
       'aria-label': 'Upload your profile picture',
     },
   });
