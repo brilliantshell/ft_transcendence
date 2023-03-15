@@ -3,7 +3,7 @@ import { memo, ReactNode, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ErrorAlert } from '../../util/Alert';
 import { useRecoilValue } from 'recoil';
-import { userActivity } from '../../util/Recoils';
+import { editProfileState, userActivity } from '../../util/Recoils';
 
 interface Props {
   userId: number;
@@ -28,6 +28,7 @@ function UserBase(props: Props) {
   });
 
   const activityMap = useRecoilValue(userActivity);
+  const editProfile = useRecoilValue(editProfileState);
 
   useEffect(() => {
     instance
@@ -44,7 +45,7 @@ function UserBase(props: Props) {
       .catch(() => {
         ErrorAlert('오류가 발생', '오류가 발생했습니다!');
       });
-  }, [props.userId]);
+  }, [props.userId, editProfile]);
 
   const onlineFunc = () => {
     if (!activityMap.get(props.userId)) return false;

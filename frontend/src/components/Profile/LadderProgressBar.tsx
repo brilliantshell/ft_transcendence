@@ -1,4 +1,4 @@
-const MAX_LEVEL = 1000;
+const MAX_LEVEL = 100;
 
 function LadderProgressBar(props: { ladder: number }) {
   return (

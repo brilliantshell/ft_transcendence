@@ -1,7 +1,7 @@
 import { useParams } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { useRecoilValue } from 'recoil';
-import { myIdState } from '../util/Recoils';
+import { editProfileState, myIdState } from '../util/Recoils';
 import { socket } from '../util/Socket';
 import { useCurrentUi } from '../components/hooks/CurrentUi';
 import { useSocketOn } from '../components/hooks/SocketOnHooks';
@@ -29,6 +29,7 @@ export interface ProfileDataForm {
 
 function Profile() {
   const [isConnected, setIsConnected] = useState(socket.connected);
+  const editProfile = useRecoilValue(editProfileState);
 
   useCurrentUi(isConnected, setIsConnected, 'profile');
   useSocketOn();
@@ -49,7 +50,7 @@ function Profile() {
           'ID가 유효하지 않습니다.',
         );
       });
-  }, [id]);
+  }, [id, editProfile]);
 
   return (
     profileData && (
