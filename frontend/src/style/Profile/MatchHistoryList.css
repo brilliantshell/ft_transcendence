@@ -1,8 +1,7 @@
 .matchHistoryList {
-  display: grid;
   overflow: scroll;
   background-color: var(--primary);
-  grid-gap: 2rem;
+  gap: 2rem;
   scroll-snap-type: y mandatory;
   scrollbar-width: none;
   -ms-overflow-style: none;
@@ -23,27 +22,45 @@
   display: grid;
   width: 28rem;
   height: 16rem;
-  justify-content: stretch;
   scroll-snap-align: center;
-  grid-template-columns: 12rem 2rem 12rem;
+  grid-template-columns: 12rem 3rem 12rem;
   grid-template-rows: repeat(3, minmax(3rem, auto));
-  border-radius: 10px;
   color: white;
   place-content: stretch;
   place-items: stretch;
   align-items: stretch;
-  justify-content: center;
   align-content: center;
   border-radius: 10px;
   background: #6a7ba2;
   box-shadow: 10px 10px 20px #4b5773, -10px -10px 20px #899fd1;
 }
 
-/* .matchHistoryList .matchHistoryItem {
+.profileItem + .matchHistoryList {
+  display: flex;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  height: 100%;
+  overflow: scroll;
+  max-height: 36rem;
+}
+
+.matchHistory {
+  min-height: 16rem;
+  justify-content: center;
+}
+
+.matchHistoryList .matchHistoryItem {
   place-self: stretch;
   place-items: stretch;
   place-content: stretch;
-} */
+}
+
+.matchProfileImg {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+}
 
 .matchHistoryItem:nth-child(1) {
   grid-column: 1;
@@ -56,11 +73,21 @@
 }
 
 .matchHistoryItem:nth-child(3) {
-  grid-column: 1 / 4;
+  grid-column: 2;
   grid-row: 2;
 }
 
 .matchHistoryItem:nth-child(4) {
   grid-column: 1 / 4;
   grid-row: 3;
+}
+
+.matchHistoryItem:nth-child(5) {
+  grid-column: 1;
+  grid-row: 2;
+}
+
+.matchHistoryItem:nth-child(6) {
+  grid-column: 3;
+  grid-row: 2;
 }

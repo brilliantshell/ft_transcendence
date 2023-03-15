@@ -14,8 +14,6 @@ function ChatRoom() {
 
   useCurrentUi(isConnected, setIsConnected, `chatRooms-${id}`);
 
-  //   DELETE /chats/{:channelId}/user ⇒ 204 || 403 - 나가기
-
   useEffect(() => {
     if (id === undefined || !/^[1-9]\d{0,9}$/.test(id)) {
       ErrorAlert('잘못된 접근입니다.', '채팅방을 다시 선택해주세요.');

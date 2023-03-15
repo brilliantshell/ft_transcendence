@@ -2,7 +2,7 @@
   height: 5rem;
   width: 100%;
   display: inline-flex;
-  list-style: none;
+  /* list-style: none; */
   justify-content: center;
 }
 
@@ -23,7 +23,6 @@
   margin: 1rem;
   width: 3rem;
   height: 3rem;
-  filter: grayscale(100%);
 }
 
 .achievementBar .achievementElement .achievementTooltip {
@@ -37,29 +36,19 @@
   pointer-events: none;
   box-shadow: 0 10px 10px rgba(0, 0, 0, 0.1);
   transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  word-break: keep-all;
 }
 
 .achievementBar .achievementElement:hover .achievementTooltip {
   top: -4rem;
-  /* opacity: 1; */
   visibility: visible;
   pointer-events: auto;
-  filter: grayscale(0%);
-}
-
-.achievementBar .achievementElement:hover span,
-.achievementBar .achievementElement:hover .achievementTooltip {
-  text-shadow: 0px -1px 0px rgba(0, 0, 0, 0.1);
-  filter: grayscale(0%);
 }
 
 .achievementBar .achievementElement:hover .achievementTooltip,
 .achievementBar .achievementElement:hover .achievementTooltip::before {
   background-color: var(--secondary_dark);
-  opacity: 85%;
+  opacity: 90%;
   color: white;
-}
-
-.achievementBar .achievementElement .achievementImage:hover {
-  filter: grayscale(0%);
+  text-shadow: -2px -2px 0px rgba(0, 0, 0, 0.1);
 }

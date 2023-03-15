@@ -44,3 +44,37 @@ export const InfoAlert = (title: string, text: string) => {
     html: `${text}`,
   });
 };
+
+export const InputAlert = (title: string, label: string) => {
+  return ReactSwal.fire({
+    title: `${title}`,
+    input: 'text',
+    inputLabel: `${label}`,
+    showCancelButton: true,
+    confirmButtonText: '확인',
+    cancelButtonText: '취소',
+  });
+};
+
+export const FileAlert = (title: string) => {
+  return ReactSwal.fire({
+    title: `${title}`,
+    input: 'file',
+    showCancelButton: true,
+    confirmButtonText: '확인',
+    cancelButtonText: '취소',
+    inputAttributes: {
+      accept: 'image/*',
+      'aria-label': 'Upload your profile picture',
+    },
+  });
+};
+
+export const EmailAlert = (inputLabel: string) => {
+  return ReactSwal.fire({
+    title: '이메일을 입력하세요.',
+    input: 'email',
+    inputLabel: `${inputLabel}`,
+    inputPlaceholder: '등록할 이메일을 입력해주세요.',
+  });
+};

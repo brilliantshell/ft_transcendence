@@ -1,11 +1,12 @@
-/* TODO - level의 최고값이 100일 것으로 예상했으나, 수정 필요할 듯 */
-function LadderProgressBar(props: { ladder: number | undefined }) {
+const MAX_LEVEL = 1000;
+
+function LadderProgressBar(props: { ladder: number }) {
   return (
     <div className="profileItem ladderBar">
-      <div>LEVEL {props.ladder}</div>
+      <span className="ladderBarItem">LEVEL {props.ladder}</span>
       <div
-        className="ladderProportion"
-        style={{ width: `${props.ladder}%` }}
+        className="ladderBarItem ladderProportion"
+        style={{ width: `${(props.ladder / MAX_LEVEL) * 100}%` }}
       ></div>
     </div>
   );
