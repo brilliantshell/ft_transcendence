@@ -107,7 +107,7 @@ function SignUp() {
             {error && '닉네임은 4 ~ 10자의 영문자로 입력해주세요.'}
           </p>
         </label>
-        <button className="signUpButton" type="submit">
+        <button className="signUpButton xlarge" type="submit">
           회원가입
         </button>
       </form>

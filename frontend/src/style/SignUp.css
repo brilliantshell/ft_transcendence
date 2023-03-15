@@ -108,7 +108,6 @@
   border-radius: 10px;
   background-color: var(--primary);
   color: var(--secondary);
-  font-size: 1.5rem;
   cursor: pointer;
   transition: 0.8s;
 }
