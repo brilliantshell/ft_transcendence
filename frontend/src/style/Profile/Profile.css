@@ -1,7 +1,6 @@
 .profileContainer {
   display: grid;
-  width: 90%;
-  grid-template-columns: 5fr 8fr;
+  grid-template-columns: minmax(5rem, 30rem) minmax(8rem, 48rem);
   grid-template-rows: repeat(5, 6rem);
   grid-gap: 1.5rem;
 }
