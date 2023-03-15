@@ -18,14 +18,30 @@ function MatchHistory(props: {
         LOSER {props.history?.loser.nickname}
       </div>
       <div className="matchHistoryItem">
-        <p>SCORE</p>
-        <p>
+        <div>SCORE</div>
+        <div>
           {props.history?.score[0]} : {props.history?.score[1]}
-        </p>
+        </div>
       </div>
       <div className="matchHistoryItem">
         TYPE: {props.history?.isRank ? 'LADDER' : 'RANDOM'}
       </div>
+      <img
+        className="matchHistoryItem"
+        src={
+          props.history?.winner.isDefaultImage
+            ? '/assets/defaultProfile.svg'
+            : `/assets/profile-image/${props.history?.winner.userId}`
+        }
+      ></img>
+      <img
+        className="matchHistoryItem"
+        src={
+          props.history?.loser.isDefaultImage
+            ? '/assets/defaultProfile.svg'
+            : `/assets/profile-image/${props.history?.loser.userId}`
+        }
+      ></img>
     </div>
   );
 }

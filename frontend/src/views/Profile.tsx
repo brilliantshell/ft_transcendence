@@ -16,7 +16,7 @@ import MatchHistoryList from '../components/Profile/MatchHistoryList';
 
 export interface ProfileDataForm {
   ladder: number;
-  achievements: Array<{ id: number; title: string; about: string }>;
+  achievement: Array<{ id: number; title: string; about: string }>;
   winLossTotal: Array<number>;
   matchHistory: Array<{
     matchId: number;

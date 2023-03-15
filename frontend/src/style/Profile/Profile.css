@@ -1,8 +1,8 @@
 .profileContainer {
   display: grid;
-  place-content: center;
-  place-items: center;
-  align-content: center;
+  /* place-content: center; */
+  /* place-items: center; */
+  /* align-content: center; */
   grid-template-columns: 25rem 40rem;
   grid-template-rows: repeat(4, minmax(6rem, auto));
   grid-gap: 1.5rem;
