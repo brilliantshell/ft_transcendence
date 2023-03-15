@@ -54,7 +54,7 @@ export class UserController {
   @HttpCode(HttpStatus.NO_CONTENT)
   @UseGuards(SelfCheckGuard, UserExistGuard, BlockedUserGuard, DeleteBlockGuard)
   deleteBlock(@Req() req: RelationshipRequest) {
-    this.userService.deleteBlock(req.user.userId, req.targetId);
+    return this.userService.deleteBlock(req.user.userId, req.targetId);
   }
 
   /*****************************************************************************
@@ -123,7 +123,7 @@ export class UserController {
     DeleteFriendGuard,
   )
   deleteFriendship(@Req() req: RelationshipRequest) {
-    this.userService.deleteFriendship(req.user.userId, req.targetId);
+    return this.userService.deleteFriendship(req.user.userId, req.targetId);
   }
 
   @Patch(':userId/friend')
@@ -135,7 +135,7 @@ export class UserController {
     AcceptFriendGuard,
   )
   updateFriendship(@Req() req: RelationshipRequest) {
-    this.userService.acceptFriendRequest(req.user.userId, req.targetId);
+    return this.userService.acceptFriendRequest(req.user.userId, req.targetId);
   }
 
   /*****************************************************************************
