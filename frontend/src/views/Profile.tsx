@@ -58,7 +58,7 @@ function Profile() {
         <div className="profileItem">
           <User userId={id ? Number(id) : myId} />
         </div>
-        <Achievements achievements={profileData.achievements} />
+        <Achievements achievements={profileData.achievement} />
         <LadderProgressBar ladder={profileData.ladder}></LadderProgressBar>
         <WinLossTotalCounter winLoss={profileData.winLossTotal} />
         <MatchHistoryList history={profileData.matchHistory} />
