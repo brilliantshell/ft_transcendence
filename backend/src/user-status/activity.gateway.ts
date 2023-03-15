@@ -74,6 +74,9 @@ export class ActivityGateway
       process.env.NODE_ENV === 'development'
         ? Math.floor(Number(clientSocket.handshake.headers['x-user-id']))
         : clientSocket.request.user.userId;
+    if (process.env.NODE_ENV === 'development' && isNaN(userId)) {
+      return;
+    }
     const socketId = clientSocket.id;
     this.userSocketStorage.clients.set(userId, socketId);
     this.userSocketStorage.sockets.set(socketId, userId);
@@ -272,6 +275,11 @@ export class ActivityGateway
         this.chatsGateway.leaveRoom(
           socketId,
           (prevUi + '-active') as `chatRooms-${ChannelId}-active`,
+        );
+        this.channelStorage.updateUnseenCount(
+          Math.floor(Number(prevUi.split('-')[1])),
+          userId,
+          true,
         );
       }
       this.activityManager
