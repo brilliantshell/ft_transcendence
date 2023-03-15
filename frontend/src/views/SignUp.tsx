@@ -69,7 +69,12 @@ function SignUp() {
 
   return (
     <div className="signUp">
-      <form className="signUpForm" method="post" onSubmit={handleSubmit} noValidate>
+      <form
+        className="signUpForm"
+        method="post"
+        onSubmit={handleSubmit}
+        noValidate
+      >
         <label className="signUpImage" htmlFor="profileImage">
           <div className="signUpImageFrame">
             <EditSvg />

@@ -1,7 +1,8 @@
-import { IsEmail, IsString, Length } from 'class-validator';
+import { IsAlpha, IsEmail, IsString, Length } from 'class-validator';
 
 export class NicknameDto {
   @IsString()
+  @IsAlpha()
   @Length(4, 10)
   nickname: string;
 }
