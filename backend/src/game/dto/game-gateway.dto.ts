@@ -34,6 +34,7 @@ export interface GameDataDto {
   scores: [Score, Score];
   ballCoords: BallCoordinates;
   paddlePositions: PaddlePositions;
+  mode: 0 | 1 | 2;
 }
 
 export class GamePlayerYDto {

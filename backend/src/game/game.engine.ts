@@ -4,31 +4,46 @@ import { ReplaySubject } from 'rxjs';
 import { BallVelocity, GameData, GameId } from '../util/type';
 import { GameGateway } from './game.gateway';
 
+const BALL_RADIUS = 0.00833;
 const INITIAL_SPEED = 0.004;
 const MAX_SPEED = 0.01;
 const ACCELERATION = 0.0004;
-const PADDLE_WIDTH = 0.16667;
 const PADDLE_LEFT_END = 0.03333;
 const PADDLE_RIGHT_END = 0.96667;
+
+const GAME_META_DATA = [
+  {
+    ballRadius: 0.00833,
+    paddleWidth: BALL_RADIUS * 20,
+  },
+  {
+    ballRadius: 0.00833 * 3,
+    paddleWidth: 0.00833 * 20,
+  },
+  {
+    ballRadius: 0.00833,
+    paddleWidth: (BALL_RADIUS * 40) / 3,
+  },
+];
 
 @Injectable()
 export class GameEngine {
   constructor(private readonly gameGateway: GameGateway) {}
 
-  startGame(gameId: GameId, gameData: GameData) {
+  startGame(gameId: GameId, gameData: GameData, mode: 0 | 1 | 2) {
     const subject = new ReplaySubject<void>(1);
     gameData.intervalId = setInterval(() => subject.next(), 10);
-
     gameData.subscription = subject.subscribe(() => {
       const { ballCoords, ballVelocity } = gameData;
       const nextX = ballCoords.x + ballVelocity.vx;
       nextX < 0 || nextX > 1
         ? this.updateScore(gameId, gameData, subject)
-        : this.updateBallData(gameData);
+        : this.updateBallData(gameData, mode);
       this.gameGateway.emitGameData(gameId, {
         scores: gameData.scores,
         ballCoords: gameData.ballCoords,
         paddlePositions: gameData.paddlePositions,
+        mode,
       });
     });
   }
@@ -56,7 +71,7 @@ export class GameEngine {
     }, 500);
   }
 
-  private updateBallData(gameData: GameData) {
+  private updateBallData(gameData: GameData, mode: 0 | 1 | 2) {
     const { ballCoords, ballVelocity } = gameData;
     const { x, y } = ballCoords;
     const { vx, vy } = ballVelocity;
@@ -66,15 +81,16 @@ export class GameEngine {
     if (nextY < 0 || nextY > 1) {
       ballVelocity.vy = -vy;
     }
+    const paddleWidth = GAME_META_DATA[mode].paddleWidth;
     const isPaddleTouched =
       (x > PADDLE_LEFT_END &&
         nextX < PADDLE_LEFT_END &&
         nextY > leftY &&
-        nextY < leftY + PADDLE_WIDTH) ||
+        nextY < leftY + paddleWidth) ||
       (x < PADDLE_RIGHT_END &&
         nextX > PADDLE_RIGHT_END &&
         nextY > rightY &&
-        nextY < rightY + PADDLE_WIDTH);
+        nextY < rightY + paddleWidth);
     if (isPaddleTouched) {
       ballVelocity.vx = -vx;
       this.accelerate(ballVelocity);

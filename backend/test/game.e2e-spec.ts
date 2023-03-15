@@ -339,25 +339,20 @@ describe('GameController (e2e)', () => {
 
   describe('DELETE /game/queue', () => {
     it('should remove the user from the queue (204)', async () => {
-      const ladderQueueInterceptor = app.get(LadderQueueInterceptor);
       const [playerOne, playerTwo, playerThree] = userIds;
       await request(app.getHttpServer())
         .post('/game/queue')
         .set('x-user-id', playerOne.toString())
         .expect(201);
       await waitForExpect(() => {
-        expect(
-          (ladderQueueInterceptor as any).usersInQueue.has(playerOne),
-        ).toBeTruthy();
+        expect(gameStorage.isInLadderQueue(playerOne)).toBeTruthy();
       });
       await request(app.getHttpServer())
         .delete('/game/queue')
         .set('x-user-id', playerOne.toString())
         .expect(204);
       await waitForExpect(() => {
-        expect(
-          (ladderQueueInterceptor as any).usersInQueue.has(playerOne),
-        ).toBeFalsy();
+        expect(gameStorage.isInLadderQueue(playerOne)).toBeFalsy();
       });
       const [wsMessageOne, wsMessageTwo] = await Promise.all([
         listenPromise<NewGameDto>(clientSockets[1], 'newGame'),

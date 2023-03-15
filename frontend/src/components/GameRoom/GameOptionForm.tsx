@@ -4,12 +4,16 @@ import { isOptionSubmittedState } from '../../util/Recoils';
 import { useSetRecoilState } from 'recoil';
 import { useState } from 'react';
 
-export default function GameOptionForm({ gameId }: GameOptionFormProps) {
-  const [option, setOption] = useState(0);
+export default function GameOptionForm({
+  gameId,
+  setGameMode,
+}: GameOptionFormProps) {
+  const [option, setOption] = useState<0 | 1 | 2>(0);
   const setIsOptionSubmitted = useSetRecoilState(isOptionSubmittedState);
 
   const handleSubmit = () => {
     instance.patch(`/game/${gameId}/options`, { mode: option }).then(() => {
+      setGameMode(option);
       setIsOptionSubmitted(true);
     });
   };
@@ -21,7 +25,8 @@ export default function GameOptionForm({ gameId }: GameOptionFormProps) {
       <div className="gameOptionSelections">
         {optionNames.map((name, i) => (
           <GameOptionSelectionButton
-            optionId={i}
+            key={i}
+            optionId={i as 0 | 1 | 2}
             text={name}
             currentOption={option}
             setOption={setOption}
@@ -43,4 +48,5 @@ export default function GameOptionForm({ gameId }: GameOptionFormProps) {
 
 interface GameOptionFormProps {
   gameId: string;
+  setGameMode: React.Dispatch<React.SetStateAction<0 | 1 | 2>>;
 }

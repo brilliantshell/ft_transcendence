@@ -25,13 +25,17 @@ export class GameMetaData {
   midY: number;
   paddleW: number;
   paddleH: number;
+  paddleLeftEnd: number;
+  paddleRightEnd: number;
 
   constructor({ w, h }: { w: number; h: number }) {
-    this.radius = w / 120;
+    this.radius = w * 0.00833;
     this.midX = w / 2;
     this.midY = h / 2;
     this.paddleW = h * 0.16667;
     this.paddleH = w * 0.0125;
+    this.paddleLeftEnd = w * 0.03333;
+    this.paddleRightEnd = w * 0.96667;
   }
 }
 

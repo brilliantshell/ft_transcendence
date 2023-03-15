@@ -10,33 +10,33 @@ export default function GameEnterQueueButton() {
   const [hasEnteredQueue, setHasEnteredQueue] = useState(false);
 
   const handleButtonClick = () => {
-    hasEnteredQueue
-      ? instance.delete('/game/queue').then(() => setHasEnteredQueue(false))
-      : instance
-          .post('/game/queue')
-          .then(() => {
-            setHasEnteredQueue(true);
-            listenOnce<NewGameMessage>('newGame').then(({ gameId }) => {
-              sessionStorage.setItem(`game-${gameId}-isPlayer`, 'true');
-              nav(`/game/${gameId}`);
-            });
-          })
-          .catch(err => {
-            switch (err.response.status) {
-              case 400:
-                ErrorAlert('게임 매칭 큐', '이미 진행 중인 게임이 있습니다.');
-                break;
-              case 409:
-                ErrorAlert('게임 매칭 큐', '이미 매칭 큐에 등록되어 있습니다.');
-                break;
-              default:
-                ErrorAlert(
-                  '게임 매칭 큐',
-                  '오류가 발생했습니다. 새로고침 후 다시 시도해주세요.',
-                );
-                break;
-            }
-          });
+    if (hasEnteredQueue) {
+      instance.delete('/game/queue').finally(() => setHasEnteredQueue(false));
+    } else {
+      listenOnce<NewGameMessage>('newGame').then(({ gameId }) => {
+        sessionStorage.setItem(`game-${gameId}-isPlayer`, 'true');
+        nav(`/game/${gameId}`);
+      });
+      instance
+        .post('/game/queue')
+        .then(() => setHasEnteredQueue(true))
+        .catch(err => {
+          switch (err.response.status) {
+            case 400:
+              ErrorAlert('게임 매칭 큐', '이미 진행 중인 게임이 있습니다.');
+              break;
+            case 409:
+              ErrorAlert('게임 매칭 큐', '이미 매칭 큐에 등록되어 있습니다.');
+              break;
+            default:
+              ErrorAlert(
+                '게임 매칭 큐',
+                '오류가 발생했습니다. 새로고침 후 다시 시도해주세요.',
+              );
+              break;
+          }
+        });
+    }
   };
 
   return (
