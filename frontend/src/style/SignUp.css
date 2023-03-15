@@ -1,0 +1,119 @@
+.signUp {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100vw;
+  height: 100vh;
+}
+
+.signUpForm {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  row-gap: 4rem;
+}
+
+.signUpImage {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.signUpImageFrame {
+  border-radius: 50%;
+  height: 16rem;
+  width: 16rem;
+  transition: 0.4s;
+  position: relative;
+}
+
+.signUpImageFrame:hover {
+  filter: opacity(0.5);
+}
+
+.signUpImageEdit {
+  top: 0;
+  right: 0;
+  position: absolute;
+}
+
+.signUpImageEdit path {
+  transition: 0.4s;
+}
+
+.signUpImageFrame:hover path {
+  stroke: var(--secondary);
+}
+
+.signUpImagePreview {
+  height: 16rem;
+  width: 16rem;
+  border-radius: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.signUpImageDescription {
+  color: var(--primary_dark);
+}
+
+.signUpNickname {
+  height: 5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  row-gap: 0.4rem;
+}
+
+.signUpNicknameInput {
+  width: 20rem;
+  text-align: center;
+  border-radius: 10px;
+  height: 3rem;
+  padding: 0.5rem 1rem;
+  border: none;
+  outline: none;
+  box-shadow: 3px 3px 3px rgba(0, 0, 0, 0.2);
+  color: var(--primary_dark);
+  transition: 0.2s;
+}
+
+.signUpNicknameInput::placeholder {
+  color: var(--primary_dark);
+  font-size: 1.2rem;
+  filter: opacity(0.5);
+}
+
+.signUpNicknameInput:valid {
+  border: 2px solid var(--secondary);
+}
+
+.signUpNicknameError {
+  color: var(--primary_dark);
+  height: 1.2rem;
+}
+
+.signUpButton {
+  width: 15rem;
+  height: 5rem;
+  padding: 1rem;
+  border-radius: 10px;
+  background-color: var(--primary);
+  color: var(--secondary);
+  cursor: pointer;
+  transition: 0.8s;
+}
+
+.signUpButton:hover {
+  background-color: var(--secondary);
+  color: var(--primary_dark);
+  transform: scale(1.05);
+}
