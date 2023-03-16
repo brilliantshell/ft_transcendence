@@ -6,6 +6,7 @@ import { socket } from '../../util/Socket';
 import Login from '../../views/Login';
 import SignUp from '../../views/SignUp';
 import ErrorBoundary from './ErrorBoundary';
+import TwoFactorAuth from '../../views/TwoFactorAuth';
 
 const BASE_URL =
   import.meta.env.DEV === true ? 'http://localhost:3000/api' : '/api';
@@ -34,6 +35,7 @@ function PublicRoutes() {
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/sign-up" element={<SignUp />} />
+          <Route path="/2fa" element={<TwoFactorAuth />} />
         </Routes>
       </ErrorBoundary>
     </main>

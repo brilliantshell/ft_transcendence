@@ -1,0 +1,52 @@
+.twoFA {
+  align-items: center;
+  background-color: var(--primary_light);
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  justify-content: center;
+  width: 100vw;
+}
+
+.twoFAHeading {
+  color: var(--secondary_light);
+}
+
+.twoFAInput {
+  border: none;
+  border-radius: 10px;
+  box-shadow: 3px 3px 3px rgba(0, 0, 0, 0.2);
+  color: var(--primary_dark);
+  height: 1.5rem;
+  margin: 4rem 0 1rem;
+  outline: none;
+  padding: 0.5rem 1rem;
+  text-align: center;
+  transition: 0.2s;
+  width: 13rem;
+}
+
+.twoFAInput::placeholder {
+  color: var(--primary_dark);
+  filter: opacity(0.5);
+  font-size: 1.2rem;
+}
+
+.twoFAInput:valid {
+  border: 2px solid var(--secondary);
+}
+
+.twoFASubmitButton {
+  background-color: var(--primary);
+  border-radius: 10px;
+  color: var(--secondary);
+  height: 2.5rem;
+  transition: 0.8s;
+  width: 12rem;
+}
+
+.twoFASubmitButton:hover {
+  background-color: var(--secondary);
+  color: var(--primary_dark);
+  transform: scale(1.05);
+}

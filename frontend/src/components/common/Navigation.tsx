@@ -88,11 +88,10 @@ function Navigation() {
           instance
             .delete('logout')
             .then(() => {
-              console.log('logout');
               window.location.href = '/login';
               sessionStorage.clear();
             })
-            .catch(err => console.log(err.response));
+            .catch(() => {});
         }}
       >
         logout
