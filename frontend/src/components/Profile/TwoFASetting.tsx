@@ -15,6 +15,7 @@ function TwoFASetting() {
       ? `현재 이메일은 ${email} 입니다.`
       : '등록된 메일이 없습니다.';
     EmailAlert(str).then(res1 => {
+      if (!res1.isConfirmed) return;
       instance
         .patch('/profile/2fa-email', { email: res1.value })
         .then(() => {

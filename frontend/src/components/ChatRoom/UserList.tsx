@@ -81,7 +81,7 @@ function UserList(props: Props) {
   const isDm = isReadonlyDm !== null;
 
   return (
-    <>
+    <div className="chatRoomLeft">
       <div className="chatRoomUserList">
         {channelMembers.map(data => (
           <User
@@ -99,7 +99,7 @@ function UserList(props: Props) {
       {!isDm && myRole === 'owner' && (
         <ChannelUpdateButton channelId={props.id} />
       )}
-    </>
+    </div>
   );
 }
 

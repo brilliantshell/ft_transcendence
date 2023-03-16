@@ -12,10 +12,14 @@ function MatchHistory(props: {
   return (
     <div className="matchHistory">
       <div className="matchHistoryItem">
-        WINNER {props.history?.winner.nickname}
+        WINNER
+        <br />
+        {props.history?.winner.nickname}
       </div>
       <div className="matchHistoryItem">
-        LOSER {props.history?.loser.nickname}
+        LOSER
+        <br />
+        {props.history?.loser.nickname}
       </div>
       <div className="matchHistoryItem">
         <div>SCORE</div>
@@ -59,6 +63,9 @@ function MatchHistoryList(props: {
 }) {
   return (
     <div className="profileItem matchHistoryList">
+      {!props.history?.length && (
+        <div style={{ margin: 'auto' }}>매치 기록이 없습니다.</div>
+      )}
       {props.history?.map(matchLog => (
         <MatchHistory history={matchLog} key={matchLog.matchId} />
       ))}

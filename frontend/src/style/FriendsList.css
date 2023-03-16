@@ -63,3 +63,19 @@
   vertical-align: middle;
   width: 100%;
 }
+
+.friendAcceptButton {
+  background-color: var(--primary_light);
+  border-radius: 0.5rem;
+  color: white;
+  height: 1.6rem;
+  width: 3rem;
+}
+
+.friendDeclineButton {
+  background-color: var(--red);
+  border-radius: 0.5rem;
+  color: white;
+  height: 1.6rem;
+  width: 3rem;
+}

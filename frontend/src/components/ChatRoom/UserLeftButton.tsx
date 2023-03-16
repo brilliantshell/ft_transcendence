@@ -29,7 +29,11 @@ function UserLeftButton(props: Props) {
     });
   };
 
-  return <button onClick={onClick}>나가기</button>;
+  return (
+    <button className="chatRoomButton" onClick={onClick}>
+      나가기
+    </button>
+  );
 }
 
 export default UserLeftButton;

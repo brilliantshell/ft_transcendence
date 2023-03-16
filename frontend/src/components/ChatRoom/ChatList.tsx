@@ -80,7 +80,7 @@ function ChatList(props: Props) {
   return (
     <div className="chatList" ref={chatListDivRef}>
       {isMoreMessage && (
-        <button onClick={clickHandler}>
+        <button onClick={clickHandler} className="upButton">
           <img className="upButtonImage" src={BUTTON_IMG_PATH}></img>
         </button>
       )}

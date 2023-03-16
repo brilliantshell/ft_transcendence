@@ -36,7 +36,9 @@ function ChannelInvitationButton({ channelId }: InvitationButtonProps) {
 
   return (
     <>
-      <button onClick={() => setShowModal(true)}>초대</button>
+      <button className="chatRoomButton" onClick={() => setShowModal(true)}>
+        초대
+      </button>
       {showModal &&
         createPortal(
           <SearchModal
