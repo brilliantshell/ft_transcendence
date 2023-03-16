@@ -87,7 +87,7 @@ export class JwtAuthIoAdapter extends IoAdapter {
   private setCookieValue(value: string, option: CookieOptions) {
     const { httpOnly, sameSite, secure, maxAge } = option;
     return `${value}; Path=/${httpOnly && '; HttpOnly'}; SameSite=${sameSite}${
-      secure && '; Secure'
+      secure ? '; Secure' : ''
     }; Max-Age=${maxAge / 1000}`;
   }
 }
