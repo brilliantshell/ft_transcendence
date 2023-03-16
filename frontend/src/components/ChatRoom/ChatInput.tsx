@@ -41,7 +41,6 @@ function ChatInput(props: Props) {
         if (err.response.status === 400) {
           ErrorAlert('잘못된 명령어입니다.', '/help로 명령어를 확인하세요.');
         } else if (err.response.status === 403) {
-          // console.error(err.response.data.message);
           let alertMessage = '';
           if (
             err.response.data.message === 'This user is banned from the channel'
@@ -60,8 +59,7 @@ function ChatInput(props: Props) {
           } else if (
             err.response.data.message === "You don't have permission to do this"
           ) {
-            alertMessage =
-              '이 채팅방에서 명령어를 사용할 수 있는 권한이 없습니다.';
+            alertMessage = '이 명령어를 사용할 수 있는 권한이 없습니다.';
           } else {
             const time = err.response.data.message.match(/(\d+)/)[0];
             alertMessage = `입력 제한 시간 ${time}분 남았습니다.`;
