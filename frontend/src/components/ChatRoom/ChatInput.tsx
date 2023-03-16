@@ -41,7 +41,7 @@ function ChatInput(props: Props) {
         if (err.response.status === 400) {
           ErrorAlert('잘못된 명령어입니다.', '/help로 명령어를 확인하세요.');
         } else if (err.response.status === 403) {
-          console.error(err.response.data.message);
+          // console.error(err.response.data.message);
           let alertMessage = '';
           if (
             err.response.data.message === 'This user is banned from the channel'

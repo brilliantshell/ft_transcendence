@@ -56,12 +56,13 @@ function UserList(props: Props) {
           );
         });
         socket.on('roleChanged', data => {
-          const copy = [...channelMembers];
-          const index = copy.findIndex(
-            member => member.id === data.changedMember,
-          );
-          copy[index].role = data.newRole;
-          setChannelMembers(copy);
+          setChannelMembers(prev => {
+            const index = prev.findIndex(
+              member => member.id === data.changedMember,
+            );
+            prev[index].role = data.newRole;
+            return [...prev];
+          });
         });
       })
       .catch(err => {
