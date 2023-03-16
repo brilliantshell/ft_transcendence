@@ -84,14 +84,16 @@ function UserList(props: Props) {
   return (
     <div className="chatRoomLeft">
       <div className="chatRoomUserList">
-        {channelMembers.map(data => (
-          <User
-            key={data.id}
-            userId={data.id}
-            downChild={!isDm && data.role}
-            session={true}
-          ></User>
-        ))}
+        <div className="chatRoomUser">
+          {channelMembers.map(data => (
+            <User
+              key={data.id}
+              userId={data.id}
+              downChild={!isDm && data.role}
+              session={true}
+            ></User>
+          ))}
+        </div>
       </div>
 
       <UserLeftButton id={props.id} />
