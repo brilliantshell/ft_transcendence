@@ -5,7 +5,7 @@ function Main() {
   return (
     <main>
       <Routers />
-      <FriendsList></FriendsList>
+      <FriendsList />
     </main>
   );
 }

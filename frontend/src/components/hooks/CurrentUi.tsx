@@ -16,7 +16,6 @@ export function useCurrentUi(
   ui: CurrentUi,
 ) {
   const nav = useNavigate();
-
   const newNormalGameHandler = ({
     gameId,
     inviterNickname,
@@ -26,7 +25,6 @@ export function useCurrentUi(
       `${inviterNickname}님이 게임에 초대했습니다.<br/>응하시겠습니다?`,
     ).then(({ isConfirmed, isDismissed }) => {
       if (isConfirmed) {
-        sessionStorage.setItem(`game-${gameId}-isPlayer`, 'true');
         nav(`/game/${gameId}`);
       } else if (isDismissed) {
         instance.delete(`/game/${gameId}`);
@@ -50,13 +48,13 @@ export function useCurrentUi(
   useEffect(() => {
     if (isConnected) {
       socket.emit('currentUi', { ui });
-      if (!ui.startsWith('game-')) {
-        socket.on('newNormalGame', newNormalGameHandler);
-      }
     } else {
       listenOnce('connect').then(() => {
         socket.emit('currentUi', { ui }, () => setIsConnected(true));
       });
+    }
+    if (!ui.startsWith('game-')) {
+      socket.on('newNormalGame', newNormalGameHandler);
     }
     return () => {
       socket.off('newNormalGame', newNormalGameHandler);

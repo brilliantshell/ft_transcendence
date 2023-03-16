@@ -18,10 +18,6 @@ function GameButton({ userId }: Props) {
     instance
       .post(`/user/${userId}/game`)
       .then(({ headers }) => {
-        sessionStorage.setItem(
-          `game-${headers.location.slice(6)}-isPlayer`,
-          'true',
-        );
         nav(headers.location);
       })
       .catch((err: AxiosError) =>
@@ -52,7 +48,6 @@ function GameButton({ userId }: Props) {
     if (!gameId) {
       return;
     }
-    sessionStorage.setItem(`game-${gameId}-isPlayer`, 'false');
     nav(`/game/${gameId}`);
   };
 

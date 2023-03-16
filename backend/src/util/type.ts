@@ -96,6 +96,8 @@ export class GameInfo {
   rightNickname?: string;
   mode: 0 | 1 | 2;
   isStarted = false;
+  hasInvitedJoined = false;
+  isOptionSubmitted = false;
   gameData = new GameData();
 }
 

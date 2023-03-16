@@ -11,7 +11,6 @@ import { GameEngine } from './game.engine';
 import { GameGateway } from './game.gateway';
 import { GameId, GameInfo, UserId } from '../util/type';
 import { GameStorage } from './game.storage';
-import { UserRelationshipStorage } from '../user-status/user-relationship.storage';
 import { UserSocketStorage } from '../user-status/user-socket.storage';
 
 @Injectable()
@@ -22,7 +21,6 @@ export class GameService {
     @Inject(forwardRef(() => GameGateway))
     private readonly gameGateway: GameGateway,
     private readonly gameStorage: GameStorage,
-    private readonly userRelationshipStorage: UserRelationshipStorage,
     private readonly userSocketStorage: UserSocketStorage,
   ) {}
 
@@ -49,71 +47,63 @@ export class GameService {
   }
 
   /**
-   * @description 관전을 요청하는 유저에게 게임의 기본 정보 제공 및 해당 게임 room 에 소켓 추가
+   * @description 플레이어 / 관전자에게 게임의 기본 정보 제공 및 해당 게임 room 에 소켓 추가
    *
-   * @param spectatorId 관전자 id
+   * @param userId 관전자 id
    * @param gameId 게임 id
    * @param gameInfo 게임 정보
    * @returns 게임의 기본 정보
    */
-  findGameInfo(spectatorId: UserId, gameId: GameId, gameInfo: GameInfo) {
-    const { leftId, leftNickname, rightId, rightNickname, mode, isRank } =
-      gameInfo;
-    const [leftRelationship, rightRelationship] = [
-      this.userRelationshipStorage.getRelationship(spectatorId, leftId),
-      this.userRelationshipStorage.getRelationship(spectatorId, rightId),
-    ];
-    if (
-      !isRank &&
-      (leftRelationship?.startsWith('block') ||
-        rightRelationship?.startsWith('block'))
-    ) {
-      throw new ForbiddenException(
-        `The requester(${spectatorId}) is either blocked by or a blocker of a game participant`,
+  findGameInfo(userId: UserId, gameId: GameId, gameInfo: GameInfo) {
+    const {
+      leftId,
+      leftNickname,
+      rightId,
+      rightNickname,
+      mode,
+      isRank,
+      isStarted,
+    } = gameInfo;
+    const isPlayer = userId === leftId || userId === rightId;
+    if (isPlayer) {
+      if (
+        !isRank &&
+        rightId === userId &&
+        this.gameStorage.players.get(userId) === gameId
+      ) {
+        gameInfo.hasInvitedJoined = true;
+        this.gameGateway.emitGameInvitedJoined(
+          this.userSocketStorage.clients.get(leftId),
+        );
+      }
+    } else {
+      this.gameGateway.joinRoom(
+        this.userSocketStorage.clients.get(userId),
+        `game-${gameId}`,
       );
     }
-    this.gameGateway.joinRoom(
-      this.userSocketStorage.clients.get(spectatorId),
-      `game-${gameId}`,
-    );
     return {
       isRank,
-      leftPlayer: leftNickname,
-      rightPlayer: rightNickname,
+      isPlayer,
+      isLeft: userId === leftId,
+      isStarted,
+      leftId,
+      leftNickname,
+      rightId,
+      rightNickname,
       mode,
     };
   }
 
   /**
-   * @description 게임에 참여하는 유저에게 게임의 기본 정보 제공
+   * @description 일반 게임의 기본 정보 제공
    *
-   * @param playerId 요청을 보낸 플레이어 id
-   * @param gameId 게임 id
    * @param gameInfo 게임 정보
-   * @returns 게임의 기본 정보
    */
-  findPlayers(playerId: UserId, gameId: GameId, gameInfo: GameInfo) {
-    const { isRank, leftId, leftNickname, rightId, rightNickname } = gameInfo;
-    const isLeft = leftId === playerId;
-    const [playerNickname, opponentId, opponentNickname] = isLeft
-      ? [leftNickname, rightId, rightNickname]
-      : [rightNickname, leftId, leftNickname];
-    if (
-      !isRank &&
-      rightId === playerId &&
-      this.gameStorage.players.get(playerId) === gameId
-    ) {
-      this.gameGateway.emitGameInvitedJoined(
-        this.userSocketStorage.clients.get(leftId),
-      );
-    }
+  findNormalGameInfo(gameInfo: GameInfo) {
     return {
-      isRank,
-      isLeft,
-      playerId,
-      playerNickname,
-      opponentId,
-      opponentNickname,
+      hasInvitedJoined: gameInfo.hasInvitedJoined,
+      isOptionSubmitted: gameInfo.isOptionSubmitted,
     };
   }
 
@@ -185,6 +175,7 @@ export class GameService {
       );
     }
     gameInfo.mode = mode;
+    gameInfo.isOptionSubmitted = true;
     this.gameGateway.emitGameOption(
       gameId,
       this.userSocketStorage.clients.get(gameInfo.leftId),

@@ -2,11 +2,14 @@ import { DataSource, In } from 'typeorm';
 import { DateTime } from 'luxon';
 import { InjectDataSource } from '@nestjs/typeorm';
 import {
+  Inject,
   Injectable,
   InternalServerErrorException,
   Logger,
+  forwardRef,
 } from '@nestjs/common';
 
+import { ActivityGateway } from '../user-status/activity.gateway';
 import { GameId, GameInfo, Score, UserId } from '../util/type';
 import { MatchHistory } from '../entity/match-history.entity';
 import { Users } from '../entity/users.entity';
@@ -20,6 +23,8 @@ export class GameStorage {
   private readonly logger = new Logger(GameStorage.name);
 
   constructor(
+    @Inject(forwardRef(() => ActivityGateway))
+    private readonly acitivityGateway: ActivityGateway,
     @InjectDataSource()
     private readonly dataSource: DataSource,
   ) {}
@@ -207,5 +212,7 @@ export class GameStorage {
     this.games.delete(gameId);
     this.players.delete(leftId);
     this.players.delete(rightId);
+    this.acitivityGateway.emitUserActivity(leftId);
+    this.acitivityGateway.emitUserActivity(rightId);
   }
 }

@@ -11,6 +11,7 @@ import { NavigateFunction } from 'react-router-dom';
 import { socket } from '../../../util/Socket';
 
 export class GamePainter {
+  private isModeSet = false;
   private readonly metaData: GameMetaData;
 
   constructor(
@@ -19,15 +20,9 @@ export class GamePainter {
     private readonly controllerType: ControllerType,
     private readonly dimension: { w: number; h: number },
     private readonly nav: NavigateFunction,
-    gameMode: 0 | 1 | 2,
   ) {
     this.context.font = '4rem DungGeunMo';
     this.metaData = new GameMetaData(dimension);
-    if (gameMode > 0) {
-      gameMode === 1
-        ? (this.metaData.radius *= 3)
-        : (this.metaData.paddleW *= 2 / 3);
-    }
   }
 
   /*****************************************************************************
@@ -38,18 +33,15 @@ export class GamePainter {
 
   drawGame() {
     this.drawWaitMessage();
-    if (!this.controllerType.isPlayer) {
-      socket.once('gameData', ({ mode }) => {
-        if (mode > 0) {
+    socket.on(
+      'gameData',
+      ({ ballCoords, paddlePositions, scores, mode }: GameDataMessage) => {
+        if (!this.isModeSet && mode > 0) {
           mode === 1
             ? (this.metaData.radius *= 3)
             : (this.metaData.paddleW *= 2 / 3);
+          this.isModeSet = true;
         }
-      });
-    }
-    socket.on(
-      'gameData',
-      ({ ballCoords, paddlePositions, scores }: GameDataMessage) => {
         this.context.clearRect(0, 0, this.dimension.w, this.dimension.h);
         this.drawLine();
         this.drawBall(ballCoords);
@@ -62,8 +54,6 @@ export class GamePainter {
       ({ winnerSide }: { winnerSide: 'left' | 'right' }) => {
         socket.off('gameData');
         this.drawResult(winnerSide);
-        sessionStorage.removeItem(`game-${this.gameInfo.id}-isStarted`);
-        sessionStorage.removeItem(`game-${this.gameInfo.id}-isPlayer`);
         setTimeout(() => {
           if (window.location.pathname === `/game/${this.gameInfo.id}`) {
             this.nav('/waiting-room');

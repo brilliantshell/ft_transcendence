@@ -1,21 +1,17 @@
 import GameOptionSelectionButton from './GameOptionSelectionButton';
 import instance from '../../util/Axios';
-import { isOptionSubmittedState } from '../../util/Recoils';
-import { useSetRecoilState } from 'recoil';
 import { useState } from 'react';
 
 export default function GameOptionForm({
   gameId,
-  setGameMode,
+  setIsOptionSubmitted,
 }: GameOptionFormProps) {
   const [option, setOption] = useState<0 | 1 | 2>(0);
-  const setIsOptionSubmitted = useSetRecoilState(isOptionSubmittedState);
 
   const handleSubmit = () => {
-    instance.patch(`/game/${gameId}/options`, { mode: option }).then(() => {
-      setGameMode(option);
-      setIsOptionSubmitted(true);
-    });
+    instance
+      .patch(`/game/${gameId}/options`, { mode: option })
+      .then(() => setIsOptionSubmitted(true));
   };
 
   const optionNames = ['NORMAL', 'LARGER BALL', 'SHORTER PADDLES'];
@@ -48,5 +44,5 @@ export default function GameOptionForm({
 
 interface GameOptionFormProps {
   gameId: string;
-  setGameMode: React.Dispatch<React.SetStateAction<0 | 1 | 2>>;
+  setIsOptionSubmitted: React.Dispatch<React.SetStateAction<boolean>>;
 }
