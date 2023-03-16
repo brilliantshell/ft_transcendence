@@ -2,16 +2,21 @@ import { DateTime } from 'luxon';
 import { Server } from 'socket.io';
 import { WebSocketGateway, WebSocketServer } from '@nestjs/websockets';
 
-import { ChannelId, MessageId, SocketId, UserId, UserRole } from '../util/type';
-import { UserSocketStorage } from '../user-status/user-socket.storage';
 import { WEBSOCKET_CONFIG } from '../config/constant/constant-config';
+import { ChannelId, SocketId, UserId, UserRole } from '../util/type';
+import { NewMessage } from './dto/chats-gateway.dto';
+import { UserRelationshipStorage } from '../user-status/user-relationship.storage';
+import { UserSocketStorage } from '../user-status/user-socket.storage';
 
 @WebSocketGateway(WEBSOCKET_CONFIG)
 export class ChatsGateway {
   @WebSocketServer()
   private server: Server;
 
-  constructor(private userSocketStorage: UserSocketStorage) {}
+  constructor(
+    private userSocketStorage: UserSocketStorage,
+    private readonly userRelationshipStorage: UserRelationshipStorage,
+  ) {}
 
   /*****************************************************************************
    *                                                                           *
@@ -177,18 +182,31 @@ export class ChatsGateway {
    */
   emitNewMessage(
     channelId: ChannelId,
-    senderId: UserId,
-    messageId: MessageId,
-    contents: string,
-    createdAt: DateTime,
+    { senderId, messageId, contents, createdAt }: NewMessage,
+    blockedUsers: UserId[],
   ) {
-    this.server.in(`chatRooms-${channelId}-active`).emit('newMessage', {
-      senderId,
-      messageId,
-      contents,
-      createdAt: createdAt.toMillis(),
-    });
-    this.emitMessageArrived(channelId);
+    const blockedUserSockets = [];
+    for (const blockedUser of blockedUsers) {
+      const relationship = this.userRelationshipStorage.getRelationship(
+        senderId,
+        blockedUser,
+      );
+      if (relationship === 'blocked' || relationship === 'blocker') {
+        blockedUserSockets.push(
+          this.userSocketStorage.clients.get(blockedUser),
+        );
+      }
+    }
+    this.server
+      .in(`chatRooms-${channelId}-active`)
+      .except(blockedUserSockets)
+      .emit('newMessage', {
+        senderId,
+        messageId,
+        contents,
+        createdAt: createdAt.toMillis(),
+      });
+    this.emitMessageArrived(channelId, blockedUserSockets);
   }
 
   /**
@@ -307,10 +325,14 @@ export class ChatsGateway {
    *
    * @param channelId 채팅방의 id
    */
-  private emitMessageArrived(channelId: ChannelId) {
+  private emitMessageArrived(
+    channelId: ChannelId,
+    blockedUserSockets: SocketId[],
+  ) {
     this.server
       .in(`chatRooms-${channelId}`)
       .except(`chatRooms-${channelId}-active`)
+      .except(blockedUserSockets)
       .emit('messageArrived', { channelId });
   }
 

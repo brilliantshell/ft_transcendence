@@ -136,14 +136,15 @@ export class ProfileService {
         ).authEmail,
       };
     } catch (e) {
+      if (e instanceof EntityNotFoundError) {
+        throw new NotFoundException(
+          `Two-factor Authentication of a user(${userId}) is not enabled`,
+        );
+      }
       this.logger.error(e);
-      throw e instanceof EntityNotFoundError
-        ? new NotFoundException(
-            `Two-factor Authentication of a user(${userId}) is not enabled`,
-          )
-        : new InternalServerErrorException(
-            `Failed to find Two-factor email of a user (${userId})`,
-          );
+      throw new InternalServerErrorException(
+        `Failed to find Two-factor email of a user (${userId})`,
+      );
     }
   }
 

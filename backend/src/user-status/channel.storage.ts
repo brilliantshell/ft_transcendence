@@ -127,10 +127,21 @@ export class ChannelStorage implements OnModuleInit {
       await Promise.all(
         memberships.map(({ channelId, muteEndAt, viewedAt }) =>
           this.messagesRepository
-            .countBy({ channelId, createdAt: MoreThan(viewedAt) })
-            .then((unseenCount) =>
-              this.getUser(userId)?.set(channelId, { unseenCount, muteEndAt }),
-            ),
+            .findBy({ channelId, createdAt: MoreThan(viewedAt) })
+            .then((message) => {
+              const unseenCount = message.filter(({ senderId }) => {
+                if (userId === senderId) {
+                  return true;
+                }
+                const relationship =
+                  this.userRelationshipStorage.getRelationship(
+                    userId,
+                    senderId,
+                  );
+                return relationship !== 'blocker' && relationship !== 'blocked';
+              }).length;
+              this.getUser(userId)?.set(channelId, { unseenCount, muteEndAt });
+            }),
         ),
       );
     } catch (e) {
