@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 import { myIdState } from '../../util/Recoils';
-
+import { userAtomFamily } from '../../util/Recoils';
 interface Props {
   data: { senderId: number; contents: string; createdAt: number };
 }
@@ -9,25 +9,9 @@ interface Props {
 function Message({ data }: Props) {
   const date = new Date(data.createdAt);
   const myId = useRecoilValue(myIdState);
+  const userData = useRecoilValue(userAtomFamily(data.senderId));
 
-  const [user, setUser] = useState<{
-    nickname: string;
-    isDefaultImage: boolean;
-  }>({ nickname: '', isDefaultImage: false });
-
-  useEffect(() => {
-    const intervalId = setInterval(() => {
-      if (user.nickname === '') {
-        setUser(
-          JSON.parse(
-            sessionStorage.getItem(data.senderId.toString()) ??
-              '{"nickname":"", "isDefaultImage": "false"}',
-          ),
-        );
-        user.nickname.length && clearInterval(intervalId);
-      }
-    }, 200);
-  }, []);
+  useEffect(() => {}, []);
 
   const isMyMessage = data.senderId === myId;
   return (
@@ -35,7 +19,7 @@ function Message({ data }: Props) {
       <img
         className="chatProfileImage"
         src={
-          user.isDefaultImage
+          userData.isDefaultImage
             ? '/assets/defaultProfile.svg'
             : `/assets/profile-image/${data.senderId}`
         }
@@ -43,7 +27,7 @@ function Message({ data }: Props) {
 
       <div className="messageWrap">
         <div className={isMyMessage ? 'myMessageNick' : 'messageNick'}>
-          {user.nickname}
+          {userData.nickname}
         </div>
         <div className="messageContents">{data.contents}</div>
       </div>

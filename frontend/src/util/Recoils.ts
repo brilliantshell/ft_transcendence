@@ -2,8 +2,9 @@ import {
   activityData,
   relationshipData,
 } from '../components/hooks/SocketOnHooks';
-import { atom, selector } from 'recoil';
+import { atom, atomFamily, selector } from 'recoil';
 import instance from './Axios';
+import { userData } from '../components/User/UserBase';
 
 export const myIdState = atom<number>({
   key: 'myIdState',
@@ -41,4 +42,13 @@ export const userRelationship = atom<Map<number, relationshipData>>({
 export const editProfileState = atom<boolean>({
   key: 'editProfileState',
   default: false,
+});
+
+export const userAtomFamily = atomFamily<userData, number>({
+  key: 'userAtomFamily',
+  default: id => ({
+    id,
+    nickname: '',
+    isDefaultImage: true,
+  }),
 });

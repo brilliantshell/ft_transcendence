@@ -48,19 +48,29 @@ function ChatList(props: Props) {
     dataFetch();
     setIsClick(true);
   };
-
   useEffect(() => {
-    dataFetch();
-  }, []);
-
-  useEffect(() => {
-    socket.on('newMessage', (data: MessageData) => {
-      setContents(prev => [...prev, data]);
-    });
+    instance
+      .get(`/chats/${props.id}/message?range=0,100`)
+      .then(result => {
+        const arr = result.data.messages.reverse();
+        setContents(arr);
+        if (result.data.messages.length < 100) {
+          setIsMoreMessage(false);
+        } else {
+          setIsMoreMessage(true);
+        }
+        socket.on('newMessage', (data: MessageData) => {
+          setContents(prev => [...prev, data]);
+        });
+      })
+      .catch(() => {
+        setIsMoreMessage(false);
+      });
     return () => {
+      setContents([]);
       socket.off('newMessage');
     };
-  }, []);
+  }, [props.id]);
 
   useEffect(() => {
     if (isClick) {

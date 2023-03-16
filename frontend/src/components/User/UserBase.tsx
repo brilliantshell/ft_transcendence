@@ -2,8 +2,12 @@ import instance from '../../util/Axios';
 import { memo, ReactNode, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ErrorAlert } from '../../util/Alert';
-import { useRecoilValue } from 'recoil';
-import { editProfileState, userActivity } from '../../util/Recoils';
+import { useRecoilValue, useSetRecoilState } from 'recoil';
+import {
+  editProfileState,
+  userActivity,
+  userAtomFamily,
+} from '../../util/Recoils';
 
 interface Props {
   userId: number;
@@ -12,7 +16,7 @@ interface Props {
   downChild?: ReactNode;
 }
 
-interface userData {
+export interface userData {
   nickname: string;
   isDefaultImage: boolean;
 }
@@ -29,17 +33,15 @@ function UserBase(props: Props) {
 
   const activityMap = useRecoilValue(userActivity);
   const editProfile = useRecoilValue(editProfileState);
+  const setUserAtom = useSetRecoilState(userAtomFamily(props.userId));
 
   useEffect(() => {
     instance
       .get(`/user/${props.userId}/info`)
       .then(result => {
         setUser(result.data);
+        setUserAtom(result.data);
         if (props.session === true) {
-          sessionStorage.setItem(
-            props.userId.toString(),
-            JSON.stringify(result.data),
-          );
         }
       })
       .catch(() => {
@@ -47,25 +49,31 @@ function UserBase(props: Props) {
       });
   }, [props.userId, editProfile]);
 
-  const onlineFunc = () => {
-    if (!activityMap.get(props.userId)) return false;
-    return activityMap.get(props.userId)?.activity !== 'offline';
-  };
-
   return (
     <div className="userBase">
       <div className="profileDiv">
-        {onlineFunc() ? (
-          <div
-            className="activityDot"
-            style={{ background: 'var(--online)' }}
-          />
-        ) : (
-          <div
-            className="activityDot"
-            style={{ background: 'var(--offline)' }}
-          />
-        )}
+        {
+          {
+            online: (
+              <div
+                className="activityDot"
+                style={{ background: 'var(--online)' }}
+              />
+            ),
+            offline: (
+              <div
+                className="activityDot"
+                style={{ background: 'var(--offline)' }}
+              />
+            ),
+            inGame: (
+              <div
+                className="activityDot"
+                style={{ background: 'var(--in_game)' }}
+              />
+            ),
+          }[activityMap.get(props.userId)?.activity ?? 'offline']
+        }
         <img
           className="profileImage"
           src={

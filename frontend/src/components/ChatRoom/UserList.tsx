@@ -44,15 +44,18 @@ function UserList(props: Props) {
           ]);
         });
         socket.on('memberLeft', data => {
-          if (data.isOwner) {
+          if (result.data.isReadonlyDm === null && data.isOwner) {
             ErrorAlert(
               '방장이 채팅방을 나갔습니다.',
               '채팅방이 삭제되었습니다',
             );
             navigate('/chats');
           }
-          setChannelMembers(
-            channelMembers.filter(member => member.id !== data.leftMember),
+          if (myId === data.leftMember) {
+            navigate('/chats');
+          }
+          setChannelMembers(prev =>
+            prev.filter(member => member.id !== data.leftMember),
           );
         });
         socket.on('roleChanged', data => {
@@ -77,7 +80,7 @@ function UserList(props: Props) {
       socket.off('memberLeft');
       socket.off('roleChanged');
     };
-  }, []);
+  }, [props.id]);
 
   const isDm = isReadonlyDm !== null;
 
