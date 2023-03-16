@@ -53,7 +53,7 @@ function Profile() {
   }, [id, editProfile]);
 
   return (
-    profileData && (
+    profileData ? (
       <div className="profileContainer">
         <ProfileMenuBar userId={id && myId !== Number(id) ? null : myId} />
         <div className="profileItem">
@@ -64,7 +64,7 @@ function Profile() {
         <WinLossTotalCounter winLoss={profileData.winLossTotal} />
         <MatchHistoryList history={profileData.matchHistory} />
       </div>
-    )
+    ) : <></>
   );
 }
 
