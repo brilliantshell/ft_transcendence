@@ -7,13 +7,13 @@ import { JwtAuthIoAdapter } from './auth/jwt-auth.io-adapter';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  process.env.NODE_ENV === 'production'
-    ? app.useWebSocketAdapter(new JwtAuthIoAdapter(app))
-    : app.enableCors({
-        credentials: true,
-        exposedHeaders: 'location',
-        origin: 'http://localhost:5173',
-      });
+  app.useWebSocketAdapter(new JwtAuthIoAdapter(app));
+  process.env.NODE_ENV === 'development' &&
+    app.enableCors({
+      credentials: true,
+      exposedHeaders: 'location',
+      origin: 'http://localhost:5173',
+    });
   app.setGlobalPrefix('api');
   app.use(cookieParser());
   app.useGlobalPipes(

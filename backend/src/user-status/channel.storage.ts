@@ -124,26 +124,30 @@ export class ChannelStorage implements OnModuleInit {
           muteEndAt: true as any,
         },
       });
-      await Promise.all(
-        memberships.map(({ channelId, muteEndAt, viewedAt }) =>
-          this.messagesRepository
-            .findBy({ channelId, createdAt: MoreThan(viewedAt) })
-            .then((message) => {
-              const unseenCount = message.filter(({ senderId }) => {
-                if (userId === senderId) {
-                  return true;
-                }
-                const relationship =
-                  this.userRelationshipStorage.getRelationship(
-                    userId,
-                    senderId,
-                  );
-                return relationship !== 'blocker' && relationship !== 'blocked';
-              }).length;
-              this.getUser(userId)?.set(channelId, { unseenCount, muteEndAt });
-            }),
+      const memberChannelInfo = await Promise.all(
+        memberships.map(({ channelId, viewedAt }) =>
+          this.messagesRepository.findBy({
+            channelId,
+            createdAt: MoreThan(viewedAt),
+          }),
         ),
       );
+      memberChannelInfo.forEach((message, index) => {
+        const unseenCount = message.filter(({ senderId }) => {
+          if (userId === senderId) {
+            return true;
+          }
+          const relationship = this.userRelationshipStorage.getRelationship(
+            userId,
+            senderId,
+          );
+          return relationship !== 'blocker' && relationship !== 'blocked';
+        }).length;
+        this.users.get(userId)?.set(memberships[index].channelId, {
+          unseenCount,
+          muteEndAt: memberships[index].muteEndAt,
+        });
+      });
     } catch (e) {
       this.logger.error(e);
       throw new InternalServerErrorException(
