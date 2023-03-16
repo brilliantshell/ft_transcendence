@@ -42,7 +42,9 @@
 }
 
 .chatProfileImage {
-  height: 50px;
+  height: 45px;
+  width: 45px;
+  padding: 5px;
   border-radius: 50%;
   align-self: baseline;
 }
