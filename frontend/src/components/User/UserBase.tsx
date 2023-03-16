@@ -49,25 +49,31 @@ function UserBase(props: Props) {
       });
   }, [props.userId, editProfile]);
 
-  const onlineFunc = () => {
-    if (!activityMap.get(props.userId)) return false;
-    return activityMap.get(props.userId)?.activity !== 'offline';
-  };
-
   return (
     <div className="userBase">
       <div className="profileDiv">
-        {onlineFunc() ? (
-          <div
-            className="activityDot"
-            style={{ background: 'var(--online)' }}
-          />
-        ) : (
-          <div
-            className="activityDot"
-            style={{ background: 'var(--offline)' }}
-          />
-        )}
+        {
+          {
+            online: (
+              <div
+                className="activityDot"
+                style={{ background: 'var(--online)' }}
+              />
+            ),
+            offline: (
+              <div
+                className="activityDot"
+                style={{ background: 'var(--offline)' }}
+              />
+            ),
+            inGame: (
+              <div
+                className="activityDot"
+                style={{ background: 'var(--in_game)' }}
+              />
+            ),
+          }[activityMap.get(props.userId)?.activity ?? 'offline']
+        }
         <img
           className="profileImage"
           src={

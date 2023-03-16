@@ -14,7 +14,9 @@ function ChannelUpdateButton({ channelId }: ChannelUpdateButtonProp) {
 
   return (
     <>
-      <button onClick={() => setShowModal(true)}>수정</button>
+      <button className="chatRoomButton" onClick={() => setShowModal(true)}>
+        수정
+      </button>
       {showModal &&
         createPortal(
           <FormModal
