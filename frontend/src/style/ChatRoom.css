@@ -9,6 +9,9 @@
 }
 
 .chatRoomUserList {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
   height: 95%;
   border-radius: 10px;
   overflow-y: scroll;

@@ -8,20 +8,34 @@ import {
 } from '../util/constant/cookie-constant';
 import { AuthService } from './auth.service';
 import { CookieOptions } from 'express';
+import { ChannelStorage } from 'src/user-status/channel.storage';
+import { UserRelationshipStorage } from 'src/user-status/user-relationship.storage';
 import { VerifiedWsRequest } from '../util/type';
 
 export class JwtAuthIoAdapter extends IoAdapter {
   private authService: AuthService;
+  private channelStorage: ChannelStorage;
+  private usersRelationshipStorage: UserRelationshipStorage;
 
   constructor(private app: INestApplication) {
     super(app);
     this.authService = this.app.get(AuthService);
+    this.channelStorage = this.app.get(ChannelStorage);
+    this.usersRelationshipStorage = this.app.get(UserRelationshipStorage);
   }
 
   createIOServer(port: number, options?: ServerOptions) {
+    options.cors =
+      process.env.NODE_ENV === 'development'
+        ? {
+            origin: 'http://localhost:5173',
+            credentials: true,
+          }
+        : {};
     options.allowRequest = this.allowRequest;
     const server: Server = super.createIOServer(port, options);
-    server.engine.on('initial_headers', this.setCookies);
+    process.env.NODE_ENV === 'production' &&
+      server.engine.on('initial_headers', this.setCookies);
     return server;
   }
 
@@ -29,14 +43,27 @@ export class JwtAuthIoAdapter extends IoAdapter {
     req: VerifiedWsRequest,
     cb: (err: string | null, success: boolean) => void,
   ) => {
-    const { accessToken, refreshToken } = this.findTokensFromCookie(
-      req.headers.cookie?.split('; '),
-    );
-    req.user = await this.verifyUser(accessToken, refreshToken);
-    if (req.user) {
-      cb(null, true);
+    if (process.env.NODE_ENV === 'development') {
+      const userId = Math.floor(Number(req.headers['x-user-id']));
+      if (isNaN(userId)) {
+        cb('Unauthorized', false);
+      } else {
+        await this.usersRelationshipStorage.load(userId);
+        await this.channelStorage.loadUser(userId);
+        cb(null, true);
+      }
     } else {
-      cb('Unauthorized', false);
+      const { accessToken, refreshToken } = this.findTokensFromCookie(
+        req.headers.cookie?.split('; '),
+      );
+      req.user = await this.verifyUser(accessToken, refreshToken);
+      if (req.user) {
+        await this.usersRelationshipStorage.load(req.user.userId);
+        await this.channelStorage.loadUser(req.user.userId);
+        cb(null, true);
+      } else {
+        cb('Unauthorized', false);
+      }
     }
   };
 

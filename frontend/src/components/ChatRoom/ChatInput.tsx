@@ -41,11 +41,30 @@ function ChatInput(props: Props) {
         if (err.response.status === 400) {
           ErrorAlert('잘못된 명령어입니다.', '/help로 명령어를 확인하세요.');
         } else if (err.response.status === 403) {
-          const time = err.response.data.message.match(/(\d+)/)[0];
-          ErrorAlert(
-            '권한이 없는 유저입니다.',
-            `입력 제한 시간 ${time}분 남았습니다.`,
-          );
+          let alertMessage = '';
+          if (
+            err.response.data.message === 'This user is banned from the channel'
+          ) {
+            alertMessage = '이 채팅방에서 차단된 상태입니다.';
+          } else if (
+            err.response.data.message ===
+            'This user is not a member of the channel'
+          ) {
+            alertMessage = '이 채팅방의 멤버가 아닙니다.';
+          } else if (
+            err.response.data.message === 'Cannot send message to this user'
+          ) {
+            alertMessage =
+              '해당 사용자에게 메시지를 보낼 수 있는 관계인지 확인하세요.';
+          } else if (
+            err.response.data.message === "You don't have permission to do this"
+          ) {
+            alertMessage = '이 명령어를 사용할 수 있는 권한이 없습니다.';
+          } else {
+            const time = err.response.data.message.match(/(\d+)/)[0];
+            alertMessage = `입력 제한 시간 ${time}분 남았습니다.`;
+          }
+          ErrorAlert('메시지를 보낼 수 없습니다.', alertMessage);
         } else if (err.response.status === 404) {
           ErrorAlert('존재하지 않는 유저 입니다.', '유저 닉네임을 확인하세요.');
         }
