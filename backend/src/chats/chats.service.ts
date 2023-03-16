@@ -1,5 +1,4 @@
 import {
-  BadRequestException,
   ForbiddenException,
   Injectable,
   InternalServerErrorException,
@@ -18,8 +17,9 @@ import {
   CreateChannelDto,
   UpdateChannelDto,
 } from './dto/chats.dto';
-import { ChannelStorage } from '../user-status/channel.storage';
 import { ChannelId, UserChannelStatus, UserId, UserRole } from '../util/type';
+import { ChannelMembers } from '../entity/channel-members.entity';
+import { ChannelStorage } from '../user-status/channel.storage';
 import { ChatsGateway } from './chats.gateway';
 import { Messages } from '../entity/messages.entity';
 import { UserRelationshipStorage } from '../user-status/user-relationship.storage';
@@ -31,6 +31,8 @@ export class ChatsService {
   constructor(
     private readonly activityManager: ActivityManager,
     private readonly channelStorage: ChannelStorage,
+    @InjectRepository(ChannelMembers)
+    private readonly channelMembersRepository: Repository<ChannelMembers>,
     @InjectRepository(Channels)
     private readonly channelsRepository: Repository<Channels>,
     private readonly chatsGateway: ChatsGateway,
@@ -62,11 +64,7 @@ export class ChatsService {
     if (this.channelStorage.getChannels().size === 0) {
       return { joinedChannels: [], otherChannels: [] };
     }
-    // FIXME : Delete when AuthGuard is implemented
     const userChannelMap = this.channelStorage.getUser(userId);
-    if (!userChannelMap) {
-      throw new BadRequestException('Invalid Request');
-    }
     return {
       joinedChannels: await this.getJoinedChannels(userId, userChannelMap),
       otherChannels: await this.getChannelsExceptJoined(userId, userChannelMap),
