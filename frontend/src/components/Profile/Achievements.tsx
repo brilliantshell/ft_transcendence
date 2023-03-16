@@ -26,6 +26,7 @@ function Achievements(props: {
 }) {
   return (
     <div className="profileItem achievementBar">
+      {!props.achievements?.length && <div>아직 업적을 얻지 못했습니다.</div>}
       <div className="achievementBar">
         {props.achievements?.map(achievementItem => (
           <AchievementElement

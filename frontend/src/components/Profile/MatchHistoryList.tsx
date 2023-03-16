@@ -63,6 +63,9 @@ function MatchHistoryList(props: {
 }) {
   return (
     <div className="profileItem matchHistoryList">
+      {!props.history?.length && (
+        <div style={{ margin: 'auto' }}>매치 기록이 없습니다.</div>
+      )}
       {props.history?.map(matchLog => (
         <MatchHistory history={matchLog} key={matchLog.matchId} />
       ))}
