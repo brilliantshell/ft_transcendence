@@ -14,6 +14,7 @@ export function useCurrentUi(
   isConnected: boolean,
   setIsConnected: React.Dispatch<React.SetStateAction<boolean>>,
   ui: CurrentUi,
+  deps: React.DependencyList = [],
 ) {
   const nav = useNavigate();
 
@@ -61,7 +62,7 @@ export function useCurrentUi(
     return () => {
       socket.off('newNormalGame', newNormalGameHandler);
     };
-  }, []);
+  }, deps);
 }
 
 // SECTION : Types & Interfaces

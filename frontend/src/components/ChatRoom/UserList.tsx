@@ -52,7 +52,6 @@ function UserList(props: Props) {
             navigate('/chats');
           }
           if (myId === data.leftMember) {
-            ErrorAlert('추방당했습니다.', '채팅방이 삭제되었습니다');
             navigate('/chats');
           }
           setChannelMembers(prev =>
@@ -60,12 +59,13 @@ function UserList(props: Props) {
           );
         });
         socket.on('roleChanged', data => {
-          const copy = [...channelMembers];
-          const index = copy.findIndex(
-            member => member.id === data.changedMember,
-          );
-          copy[index].role = data.newRole;
-          setChannelMembers(copy);
+          setChannelMembers(prev => {
+            const index = prev.findIndex(
+              member => member.id === data.changedMember,
+            );
+            prev[index].role = data.newRole;
+            return [...prev];
+          });
         });
       })
       .catch(err => {
