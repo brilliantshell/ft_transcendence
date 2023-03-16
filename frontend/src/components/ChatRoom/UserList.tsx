@@ -44,7 +44,7 @@ function UserList(props: Props) {
           ]);
         });
         socket.on('memberLeft', data => {
-          if (data.isOwner) {
+          if (result.data.isReadonlyDm === null && data.isOwner) {
             ErrorAlert(
               '방장이 채팅방을 나갔습니다.',
               '채팅방이 삭제되었습니다',
