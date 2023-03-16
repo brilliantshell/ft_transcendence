@@ -56,12 +56,13 @@ function UserList(props: Props) {
           );
         });
         socket.on('roleChanged', data => {
-          const copy = [...channelMembers];
-          const index = copy.findIndex(
-            member => member.id === data.changedMember,
-          );
-          copy[index].role = data.newRole;
-          setChannelMembers(copy);
+          setChannelMembers(prev => {
+            const index = prev.findIndex(
+              member => member.id === data.changedMember,
+            );
+            prev[index].role = data.newRole;
+            return [...prev];
+          });
         });
       })
       .catch(err => {
@@ -83,14 +84,16 @@ function UserList(props: Props) {
   return (
     <div className="chatRoomLeft">
       <div className="chatRoomUserList">
-        {channelMembers.map(data => (
-          <User
-            key={data.id}
-            userId={data.id}
-            downChild={!isDm && data.role}
-            session={true}
-          ></User>
-        ))}
+        <div className="chatRoomUser">
+          {channelMembers.map(data => (
+            <User
+              key={data.id}
+              userId={data.id}
+              downChild={!isDm && data.role}
+              session={true}
+            ></User>
+          ))}
+        </div>
       </div>
 
       <UserLeftButton id={props.id} />
