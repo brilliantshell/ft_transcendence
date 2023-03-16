@@ -17,7 +17,6 @@
 }
 
 .chatList {
-  /* border: 1px solid; */
   border-radius: 10px;
   height: 95%;
   overflow-y: scroll;
@@ -42,7 +41,9 @@
 }
 
 .chatProfileImage {
-  height: 50px;
+  height: 45px;
+  width: 45px;
+  padding: 5px;
   border-radius: 50%;
   align-self: baseline;
 }
@@ -74,6 +75,10 @@
   align-self: flex-end;
 }
 
+.chatRoomLeft {
+  height: 80vh;
+}
+
 .chatRoomRight {
   display: flex;
   flex-direction: column;
@@ -81,13 +86,35 @@
 }
 
 .chatRoomInput {
-  height: 1rem;
+  height: 1.5rem;
+  width: 80%;
+  border-radius: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.chatRoomInputButton {
+  background-color: var(--secondary);
+  border-radius: 0.5rem;
+  height: 1.7rem;
+  margin-left: 0.2rem;
+  width: 3rem;
+}
+
+.chatRoomButton {
+  background-color: var(--secondary);
+  border-radius: 0.5rem;
+  height: 1.7rem;
+  margin-left: 0.2rem;
+  margin-right: 0.2rem;
+  margin-top: 0.5rem;
+  width: 4rem;
 }
 
 .upButton {
-  width: 40px;
-  height: 40px;
+  width: 50px;
+  height: 50px;
   border-radius: 50%;
+  background-color: transparent;
 }
 
 .upButtonImage {

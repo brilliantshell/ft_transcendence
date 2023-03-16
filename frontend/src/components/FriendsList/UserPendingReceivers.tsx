@@ -53,8 +53,12 @@ function UserPendingReceivers(props: Props) {
       userId={props.userId}
       downChild={
         <>
-          <button onClick={friendPatch}>수락</button>
-          <button onClick={friendDelete}>거절</button>
+          <button className="friendAcceptButton" onClick={friendPatch}>
+            수락
+          </button>
+          <button className="friendDeclineButton" onClick={friendDelete}>
+            거절
+          </button>
         </>
       }
     ></User>

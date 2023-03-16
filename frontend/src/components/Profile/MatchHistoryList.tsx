@@ -12,10 +12,14 @@ function MatchHistory(props: {
   return (
     <div className="matchHistory">
       <div className="matchHistoryItem">
-        WINNER {props.history?.winner.nickname}
+        WINNER
+        <br />
+        {props.history?.winner.nickname}
       </div>
       <div className="matchHistoryItem">
-        LOSER {props.history?.loser.nickname}
+        LOSER
+        <br />
+        {props.history?.loser.nickname}
       </div>
       <div className="matchHistoryItem">
         <div>SCORE</div>

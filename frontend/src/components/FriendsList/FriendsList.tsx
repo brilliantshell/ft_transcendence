@@ -4,7 +4,6 @@ import { socket } from '../../util/Socket';
 import { useEffect, useRef, useState } from 'react';
 
 // TODO : 친구 요청이 있으면 점 추가
-// TODO : 친구 리스트 버튼 모양 수정
 
 function FriendsList() {
   const [requestCount, setRequestCount] = useState<number | null>(null);

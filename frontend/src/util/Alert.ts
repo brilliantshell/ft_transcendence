@@ -77,5 +77,6 @@ export const EmailAlert = (inputLabel: string) => {
     input: 'email',
     inputLabel: `${inputLabel}`,
     inputPlaceholder: '등록할 이메일을 입력해주세요.',
+    confirmButtonText: '확인',
   });
 };
