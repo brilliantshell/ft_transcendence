@@ -31,9 +31,7 @@ function ChatRoom() {
 
   return (
     <div className="chatRoom">
-      <div>
-        <UserList id={id ?? ''} />
-      </div>
+      <div>{isConnected && <UserList id={id ?? ''} />}</div>
       <div className="chatRoomRight">
         <ChatList id={id ?? ''} />
         <ChatInput id={id ?? ''} />
