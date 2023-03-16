@@ -41,7 +41,7 @@ function Chats() {
         .catch(() => ErrorAlert('채널 목록 로딩 실패', '오류가 발생했습니다.'));
   }, [isConnected]);
 
-  useChannelCreatedEvent(setOtherChannels);
+  useChannelCreatedEvent(setJoinedChannels, setOtherChannels);
   useChannelShownEvent(joinedChannels, setOtherChannels);
   useChannelHiddenEvent(joinedChannels, setOtherChannels);
   useChannelDeletedEvent(setJoinedChannels, setOtherChannels);

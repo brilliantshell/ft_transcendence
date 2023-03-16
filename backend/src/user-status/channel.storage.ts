@@ -202,7 +202,7 @@ export class ChannelStorage implements OnModuleInit {
     this.channels.set(newChannel.channelId, {
       modifiedAt: dmCreatedAt,
       userRoleMap: new Map<UserId, UserRole>()
-        .set(owner, 'owner')
+        .set(owner, 'member')
         .set(peer, 'member'),
       accessMode: 'private',
     });
@@ -215,7 +215,7 @@ export class ChannelStorage implements OnModuleInit {
       muteEndAt: DateTime.fromMillis(0),
     });
     this.userRelationshipStorage.addDm(newChannel.channelId);
-    return newChannel.channelId;
+    return newChannel;
   }
 
   /**
@@ -333,7 +333,11 @@ export class ChannelStorage implements OnModuleInit {
   async deleteUserFromChannel(channelId: ChannelId, userId: UserId) {
     const channelUsers = this.getChannel(channelId).userRoleMap;
     try {
-      if (channelUsers.get(userId) === 'owner') {
+      if (
+        channelUsers.get(userId) === 'owner' ||
+        (this.userRelationshipStorage.isBlockedDm(channelId) !== undefined &&
+          channelUsers.size === 1)
+      ) {
         await this.channelsRepository.delete({ channelId });
         const members = channelUsers.keys();
         for (const member of members) {
@@ -606,10 +610,12 @@ export class ChannelStorage implements OnModuleInit {
         });
         curUserRoleMap = this.getChannel(channelId).userRoleMap;
       }
-      curUserRoleMap.set(
-        memberId,
-        ownerId === memberId ? 'owner' : isAdmin ? 'admin' : 'member',
-      );
+      this.userRelationshipStorage.isBlockedDm(channelId) === undefined
+        ? curUserRoleMap.set(
+            memberId,
+            ownerId === memberId ? 'owner' : isAdmin ? 'admin' : 'member',
+          )
+        : curUserRoleMap.set(memberId, 'member');
     });
   }
 
@@ -660,7 +666,7 @@ export class ChannelStorage implements OnModuleInit {
         dmPeerId: peer,
       })
       .setParameters({ owner, peer })
-      .returning(['channelId', 'modifiedAt'])
+      .returning(['channelId', 'name', 'modifiedAt'])
       .execute();
     const newChannel = insertResult.generatedMaps[0] as Channels;
     const { channelId, modifiedAt } = newChannel;

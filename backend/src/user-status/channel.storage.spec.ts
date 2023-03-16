@@ -335,11 +335,11 @@ describe('ChannelStorage', () => {
     const peerId = nonDm.ownerId === userId ? nonDm.dmPeerId : nonDm.ownerId;
     await storage.loadUser(userId);
     const newChannelId = await storage.addDm(userId, peerId);
-    const channelInfo = storage.getChannel(newChannelId);
+    const channelInfo = storage.getChannel(newChannelId.channelId);
     expect(channelInfo).toBeDefined();
 
     const [channelData] = await channelsRepository.findBy({
-      channelId: newChannelId,
+      channelId: newChannelId.channelId,
     });
 
     const peer = userEntities.find((user) => user.userId === peerId);
@@ -351,7 +351,7 @@ describe('ChannelStorage', () => {
     expect(channelData.name).toBe(`${nickname}, ${peer.nickname}`);
 
     const members = await channelMembersRepository.findBy({
-      channelId: newChannelId,
+      channelId: newChannelId.channelId,
     });
     expect(members.length).toBe(2);
     expect(members[0].memberId).toBe(userId);
@@ -365,15 +365,17 @@ describe('ChannelStorage', () => {
     expect(channelInfo.modifiedAt).toEqual(channelData.modifiedAt);
     expect(channelInfo.modifiedAt).toEqual(channelData.modifiedAt);
 
-    expect(storage.getUser(userId).has(newChannelId)).toBeTruthy();
-    expect(storage.getUser(userId).get(newChannelId)).toEqual({
+    expect(storage.getUser(userId).has(newChannelId.channelId)).toBeTruthy();
+    expect(storage.getUser(userId).get(newChannelId.channelId)).toEqual({
       unseenCount: 0,
       muteEndAt: DateTime.fromMillis(0),
     });
 
-    expect(userRelationshipStorage.isBlockedDm(newChannelId)).toBeFalsy();
+    expect(
+      userRelationshipStorage.isBlockedDm(newChannelId.channelId),
+    ).toBeFalsy();
 
-    storage.deleteUserFromChannel(newChannelId, userId);
+    storage.deleteUserFromChannel(newChannelId.channelId, userId);
   });
 
   it('should delete a channel when the owner of the channel leaves the channel', async () => {

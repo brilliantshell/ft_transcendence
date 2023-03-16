@@ -8,6 +8,7 @@ import { Repository } from 'typeorm';
 
 import { ActivityGateway } from '../user-status/activity.gateway';
 import { ChannelStorage } from '../user-status/channel.storage';
+import { ChatsGateway } from '../chats/chats.gateway';
 import { FriendListDto, UserProfileDto } from './dto/user.dto';
 import { UserGateway } from './user.gateway';
 import { UserId } from '../util/type';
@@ -21,6 +22,7 @@ export class UserService {
   constructor(
     private readonly activityGateway: ActivityGateway,
     private readonly channelStorage: ChannelStorage,
+    private readonly chatsGateway: ChatsGateway,
     private readonly userGateway: UserGateway,
     private readonly userRelationshipStorage: UserRelationshipStorage,
     @InjectRepository(Users)
@@ -107,8 +109,13 @@ export class UserService {
         return { dmId: channelId, isNew: false };
       }
     }
+    const { channelId, name } = await this.channelStorage.addDm(
+      ownerId,
+      peerId,
+    );
+    this.chatsGateway.emitDmCreated(channelId, name, ownerId, peerId);
     return {
-      dmId: await this.channelStorage.addDm(ownerId, peerId),
+      dmId: channelId,
       isNew: true,
     };
   }

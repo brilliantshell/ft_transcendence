@@ -46,12 +46,26 @@ function addToOtherChannels(
 }
 
 export function useChannelCreatedEvent(
+  setJoinedChannels: React.Dispatch<React.SetStateAction<ChannelInfo[]>>,
   setOtherChannels: React.Dispatch<React.SetStateAction<ChannelInfo[]>>,
 ) {
   const handleChannelCreated = (channel: ChannelCreated) => {
-    setOtherChannels(prev =>
-      addToOtherChannels(prev, { ...channel, memberCount: 1 }),
-    );
+    channel.accessMode === 'private'
+      ? setJoinedChannels(prev =>
+          [
+            {
+              channelId: channel.channelId,
+              channelName: channel.channelName,
+              isDm: true,
+              memberCount: 2,
+              accessMode: 'private',
+              unseenCount: 0,
+            } as ChannelInfo,
+          ].concat(prev),
+        )
+      : setOtherChannels(prev =>
+          addToOtherChannels(prev, { ...channel, memberCount: 1 }),
+        );
   };
   useEffect(() => {
     socket.on('channelCreated', handleChannelCreated);
