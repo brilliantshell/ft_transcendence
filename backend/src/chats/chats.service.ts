@@ -210,6 +210,7 @@ export class ChatsService {
    */
   async leaveChannel(channelId: ChannelId, userId: UserId) {
     const isOwner =
+      this.userRelationshipStorage.isBlockedDm(channelId) === undefined &&
       this.channelStorage.getUserRole(channelId, userId) === 'owner';
     await this.channelStorage.deleteUserFromChannel(channelId, userId);
     return this.chatsGateway.emitMemberLeft(channelId, userId, isOwner);

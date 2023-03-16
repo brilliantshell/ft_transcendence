@@ -1,6 +1,7 @@
 import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
+import { ChatsModule } from 'src/chats/chats.module';
 import { GameModule } from '../game/game.module';
 import { UserController } from './user.controller';
 import { UserGateway } from './user.gateway';
@@ -11,6 +12,7 @@ import { Users } from '../entity/users.entity';
 @Module({
   imports: [
     TypeOrmModule.forFeature([Users]),
+    forwardRef(() => ChatsModule),
     GameModule,
     forwardRef(() => UserStatusModule),
   ],

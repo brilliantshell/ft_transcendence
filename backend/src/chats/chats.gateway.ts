@@ -38,7 +38,7 @@ export class ChatsGateway {
    */
   joinChannelRoom(channelId: ChannelId, userId: UserId) {
     const socketId = this.userSocketStorage.clients.get(userId);
-    this.server.in(socketId).socketsJoin(`chatRooms-${channelId}`);
+    socketId && this.server.in(socketId).socketsJoin(`chatRooms-${channelId}`);
   }
 
   /**
@@ -87,9 +87,9 @@ export class ChatsGateway {
   /**
    * @description 새로운 채널이 생성됐을 떄, chats-UI 를 보고 있는 유저에게 알림
    *
-   * @param channelId
-   * @param channelName
-   * @param accessMode
+   * @param channelId 채널의 id
+   * @param channelName 채널의 이름
+   * @param accessMode 채널의 접근 권한
    */
   emitChannelCreated(
     channelId: ChannelId,
@@ -101,6 +101,31 @@ export class ChatsGateway {
       channelName,
       accessMode,
     });
+  }
+
+  /**
+   * @description 새로운 DM 이 생성됐을 때, chats-UI 를 보고 있는 상대방에게 알림
+   *
+   * @param channelId dm 채널의 id
+   * @param channelName  dm 채널의 이름
+   * @param peerId  dm 채널의 상대방 id
+   */
+  emitDmCreated(
+    channelId: ChannelId,
+    channelName: string,
+    ownerId: UserId,
+    peerId: UserId,
+  ) {
+    this.joinChannelRoom(channelId, ownerId);
+    this.joinChannelRoom(channelId, peerId);
+    const socketId = this.userSocketStorage.clients.get(peerId);
+    if (this.getRoomMembers('chats').has(socketId)) {
+      this.server.in(socketId).emit('channelCreated', {
+        channelId,
+        channelName,
+        accessMode: 'private',
+      });
+    }
   }
 
   /**
