@@ -24,11 +24,6 @@ export const gamesInProgressState = atom<
   default: [],
 });
 
-export const isOptionSubmittedState = atom<boolean>({
-  key: 'isOptionSubmitted',
-  default: false,
-});
-
 export const userActivity = atom<Map<number, activityData>>({
   key: 'userActivity',
   default: new Map<number, activityData>(),

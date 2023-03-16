@@ -1,18 +1,20 @@
+import { ErrorAlert } from '../util/Alert';
 import GameInfo from '../components/GameRoom/GameInfo';
 import GameMenu from '../components/GameRoom/GameMenu';
 import GamePlay from '../components/GameRoom/GamePlay';
-import { isOptionSubmittedState } from '../util/Recoils';
 import { socket } from '../util/Socket';
 import { useCurrentUi } from '../components/hooks/CurrentUi';
-import { useRequestGame } from '../components/GameRoom/hooks/GameDataHooks';
 import { useNavigate, useParams } from 'react-router-dom';
+import {
+  GameInfoData,
+  useRequestGame,
+} from '../components/GameRoom/hooks/GameDataHooks';
 import { useState } from 'react';
-import { useRecoilValue } from 'recoil';
-import { ErrorAlert } from '../util/Alert';
 
 export default function GameRoom() {
   const nav = useNavigate();
   const { gameId } = useParams();
+
   if (gameId === undefined) {
     return <></>;
   } else if (!gameId.match(/^[0-9A-Za-z_-]{21}$/)) {
@@ -20,16 +22,20 @@ export default function GameRoom() {
       nav(-1),
     );
   }
+
+  const [gameInfo, setGameInfo] = useState<GameInfoData | null>(null);
   const [isConnected, setIsConnected] = useState(socket.connected);
-  const isOptionSubmitted = useRecoilValue(isOptionSubmittedState);
+
+  const [isNormalSubmitted, setIsNormalSubmitted] = useState(false);
 
   useCurrentUi(isConnected, setIsConnected, `game-${gameId}`);
-  const { gameInfo, players } = useRequestGame(isConnected, gameId);
+  useRequestGame(isConnected, gameId, setGameInfo);
 
-  if (!gameInfo || !players) {
+  if (!gameInfo) {
     return <></>;
   }
-  const { isRank, isLeft } = gameInfo;
+
+  const { isRank, isPlayer, isLeft, isStarted, players } = gameInfo;
 
   return (
     <div className="gameRoom">
@@ -39,17 +45,16 @@ export default function GameRoom() {
         rightPlayer={players[1]}
       />
       <GamePlay
-        gameInfo={{ id: gameId, isRank, players }}
-        controllerType={{
-          isLeft: isLeft,
-          isPlayer:
-            sessionStorage.getItem(`game-${gameId}-isPlayer`) === 'true',
-        }}
+        gameInfo={{ id: gameId, isRank, isStarted, players }}
+        controllerType={{ isLeft, isPlayer }}
       />
       <GameMenu
         gameId={gameId}
         isRank={isRank}
-        isOptionSubmitted={isOptionSubmitted}
+        gameInfo={{ id: gameId, isRank, isStarted, players }}
+        setGameInfo={setGameInfo}
+        isNormalSubmitted={isNormalSubmitted}
+        setIsNormalSubmitted={setIsNormalSubmitted}
       />
     </div>
   );

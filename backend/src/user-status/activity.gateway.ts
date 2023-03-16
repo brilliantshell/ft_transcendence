@@ -7,8 +7,8 @@ import {
   WebSocketGateway,
   WebSocketServer,
 } from '@nestjs/websockets';
+import { Inject, UsePipes, ValidationPipe, forwardRef } from '@nestjs/common';
 import { Server, Socket } from 'socket.io';
-import { UsePipes, ValidationPipe } from '@nestjs/common';
 
 import {
   Activity,
@@ -51,6 +51,7 @@ export class ActivityGateway
     private readonly channelStorage: ChannelStorage,
     private readonly chatsGateway: ChatsGateway,
     private readonly gameGateway: GameGateway,
+    @Inject(forwardRef(() => GameStorage))
     private readonly gameStorage: GameStorage,
     private readonly ranksGateway: RanksGateway,
     private readonly userGateway: UserGateway,
@@ -92,7 +93,7 @@ export class ActivityGateway
       this.userGateway.emitFriendRequestDiff(socketId, pendingRequestCount);
     }
     clientSocket.on('disconnecting', () =>
-      this.handleDisconnecting(clientSocket.id, clientSocket.rooms),
+      this.handleDisconnecting(clientSocket.id),
     );
   }
 
@@ -219,10 +220,10 @@ export class ActivityGateway
   private createUserActivityDto(targetId: UserId): UserActivityDto {
     let activity: Activity = 'offline';
     const currentUi = this.activityManager.getActivity(targetId);
-    if (currentUi) {
-      activity = currentUi.startsWith('game-') ? 'inGame' : 'online';
-    }
     const gameId = this.gameStorage.players.get(targetId) ?? null;
+    if (currentUi) {
+      activity = gameId ? 'inGame' : 'online';
+    }
     return {
       activity,
       gameId: activity === 'inGame' ? gameId : null,
@@ -236,16 +237,12 @@ export class ActivityGateway
    * @param socketId 유저의 socket id
    * @param rooms 유저의 socket 이 속한 room 목록
    */
-  handleDisconnecting(socketId: SocketId, rooms: Set<string>) {
+  handleDisconnecting(socketId: SocketId) {
     const userId = this.userSocketStorage.sockets.get(socketId);
-    this.gameStorage.matchedPair.length = 0;
-    this.gameStorage.deleteUserFromLadderQueue(userId);
-    for (const room of rooms) {
-      if (room.startsWith('game-')) {
-        this.gameGateway.abortIfPlayerLeave(room.replace('game-', ''), userId);
-        break;
-      }
+    if (this.gameStorage.matchedPair.includes(userId)) {
+      this.gameStorage.matchedPair.length = 0;
     }
+    this.gameStorage.deleteUserFromLadderQueue(userId);
   }
 
   /**
@@ -263,7 +260,9 @@ export class ActivityGateway
     if (prevUi === 'chats') {
       this.chatsGateway.leaveRoom(socketId, prevUi);
     } else if (prevUi === 'waitingRoom') {
-      this.gameStorage.matchedPair.length = 0;
+      if (this.gameStorage.matchedPair.includes(userId)) {
+        this.gameStorage.matchedPair.length = 0;
+      }
       this.gameStorage.deleteUserFromLadderQueue(userId);
       this.gameGateway.leaveRoom(socketId, 'waitingRoom');
     } else if (prevUi.startsWith('game-')) {

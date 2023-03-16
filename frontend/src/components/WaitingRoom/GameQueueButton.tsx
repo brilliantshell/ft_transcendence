@@ -14,7 +14,6 @@ export default function GameEnterQueueButton() {
       instance.delete('/game/queue').finally(() => setHasEnteredQueue(false));
     } else {
       listenOnce<NewGameMessage>('newGame').then(({ gameId }) => {
-        sessionStorage.setItem(`game-${gameId}-isPlayer`, 'true');
         nav(`/game/${gameId}`);
       });
       instance

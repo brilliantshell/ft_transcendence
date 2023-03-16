@@ -25,7 +25,6 @@ export default function GameInProgressButton({
     setHoverInfoCoords({ x: e.clientX + 8, y: e.clientY + 20 });
 
   const handleClick = () => {
-    sessionStorage.setItem(`game-${gameId}-isPlayer`, 'false');
     nav(`/game/${gameId}`);
   };
 
@@ -41,7 +40,7 @@ export default function GameInProgressButton({
         <div>{leftNickname}</div>
         {isHovered ? (
           <div>
-            <img src="../../public/assets/fire.gif" />
+            <img src="/assets/fire.gif" />
           </div>
         ) : (
           <div className="gameVersusText xlarge">VS</div>

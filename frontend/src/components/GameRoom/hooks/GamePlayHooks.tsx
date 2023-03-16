@@ -10,7 +10,6 @@ export function useGamePlay(
   gameInfo: GameInfo,
   controllerType: ControllerType,
   dimensions: Dimensions,
-  gameMode: 0 | 1 | 2 = 0,
 ) {
   const nav = useNavigate();
 
@@ -47,7 +46,6 @@ export function useGamePlay(
           controllerType,
           dimensions,
           nav,
-          gameMode,
         );
         if (controllerType.isPlayer) {
           document.addEventListener('keydown', keyDownHandler);

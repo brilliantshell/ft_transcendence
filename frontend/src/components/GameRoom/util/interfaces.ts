@@ -6,6 +6,7 @@ export interface Dimensions {
 export interface GameInfo {
   id: string;
   isRank: boolean;
+  isStarted: boolean;
   players: [string, string];
 }
 
@@ -55,4 +56,5 @@ export interface GameDataMessage {
   ballCoords: BallCoordinates;
   paddlePositions: PaddlePositions;
   scores: [Score, Score];
+  mode: 0 | 1 | 2;
 }

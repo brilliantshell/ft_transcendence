@@ -1,37 +1,50 @@
 import { Coordinates, HoverBox } from '../common/HoverBox';
 import { ErrorAlert } from '../../util/Alert';
+import { GameInfo } from './util/interfaces';
+import { GameInfoData } from './hooks/GameDataHooks';
 import instance from '../../util/Axios';
-import { listenOnce } from '../../util/Socket';
 import { useNavigate } from 'react-router-dom';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 export default function GameMenu({
   gameId,
   isRank,
-  isOptionSubmitted,
+  gameInfo,
+  setGameInfo,
+  isNormalSubmitted,
+  setIsNormalSubmitted,
 }: GameMenuProps) {
   const nav = useNavigate();
-  const [isStarted, setIsStarted] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const [hoverInfoCoords, setHoverInfoCoords] = useState<Coordinates>({
     x: 0,
     y: 0,
   });
 
-  if (isRank || isStarted) {
+  useEffect(() => {
+    instance.get(`/game/${gameId}/normal`).then(({ data }) => {
+      setIsNormalSubmitted(true);
+    });
+  }, []);
+
+  if (isRank || gameInfo.isStarted) {
     return <div className="gameMenu"></div>;
   }
 
   const handleStartClick = () => {
-    if (!isOptionSubmitted) {
+    if (!isNormalSubmitted) {
       return;
     }
     instance
       .patch(`/game/${gameId}/start`)
-      .then(() => {
-        setIsStarted(true);
-        sessionStorage.setItem(`game-${gameId}-isStarted`, 'true');
-      })
+      .then(() =>
+        setGameInfo(prev => {
+          if (prev) {
+            return { ...prev, ...gameInfo, isStarted: true };
+          }
+          return null;
+        }),
+      )
       .catch(() => {
         ErrorAlert('게임 시작', '게임을 시작하는데 실패했습니다.');
         nav(-1);
@@ -42,7 +55,7 @@ export default function GameMenu({
     <div className="gameMenu">
       <button
         className={
-          isOptionSubmitted ? 'gameStartButton' : 'gameStartButtonDeactivated'
+          isNormalSubmitted ? 'gameStartButton' : 'gameStartButtonDeactivated'
         }
         type="button"
         onClick={handleStartClick}
@@ -55,7 +68,7 @@ export default function GameMenu({
         START GAME
       </button>
       <HoverBox
-        isHovered={!isOptionSubmitted && isHovered}
+        isHovered={!isNormalSubmitted && isHovered}
         coords={hoverInfoCoords}
         content={'모드가 선택되어야 시작할 수 있습니다'}
       />
@@ -68,5 +81,8 @@ export default function GameMenu({
 interface GameMenuProps {
   gameId: string;
   isRank: boolean;
-  isOptionSubmitted: boolean;
+  gameInfo: GameInfo;
+  setGameInfo: React.Dispatch<React.SetStateAction<GameInfoData | null>>;
+  isNormalSubmitted: boolean;
+  setIsNormalSubmitted: React.Dispatch<React.SetStateAction<boolean>>;
 }

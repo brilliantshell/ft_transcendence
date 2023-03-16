@@ -1,38 +1,49 @@
 import { ErrorAlert } from '../../util/Alert';
 import GameOptionForm from './GameOptionForm';
 import { generateWavyText } from '../common/Animation';
-import { isOptionSubmittedState } from '../../util/Recoils';
-import { listenOnce } from '../../util/Socket';
+import instance from '../../util/Axios';
+import { listenOnce, socket } from '../../util/Socket';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useRecoilState } from 'recoil';
 
-export default function GameOption({
-  gameId,
-  isOwner,
-  setGameMode,
-}: GameOptionProps) {
+export default function GameOption({ gameId, isOwner }: GameOptionProps) {
   const nav = useNavigate();
-  const [isInvitedJoined, setIsInvitedJoined] = useState(false);
-  const [isOptionSubmitted, setIsOptionSubmitted] = useRecoilState(
-    isOptionSubmittedState,
-  );
+  const [hasInvitedJoined, setHasInvitedJoined] = useState(false);
+  const [isOptionSubmitted, setIsOptionSubmitted] = useState(false);
+
   useEffect(() => {
-    if (isOwner) {
-      listenOnce('gameCancelled').then(() => {
-        ErrorAlert(
-          '게임 취소',
-          '상대방이 게임에 접속하지 않아 취소되었습니다.',
-        );
-        nav('/waiting-room');
-      });
-      listenOnce('gameInvitedJoined').then(() => setIsInvitedJoined(true));
-    } else {
-      listenOnce<{ mode: 0 | 1 | 2 }>('gameOption').then(({ mode }) => {
-        setGameMode(mode);
-        setIsOptionSubmitted(true);
-      });
-    }
+    instance
+      .get(`/game/${gameId}/normal`)
+      .then(
+        ({
+          data,
+        }: {
+          data: { hasInvitedJoined: boolean; isOptionSubmitted: boolean };
+        }) => {
+          setHasInvitedJoined(data.hasInvitedJoined);
+          setIsOptionSubmitted(data.isOptionSubmitted);
+          listenOnce('gameOption').then(() => setIsOptionSubmitted(true));
+          if (isOwner) {
+            listenOnce('gameCancelled').then(() => {
+              ErrorAlert(
+                '게임 취소',
+                '상대방이 게임에 접속하지 않아 취소되었습니다.',
+              );
+              nav('/waiting-room');
+            });
+            if (hasInvitedJoined === false) {
+              listenOnce('gameInvitedJoined').then(() =>
+                setHasInvitedJoined(true),
+              );
+            }
+          }
+        },
+      );
+
+    return () => {
+      socket.off('gameInvitedJoined');
+      socket.off('gameOption');
+    };
   }, []);
 
   return (
@@ -49,8 +60,11 @@ export default function GameOption({
       ) : (
         <>
           {isOwner ? (
-            isInvitedJoined ? (
-              <GameOptionForm gameId={gameId} setGameMode={setGameMode} />
+            hasInvitedJoined ? (
+              <GameOptionForm
+                gameId={gameId}
+                setIsOptionSubmitted={setIsOptionSubmitted}
+              />
             ) : (
               <div className="gameOptionText large">
                 <p>상대가 게임 초대를 수락할 때까지</p>
@@ -76,5 +90,4 @@ export default function GameOption({
 interface GameOptionProps {
   gameId: string;
   isOwner: boolean;
-  setGameMode: React.Dispatch<React.SetStateAction<0 | 1 | 2>>;
 }

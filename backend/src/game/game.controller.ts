@@ -24,6 +24,7 @@ import { IsPlayerGuard } from './guard/is-player.guard';
 import { LadderQueueInterceptor } from './interceptor/ladder-queue.interceptor';
 import { LadderRestrictionGuard } from './guard/ladder-restriction.guard';
 import { MockAuthGuard } from '../guard/mock-auth.guard';
+import { SpectatorBlockGuard } from './guard/spectator-block.guard';
 
 // FIXME: AuthGuard 구현 후 변경
 @UseGuards(MockAuthGuard)
@@ -40,12 +41,6 @@ export class GameController {
   @Get('list')
   findLadderGames() {
     return this.gameService.findLadderGames();
-  }
-
-  @Get('list/:gameId')
-  @UseGuards(ExistingGameGuard)
-  findGameInfo(@Req() req: GameRequest, @Param() { gameId }: GameIdParamDto) {
-    return this.gameService.findGameInfo(req.user.userId, gameId, req.gameInfo);
   }
 
   @Post('queue')
@@ -69,9 +64,18 @@ export class GameController {
    ****************************************************************************/
 
   @Get(':gameId')
-  @UseGuards(ExistingGameGuard, IsPlayerGuard)
-  findPlayers(@Req() req: GameRequest, @Param() { gameId }: GameIdParamDto) {
-    return this.gameService.findPlayers(req.user.userId, gameId, req.gameInfo);
+  @UseGuards(ExistingGameGuard, SpectatorBlockGuard)
+  findInfoForPlayers(
+    @Req() req: GameRequest,
+    @Param() { gameId }: GameIdParamDto,
+  ) {
+    return this.gameService.findGameInfo(req.user.userId, gameId, req.gameInfo);
+  }
+
+  @Get(':gameId/normal')
+  @UseGuards(ExistingGameGuard)
+  findInfoForNormal(@Req() req: GameRequest) {
+    return this.gameService.findNormalGameInfo(req.gameInfo);
   }
 
   @Delete(':gameId')
