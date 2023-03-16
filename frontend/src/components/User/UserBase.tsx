@@ -36,6 +36,7 @@ function UserBase(props: Props) {
       .then(result => {
         setUser(result.data);
         if (props.session === true) {
+          console.log('aaaaa');
           sessionStorage.setItem(
             props.userId.toString(),
             JSON.stringify(result.data),

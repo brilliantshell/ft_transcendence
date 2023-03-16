@@ -15,19 +15,18 @@ function ChatRoom() {
   useCurrentUi(isConnected, setIsConnected, `chatRooms-${id}`);
 
   useEffect(() => {
+    // console.log('chatRoom hi');
     if (id === undefined || !/^[1-9]\d{0,9}$/.test(id)) {
       ErrorAlert('잘못된 접근입니다.', '채팅방을 다시 선택해주세요.');
       return navigate('/chats');
     }
-  }, []);
-
-  useEffect(() => {
     return () => {
+      console.log('chatRoom bye');
       const myXId = sessionStorage.getItem('x-user-id');
       sessionStorage.clear();
       sessionStorage.setItem('x-user-id', myXId?.toString() ?? '');
     };
-  }, []);
+  }, [id]);
 
   return (
     <div className="chatRoom">

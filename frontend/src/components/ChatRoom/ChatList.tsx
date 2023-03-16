@@ -75,7 +75,7 @@ function ChatList(props: Props) {
       const { scrollHeight, clientHeight } = chatListDivRef.current;
       chatListDivRef.current.scrollTop = scrollHeight - clientHeight;
     }
-  }, [contents]);
+  }, [contents, props.id]);
 
   return (
     <div className="chatList" ref={chatListDivRef}>
