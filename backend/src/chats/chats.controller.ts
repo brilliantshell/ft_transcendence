@@ -129,11 +129,17 @@ export class ChatsController {
   @Get(':channelId/message')
   @UseGuards(ChannelExistGuard, MemberExistGuard)
   findChannelMessages(
+    @Req() req: VerifiedRequest,
     @Param('channelId', ParseIntPipe) channelId: ChannelId,
     @Query('range', new ValidateRangePipe(RANGE_LIMIT_MAX))
     range: [offset: number, limit: number],
   ) {
-    return this.chatsService.findChannelMessages(channelId, range[0], range[1]);
+    return this.chatsService.findChannelMessages(
+      channelId,
+      req.user.userId,
+      range[0],
+      range[1],
+    );
   }
 
   @Post(':channelId/message')

@@ -80,10 +80,8 @@ export class ActivityGateway
     const socketId = clientSocket.id;
     this.userSocketStorage.clients.set(userId, socketId);
     this.userSocketStorage.sockets.set(socketId, userId);
-    await Promise.all([
-      this.userRelationshipStorage.load(userId),
-      this.channelStorage.loadUser(userId),
-    ]);
+    await this.userRelationshipStorage.load(userId);
+    await this.channelStorage.loadUser(userId);
     const joinedChannels = this.channelStorage.getUser(userId)?.keys();
     if (joinedChannels !== undefined) {
       for (const channelId of joinedChannels) {

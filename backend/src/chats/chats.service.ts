@@ -227,6 +227,7 @@ export class ChatsService {
    */
   async findChannelMessages(
     channelId: ChannelId,
+    requesterId: UserId,
     offset: number,
     limit: number,
   ) {
@@ -239,15 +240,26 @@ export class ChatsService {
           take: limit,
           select: ['messageId', 'senderId', 'contents', 'createdAt'],
         })
-      ).map((message) => {
-        const { messageId, senderId, contents, createdAt } = message;
-        return {
-          senderId,
-          messageId,
-          contents,
-          createdAt: createdAt.toMillis(),
-        };
-      });
+      )
+        .filter(({ senderId }) => {
+          if (requesterId === senderId) {
+            return true;
+          }
+          const relationship = this.userRelationshipStorage.getRelationship(
+            requesterId,
+            senderId,
+          );
+          return relationship !== 'blocker' && relationship !== 'blocked';
+        })
+        .map((message) => {
+          const { messageId, senderId, contents, createdAt } = message;
+          return {
+            senderId,
+            messageId,
+            contents,
+            createdAt: createdAt.toMillis(),
+          };
+        });
       return { messages };
     } catch (e) {
       this.logger.error(e);
@@ -286,16 +298,36 @@ export class ChatsService {
       this.logger.error(e);
       throw new InternalServerErrorException('Failed to create message');
     }
+    const members = this.channelStorage
+      .getChannel(channelId)
+      .userRoleMap.keys();
+    const blockedUsers = [];
+    for (const member of members) {
+      const relationship = this.userRelationshipStorage.getRelationship(
+        senderId,
+        member,
+      );
+      if (relationship === 'blocked' || relationship === 'blocker') {
+        blockedUsers.push(member);
+      }
+    }
     this.chatsGateway.emitNewMessage(
       channelId,
-      senderId,
-      messageId,
-      contents,
-      createdAt,
+      {
+        senderId,
+        messageId,
+        contents,
+        createdAt,
+      },
+      blockedUsers,
     );
     for (const [id] of this.channelStorage.getChannel(channelId).userRoleMap) {
       const currentUi = this.activityManager.getActivity(id);
-      if (currentUi !== null && currentUi !== `chatRooms-${channelId}`) {
+      if (
+        currentUi !== null &&
+        currentUi !== `chatRooms-${channelId}` &&
+        blockedUsers.find((blockedUser) => blockedUser === id) === undefined
+      ) {
         await this.channelStorage.updateUnseenCount(channelId, id);
       }
     }
