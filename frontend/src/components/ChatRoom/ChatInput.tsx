@@ -39,7 +39,19 @@ function ChatInput(props: Props) {
       .post(`/chats/${props.id}/message`, { message: message })
       .catch(err => {
         if (err.response.status === 400) {
-          ErrorAlert('잘못된 명령어입니다.', '/help로 명령어를 확인하세요.');
+          if (err.response.data.message === 'Invalid command') {
+            ErrorAlert('잘못된 명령어입니다.', '/help로 명령어를 확인하세요.');
+          } else if (
+            err.response.data.message[0] ===
+            'message must be shorter than or equal to 4096 characters'
+          ) {
+            ErrorAlert(
+              '메시지가 너무 깁니다.',
+              '4096글자 이하로 입력해주세요.',
+            );
+          } else {
+            ErrorAlert('잘못된 요청입니다.', '다시 시도해주세요.');
+          }
         } else if (err.response.status === 403) {
           let alertMessage = '';
           if (
