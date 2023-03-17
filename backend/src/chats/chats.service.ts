@@ -66,7 +66,7 @@ export class ChatsService {
       userChannelMap === undefined ||
       this.channelStorage.getChannels() === undefined
     ) {
-      throw new InternalServerErrorException('Cannot get userChannelMap');
+      throw new InternalServerErrorException('Failed to load channels');
     }
     return {
       joinedChannels: await this.getJoinedChannels(userId, userChannelMap),
