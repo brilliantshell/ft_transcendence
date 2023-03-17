@@ -2,7 +2,7 @@ import { ConfirmAlert, ErrorAlert } from '../../util/Alert';
 import instance from '../../util/Axios';
 import { listenOnce, socket } from '../../util/Socket';
 import { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 
 interface WebSocketConnectError extends Error {
   description?: number;
@@ -45,6 +45,17 @@ export function useCurrentUi(
       }
     });
   }, [socket.connected]);
+
+  useEffect(() => {
+    socket.on('disconnect', () => {
+      setTimeout(() => {
+        socket.connect();
+      }, 2000);
+    });
+    return () => {
+      socket.off('disconnect');
+    };
+  }, []);
 
   useEffect(() => {
     if (isConnected) {

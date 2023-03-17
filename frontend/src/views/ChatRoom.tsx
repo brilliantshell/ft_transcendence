@@ -22,14 +22,18 @@ function ChatRoom() {
     return () => {};
   }, [id]);
 
-  return (
+  return isConnected ? (
     <div className="chatRoom">
-      <div>{isConnected && <UserList id={id ?? ''} />}</div>
+      <div>
+        <UserList id={id ?? ''} />
+      </div>
       <div className="chatRoomRight">
         <ChatList id={id ?? ''} />
         <ChatInput id={id ?? ''} />
       </div>
     </div>
+  ) : (
+    <></>
   );
 }
 

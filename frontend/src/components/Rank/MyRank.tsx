@@ -41,10 +41,9 @@ function MyRank({ myRankInfo, setMyRankInfo }: MyRankProps) {
         .then(({ data }) =>
           setUserData({
             nickname: data.nickname,
-            imageSrc:
-              data.isDefaultImage
-                ? '/assets/defaultProfile.svg'
-                : `/assets/profile-image/${myId}`,
+            imageSrc: data.isDefaultImage
+              ? '/assets/defaultProfile.svg'
+              : `/assets/profile-image/${myId}`,
           }),
         )
         .catch(() =>

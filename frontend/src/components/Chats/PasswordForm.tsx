@@ -51,11 +51,11 @@ function PasswordForm({ hideModal, myId, channelId }: PasswordFormProps) {
   return (
     <>
       <form className="formModalBody" onSubmit={handleSubmit} id="joinChat">
-          <ChannelPasswordField
-            password={password}
-            error={error}
-            handlePassword={handlePassword}
-          />
+        <ChannelPasswordField
+          password={password}
+          error={error}
+          handlePassword={handlePassword}
+        />
       </form>
       <div className="formModalButtons">
         <button

@@ -1,9 +1,13 @@
-import { useEffect, useRef, useState } from 'react';
+import { lazy, useEffect, useRef, useState } from 'react';
 import { socket } from '../../util/Socket';
 import instance from '../../util/Axios';
-import Message from './Message';
+import { useRecoilValue } from 'recoil';
+import { userRelationship } from '../../util/Recoils';
+import { relationshipData } from '../hooks/SocketOnHooks';
 
 const BUTTON_IMG_PATH = '/assets/arrow-up-circle.png';
+
+const Message = lazy(() => import('./Message'));
 
 interface Props {
   id: string;
@@ -16,6 +20,17 @@ interface MessageData {
   senderId: number;
 }
 
+function isBlockedMessage(
+  senderId: number,
+  relationshipMap: Map<number, relationshipData>,
+) {
+  const relationship = relationshipMap.get(senderId)?.relationship;
+  if (relationship === 'blocker' || relationship === 'blocked') {
+    return true;
+  }
+  return false;
+}
+
 function ChatList(props: Props) {
   const [contents, setContents] = useState<MessageData[]>([]);
   const chatListDivRef = useRef<HTMLDivElement>(null);
@@ -23,6 +38,7 @@ function ChatList(props: Props) {
   const [isMoreMessage, setIsMoreMessage] = useState<boolean>(true);
   const [isClick, setIsClick] = useState<boolean>(false);
   const [currentHeight, setCurrentHeight] = useState<number>(0);
+  const relationshipMap = useRecoilValue(userRelationship);
 
   const dataFetch = () => {
     instance
@@ -48,6 +64,7 @@ function ChatList(props: Props) {
     dataFetch();
     setIsClick(true);
   };
+
   useEffect(() => {
     instance
       .get(`/chats/${props.id}/message?range=0,100`)
@@ -85,6 +102,9 @@ function ChatList(props: Props) {
       const { scrollHeight, clientHeight } = chatListDivRef.current;
       chatListDivRef.current.scrollTop = scrollHeight - clientHeight;
     }
+    return () => {
+      setIsClick(false);
+    };
   }, [contents]);
 
   return (
@@ -94,9 +114,12 @@ function ChatList(props: Props) {
           <img className="upButtonImage" src={BUTTON_IMG_PATH}></img>
         </button>
       )}
-      {contents.map(data => (
-        <Message key={data.messageId} data={data} />
-      ))}
+      {contents.map(
+        data =>
+          isBlockedMessage(data.senderId, relationshipMap) || (
+            <Message key={data.messageId} data={data} />
+          ),
+      )}
     </div>
   );
 }
