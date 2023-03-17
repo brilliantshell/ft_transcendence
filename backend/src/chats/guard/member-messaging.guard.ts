@@ -3,6 +3,7 @@ import {
   ExecutionContext,
   ForbiddenException,
   Injectable,
+  InternalServerErrorException,
 } from '@nestjs/common';
 import { DateTime } from 'luxon';
 
@@ -28,7 +29,10 @@ export class MemberMessagingGuard implements CanActivate {
   checkIsReadonly(channelId: ChannelId, userId: UserId) {
     const muteEndAt = this.channelStorage
       .getUser(userId)
-      .get(channelId).muteEndAt;
+      ?.get(channelId).muteEndAt;
+    if (muteEndAt === undefined) {
+      throw new InternalServerErrorException('Cannot get muteEndAt');
+    }
     if (muteEndAt !== 'epoch' && muteEndAt > DateTime.now()) {
       const remains = Math.round(
         muteEndAt.diffNow().shiftTo('minutes').minutes,

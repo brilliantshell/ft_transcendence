@@ -223,7 +223,6 @@ export class ChatsService {
    */
   async findChannelMessages(
     channelId: ChannelId,
-    requesterId: UserId,
     offset: number,
     limit: number,
   ) {
@@ -236,26 +235,15 @@ export class ChatsService {
           take: limit,
           select: ['messageId', 'senderId', 'contents', 'createdAt'],
         })
-      )
-        .filter(({ senderId }) => {
-          if (requesterId === senderId) {
-            return true;
-          }
-          const relationship = this.userRelationshipStorage.getRelationship(
-            requesterId,
-            senderId,
-          );
-          return relationship !== 'blocker' && relationship !== 'blocked';
-        })
-        .map((message) => {
-          const { messageId, senderId, contents, createdAt } = message;
-          return {
-            senderId,
-            messageId,
-            contents,
-            createdAt: createdAt.toMillis(),
-          };
-        });
+      ).map((message) => {
+        const { messageId, senderId, contents, createdAt } = message;
+        return {
+          senderId,
+          messageId,
+          contents,
+          createdAt: createdAt.toMillis(),
+        };
+      });
       return { messages };
     } catch (e) {
       this.logger.error(e);
@@ -307,16 +295,12 @@ export class ChatsService {
         blockedUsers.push(member);
       }
     }
-    this.chatsGateway.emitNewMessage(
-      channelId,
-      {
-        senderId,
-        messageId,
-        contents,
-        createdAt,
-      },
-      blockedUsers,
-    );
+    this.chatsGateway.emitNewMessage(channelId, {
+      senderId,
+      messageId,
+      contents,
+      createdAt,
+    });
     for (const [id] of this.channelStorage.getChannel(channelId).userRoleMap) {
       const currentUi = this.activityManager.getActivity(id);
       if (
