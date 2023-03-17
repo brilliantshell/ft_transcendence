@@ -1,0 +1,102 @@
+.menuBar {
+  display: flex;
+  justify-content: center;
+}
+
+.menuButton {
+  display: flex;
+  position: relative;
+  background: var(--primary_dark);
+  border-radius: 50%;
+  margin: 0.5rem;
+  width: 1.5rem;
+  height: 1.5rem;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  box-shadow: 0 10px 10px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+.menuTooltip {
+  position: absolute;
+  top: 0;
+  font-size: 14px;
+  background: #fff;
+  color: #fff;
+  padding: 5px 8px;
+  border-radius: 5px;
+  box-shadow: 0 10px 10px rgba(0, 0, 0, 0.1);
+  opacity: 0;
+  pointer-events: none;
+  transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+.menuTooltip::before {
+  position: absolute;
+  content: '';
+  height: 8px;
+  width: 8px;
+  background: #fff;
+  bottom: -3px;
+  left: 50%;
+  transform: translate(-50%) rotate(45deg);
+  transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+.menuButton:hover .menuTooltip {
+  top: -45px;
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+.changeNicknameButton:hover,
+.changeNicknameButton:hover .menuTooltip,
+.changeNicknameButton:hover .menuTooltip::before {
+  background: #e4405f;
+  color: white;
+}
+
+.uploadProfileImageButton:hover,
+.uploadProfileImageButton:hover .menuTooltip,
+.uploadProfileImageButton:hover .menuTooltip::before {
+  background: #f08700;
+  color: white;
+}
+
+.deleteProfileImageButton:hover,
+.deleteProfileImageButton:hover .menuTooltip,
+.deleteProfileImageButton:hover .menuTooltip::before {
+  background: #00a6a6;
+  color: white;
+}
+
+.setTwoFAButton:hover,
+.setTwoFAButton:hover .menuTooltip,
+.setTwoFAButton:hover .menuTooltip::before {
+  background: #1da1f2;
+  color: white;
+}
+
+.deleteTwoFAButton:hover,
+.deleteTwoFAButton:hover .menuTooltip,
+.deleteTwoFAButton:hover .menuTooltip::before {
+  background: #e30a36;
+  color: white;
+}
+
+.profileModal {
+  position: absolute;
+  top: 0;
+  left: 30%;
+  z-index: 10;
+  background-color: var(--primary_dark);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  width: 300px;
+  height: 300px;
+}

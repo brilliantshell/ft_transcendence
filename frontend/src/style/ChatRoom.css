@@ -1,0 +1,137 @@
+.chatRoom {
+  display: grid;
+  width: 80%;
+  min-width: 800px;
+  max-width: 1280px;
+  margin: 0 5%;
+  grid-template-columns: 16rem 1fr;
+  background-color: var(--primary_dark);
+  padding: 2rem;
+  border-radius: 20px;
+}
+
+.chatRoomUserList {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  height: calc(95% - 1rem);
+  border-radius: 10px;
+  overflow-y: scroll;
+  background-color: var(--primary);
+  margin: 0 1.5rem 1rem 0;
+  padding-top: 1rem;
+}
+
+.chatList {
+  background-color: var(--primary);
+  border-radius: 10px;
+  height: 95%;
+  margin-bottom: 1rem;
+  overflow-y: scroll;
+}
+
+/* Hide scrollbar for Chrome, Safari and Opera */
+.chatRoomUserList::-webkit-scrollbar,
+.chatList::-webkit-scrollbar {
+  display: none;
+}
+
+.messageWrap {
+  flex-basis: 50%;
+  margin: 0 0.5rem;
+}
+
+.message {
+  align-items: center;
+  display: flex;
+  flex-direction: row;
+  margin: 1.2rem 0.7rem;
+}
+
+.myMessage {
+  flex-direction: row-reverse;
+}
+
+.chatProfileImage {
+  height: 45px;
+  width: 45px;
+  padding: 5px;
+  border-radius: 50%;
+  align-self: baseline;
+  margin: 0 0.3rem;
+}
+
+.messageNick {
+  height: 1.5rem;
+  width: 100%;
+  text-align: left;
+}
+
+.myMessageNick {
+  width: 100%;
+  text-align: right;
+}
+
+.messageContents {
+  height: auto;
+  overflow-wrap: anywhere;
+  text-align: left;
+  border-radius: 10px;
+  padding: 0.5rem;
+  background-color: var(--secondary_light);
+}
+
+.messageTime {
+  align-self: flex-end;
+}
+
+.chatRoomLeft {
+  height: 80vh;
+}
+
+.chatRoomRight {
+  display: flex;
+  flex-direction: column;
+  height: 80vh;
+}
+
+.chatRoomInputContainer {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+}
+
+.chatRoomInput {
+  height: 1.5rem;
+  width: 92%;
+  border-radius: 0.5rem;
+}
+
+.chatRoomInputButton {
+  background-color: var(--secondary);
+  border-radius: 0.5rem;
+  height: 1.8rem;
+  margin-left: 0.2rem;
+  width: 3rem;
+}
+
+.chatRoomButton {
+  background-color: var(--secondary);
+  border-radius: 0.5rem;
+  height: 1.8rem;
+  width: 4rem;
+  margin: 0 1rem;
+}
+
+.upButton {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background-color: transparent;
+}
+
+.upButtonImage {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+}

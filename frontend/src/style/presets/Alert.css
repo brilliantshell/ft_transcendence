@@ -1,0 +1,18 @@
+/* SECTION : SweetAlert 전역 설정 */
+.swal2PopupCustom {
+  font-family: 'DungGeunMo', 'Apple SD Gothic Neo', arial, sans-serif !important;
+  background-color: var(--primary_dark) !important;
+  color: var(--secondary_light) !important;
+}
+
+/* SECTION : SweetAlert custom css */
+.swal2ConfirmCustom {
+  background-color: var(--secondary) !important;
+  color: var(--primary_dark) !important;
+}
+
+.swal2CancelCustom,
+.swal2DenyCustom {
+  background-color: var(--primary) !important;
+  color: var(--secondary_light) !important;
+}

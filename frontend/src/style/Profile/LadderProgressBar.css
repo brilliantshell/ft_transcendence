@@ -1,0 +1,15 @@
+.ladderBar {
+  justify-content: stretch;
+}
+
+.ladderBarItem {
+  align-items: center;
+  width: 100%;
+  padding: auto;
+}
+
+.ladderProportion {
+  height: 25%;
+  background-color: var(--primary_dark);
+  border-radius: 20px;
+}

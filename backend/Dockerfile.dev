@@ -1,0 +1,43 @@
+# NOTE : A Dockerfile is for BACKEND DEVELOPMENT environment
+
+FROM node:18.13.0-bullseye
+
+# Install useful tools
+RUN apt-get update && apt-get install -y \
+	apt-transport-https \
+	htop \
+	iproute2 \
+	less \
+	man-db \
+	manpages-dev \
+	net-tools \
+	tree \
+	vim \
+	locales \
+	&& echo "set nu\nsyntax on\nset mouse=a\nset shiftwidth=4\nset tabstop=4\nset enc=utf-8" > /root/.vimrc
+
+# Set locales, timezone & Install oh-my-bash
+RUN echo "en_US.UTF-8 UTF-8\nko_KR.UTF-8 UTF-8" >> /etc/locale.gen \
+	&& locale-gen \
+	&& ln -sf /usr/share/zoneinfo/Asia/Seoul /etc/localtime \
+	&& bash -c "$(curl -fsSL https://raw.githubusercontent.com/ohmybash/oh-my-bash/master/tools/install.sh)"
+
+# Install postgresql client (v15)
+RUN wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc > /tmp/postgres.key \
+	&& gpg --no-default-keyring --keyring /tmp/postgres_keyring.gpg --import /tmp/postgres.key \
+	&& gpg --no-default-keyring --keyring /tmp/postgres_keyring.gpg --export > /tmp/postgres.gpg \
+	&& mkdir -p /usr/local/share/keyrings \
+	&& mv /tmp/postgres.gpg /usr/local/share/keyrings/postgres.gpg \
+	&& echo "deb [signed-by=/usr/local/share/keyrings/postgres.gpg] http://apt.postgresql.org/pub/repos/apt/ bullseye-pgdg main 15" >> /etc/apt/sources.list.d/pgdg.list\
+	&& apt-get update \
+	&& apt-get install -y postgresql-client
+
+COPY . /backend
+
+WORKDIR /backend
+
+RUN npm install
+
+ENV NODE_ENV='development'
+
+ENTRYPOINT [ "npm", "run", "start" ]

@@ -1,0 +1,48 @@
+button {
+  border: none;
+  cursor: pointer;
+  font-family: 'DungGeunMo', 'Apple SD Gothic Neo', arial, sans-serif;
+  user-select: none;
+}
+
+select,
+input {
+  font-family: 'DungGeunMo', 'Apple SD Gothic Neo', arial, sans-serif;
+}
+
+.hoverBox {
+  background-color: rgba(0, 0, 0, 0.6);
+  border-radius: 0.5rem;
+  color: var(--secondary_light);
+  max-width: 7rem;
+  padding: 1rem 1rem;
+  word-break: keep-all;
+  z-index: 99;
+}
+
+.hidden {
+  display: none;
+}
+
+.show {
+  display: inline-block;
+}
+
+.spin {
+  animation: rotation 1s linear infinite;
+  border-radius: 50%;
+  width: 5rem;
+  height: 5rem;
+  border-right: 5px solid transparent;
+  border-top: 5px solid var(--secondary);
+  margin: auto;
+}
+
+@keyframes rotation {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}

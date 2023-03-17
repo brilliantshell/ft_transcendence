@@ -1,0 +1,67 @@
+@font-face {
+  font-family: 'DungGeunMo';
+  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_six@1.2/DungGeunMo.woff')
+    format('woff');
+  font-weight: normal;
+  font-style: normal;
+}
+
+.xxsmall {
+  font-size: 0.64rem;
+}
+
+.xsmall {
+  font-size: 0.75rem;
+}
+
+.small {
+  font-size: 0.87rem;
+}
+
+.regular {
+  font-size: 1rem;
+}
+
+.large {
+  font-size: 1.2rem;
+}
+
+.xlarge {
+  font-size: 1.5rem;
+}
+
+.xxlarge {
+  font-size: 2rem;
+}
+
+.xxxlarge {
+  font-size: 3rem;
+}
+
+.textUnderline {
+  text-decoration: underline;
+}
+
+.textBold {
+  font-weight: bold;
+}
+
+.textItalic {
+  font-style: italic;
+}
+
+.textCenter {
+  text-align: center;
+}
+
+.textLeft {
+  text-align: left;
+}
+
+i,
+.selectNone {
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}

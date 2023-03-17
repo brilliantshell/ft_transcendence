@@ -1,0 +1,81 @@
+.friendsList {
+  bottom: 2rem;
+  left: 100%;
+  margin-right: 2rem;
+  position: sticky;
+  z-index: 3;
+}
+
+.friendsListBtn {
+  background-color: var(--secondary);
+  border-radius: 50%;
+  color: white;
+  height: 4rem;
+  width: 4rem;
+}
+
+.friendsListBtn .material-symbols-outlined {
+  color: var(--primary);
+}
+
+.friendsListContent {
+  align-items: center;
+  background-color: var(--primary);
+  border-radius: 0.5rem;
+  bottom: 4.8rem;
+  display: flex;
+  flex-direction: column;
+  position: absolute;
+  right: 0;
+  width: 12rem;
+}
+
+.friendCategory {
+  background-color: var(--primary_dark);
+  color: var(--secondary);
+  height: 2.5rem;
+  line-height: 2.5rem;
+  vertical-align: middle;
+  width: 100%;
+}
+
+.friendCategory:first-of-type {
+  border-radius: 0.5rem 0.5rem 0 0;
+}
+
+.friendListMap {
+  max-height: 15rem;
+  min-height: 4rem;
+  padding-bottom: 50px;
+  overflow-y: scroll;
+}
+
+.friendListMap::-webkit-scrollbar {
+  display: none;
+}
+
+.friendListMapEmpty {
+  color: var(--primary_dark);
+  height: 4rem;
+  line-height: 4rem;
+  text-align: center;
+  text-decoration: opacity 0.5s;
+  vertical-align: middle;
+  width: 100%;
+}
+
+.friendAcceptButton {
+  background-color: var(--primary_light);
+  border-radius: 0.5rem;
+  color: white;
+  height: 1.6rem;
+  width: 3rem;
+}
+
+.friendDeclineButton {
+  background-color: var(--red);
+  border-radius: 0.5rem;
+  color: white;
+  height: 1.6rem;
+  width: 3rem;
+}

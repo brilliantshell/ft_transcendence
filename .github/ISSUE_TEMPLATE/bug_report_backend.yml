@@ -1,0 +1,35 @@
+name: Bug Report (backend)
+description: 백엔드 버그 리포트
+title: ":bug: "
+labels: ["bug", "backend"]
+body:
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: 증상
+      description: 무슨 문제가 발생 하였는지 설명해주세요.
+    validations:
+      required: true
+  - type: textarea
+    id: how-to-reproduce
+    attributes:
+      label: 재현 방법
+      description: 어떻게 버그를 재현하는지 설명해주세요.
+    validations:
+      required: true
+  - type: textarea
+    id: screenshot
+    attributes:
+      label: 스크린샷
+      description: 이해를 돕기 위해 스크린샷을 첨부해주세요.
+  - type: textarea
+    id: Expected-Behavior
+    attributes:
+      label: 기대하는 결과
+      description: 버그가 없었을 때 어떤 결과가 나왔어야 하는지 설명해주세요.
+  - type: textarea
+    id: logs
+    attributes:
+      label: 로그
+      description: 에러 로그를 복사해서 첨부해주세요.
+      render: Shell
