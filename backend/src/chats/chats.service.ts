@@ -18,7 +18,6 @@ import {
   UpdateChannelDto,
 } from './dto/chats.dto';
 import { ChannelId, UserChannelStatus, UserId, UserRole } from '../util/type';
-import { ChannelMembers } from '../entity/channel-members.entity';
 import { ChannelStorage } from '../user-status/channel.storage';
 import { ChatsGateway } from './chats.gateway';
 import { Messages } from '../entity/messages.entity';
@@ -31,8 +30,6 @@ export class ChatsService {
   constructor(
     private readonly activityManager: ActivityManager,
     private readonly channelStorage: ChannelStorage,
-    @InjectRepository(ChannelMembers)
-    private readonly channelMembersRepository: Repository<ChannelMembers>,
     @InjectRepository(Channels)
     private readonly channelsRepository: Repository<Channels>,
     private readonly chatsGateway: ChatsGateway,

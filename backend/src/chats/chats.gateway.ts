@@ -119,7 +119,7 @@ export class ChatsGateway {
     this.joinChannelRoom(channelId, ownerId);
     this.joinChannelRoom(channelId, peerId);
     const socketId = this.userSocketStorage.clients.get(peerId);
-    if (this.getRoomMembers('chats').has(socketId)) {
+    if (this.getRoomMembers('chats')?.has(socketId)) {
       this.server.in(socketId).emit('channelCreated', {
         channelId,
         channelName,
