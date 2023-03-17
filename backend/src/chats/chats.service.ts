@@ -62,6 +62,12 @@ export class ChatsService {
       return { joinedChannels: [], otherChannels: [] };
     }
     const userChannelMap = this.channelStorage.getUser(userId);
+    if (
+      userChannelMap === undefined ||
+      this.channelStorage.getChannels() === undefined
+    ) {
+      throw new InternalServerErrorException('Cannot get userChannelMap');
+    }
     return {
       joinedChannels: await this.getJoinedChannels(userId, userChannelMap),
       otherChannels: await this.getChannelsExceptJoined(userId, userChannelMap),
