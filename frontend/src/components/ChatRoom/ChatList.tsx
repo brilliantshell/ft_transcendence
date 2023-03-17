@@ -102,6 +102,9 @@ function ChatList(props: Props) {
       const { scrollHeight, clientHeight } = chatListDivRef.current;
       chatListDivRef.current.scrollTop = scrollHeight - clientHeight;
     }
+    return () => {
+      setIsClick(false);
+    };
   }, [contents]);
 
   return (
