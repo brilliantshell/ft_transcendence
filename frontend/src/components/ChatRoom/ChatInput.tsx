@@ -72,7 +72,7 @@ function ChatInput(props: Props) {
   };
 
   return (
-    <div>
+    <div className="chatRoomInputContainer">
       <input
         className="chatRoomInput"
         ref={inputRef}
