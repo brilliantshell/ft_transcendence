@@ -241,7 +241,13 @@ export class UserRelationshipStorage implements OnModuleInit {
     const friends: UserId[] = [];
     const pendingSenders: UserId[] = [];
     const pendingReceivers: UserId[] = [];
-    this.users.get(userId).forEach((status, counterpartId) => {
+    const relationship = this.users.get(userId);
+    if (relationship === undefined) {
+      throw new InternalServerErrorException(
+        'Failed to load user relationships',
+      );
+    }
+    relationship.forEach((status, counterpartId) => {
       switch (status) {
         case 'friend':
           friends.push(counterpartId);

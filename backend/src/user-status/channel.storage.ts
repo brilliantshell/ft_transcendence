@@ -576,12 +576,6 @@ export class ChannelStorage implements OnModuleInit {
     }
   }
 
-  /*****************************************************************************
-   *                                                                           *
-   * NOTE : TEST ONLY                                                          *
-   *                                                                           *
-   ****************************************************************************/
-
   getChannels() {
     return this.channels;
   }
