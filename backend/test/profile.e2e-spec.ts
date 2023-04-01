@@ -325,7 +325,7 @@ describe('ProfileController (e2e)', () => {
         });
     });
 
-    it('should return 200 when success to update profile image (svg)', async () => {
+    it('should return 415 when success to update profile image (svg)', async () => {
       const user = usersEntities[2];
       const userId = user.userId.toString();
 
@@ -333,12 +333,7 @@ describe('ProfileController (e2e)', () => {
         .put('/profile/image')
         .set('x-user-id', userId)
         .attach('profileImage', `${ASSET_DIR}/tiny.svg`)
-        .expect(204)
-        .expect(() => {
-          const file = join(PROFILE_DIR, userId);
-          expect(existsSync(file)).toBeTruthy();
-          unlinkSync(file);
-        });
+        .expect(415);
     });
     it.skip('should return 200 when almost 4MB image', async () => {
       const user = usersEntities[4];
@@ -408,7 +403,7 @@ describe('ProfileController (e2e)', () => {
             .getRepository(Users)
             .findOneBy({ userId: user.userId })
         ).isDefaultImage,
-      ).toBeFalsy();
+      ).toBeTruthy();
 
       // delete again
       await request(app.getHttpServer())

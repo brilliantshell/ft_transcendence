@@ -20,6 +20,7 @@ import {
 import { Users } from '../src/entity/users.entity';
 import { generateUsers } from './util/generate-mock-data';
 import { listenPromise } from './util/util';
+import { ACHIEVEMENTS_ENTITIES } from './util/generate-mock-data';
 
 process.env.DB_HOST = 'localhost';
 process.env.NODE_ENV = 'production';
@@ -42,6 +43,7 @@ describe('Authentication Test (e2e)', () => {
     const dataSources = await createDataSources(TEST_DB, ENTITIES);
     initDataSource = dataSources.initDataSource;
     dataSource = dataSources.dataSource;
+    dataSource.getRepository(Achievements).save(ACHIEVEMENTS_ENTITIES);
     usersEntities = generateUsers(10);
     await dataSource.getRepository(Users).insert(usersEntities);
     const moduleFixture: TestingModule = await Test.createTestingModule({

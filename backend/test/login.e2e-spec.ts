@@ -21,6 +21,7 @@ const TEST_DB = 'test_db_login_e2e';
 const ENTITIES = [Users];
 
 process.env.DB_HOST = 'localhost';
+process.env.NODE_ENV = 'production';
 
 describe('Login (e2e)', () => {
   let app: INestApplication;

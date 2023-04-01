@@ -1,6 +1,7 @@
 import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
+import { ChannelMembers } from '../entity/channel-members.entity';
 import { Channels } from '../entity/channels.entity';
 import { ChatsController } from './chats.controller';
 import { ChatsGateway } from './chats.gateway';
@@ -8,7 +9,6 @@ import { ChatsService } from './chats.service';
 import { Messages } from '../entity/messages.entity';
 import { UserStatusModule } from '../user-status/user-status.module';
 import { Users } from '../entity/users.entity';
-import { ChannelMembers } from 'src/entity/channel-members.entity';
 
 @Module({
   imports: [
