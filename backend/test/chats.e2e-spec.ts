@@ -40,6 +40,7 @@ const ENTITIES = [
 ];
 
 process.env.DB_HOST = 'localhost';
+process.env.NODE_ENV = 'development';
 
 describe('UserController (e2e)', () => {
   let app: INestApplication;

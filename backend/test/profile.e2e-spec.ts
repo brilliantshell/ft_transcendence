@@ -34,6 +34,7 @@ const TEST_DB = 'test_db_profile_e2e';
 const ENTITIES = [Achievements, Achievers, MatchHistory, Users];
 
 process.env.DB_HOST = 'localhost';
+process.env.NODE_ENV = 'development';
 
 describe('ProfileController (e2e)', () => {
   let app: INestApplication;

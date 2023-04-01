@@ -47,6 +47,7 @@ describe('UserService', () => {
   let usersRepository: Repository<Users>;
   let userSocketStorage: UserSocketStorage;
   let channelStorage: ChannelStorage;
+  let chatsGateway: ChatsGateway;
   let userRelationshipStorage: UserRelationshipStorage;
   let activityGateway: ActivityGateway;
   let activityManager: ActivityManager;
@@ -113,6 +114,7 @@ describe('UserService', () => {
       UserRelationshipStorage,
     );
     channelStorage = module.get<ChannelStorage>(ChannelStorage);
+    chatsGateway = module.get<ChatsGateway>(ChatsGateway);
     activityGateway = module.get<ActivityGateway>(ActivityGateway);
     activityManager = module.get<ActivityManager>(ActivityManager);
     userIds = [usersEntities[index++].userId, usersEntities[index++].userId];
@@ -160,12 +162,19 @@ describe('UserService', () => {
   });
 
   describe('DM', () => {
+    let dmCreatedSpy: jest.SpyInstance;
+    beforeEach(() => {
+      dmCreatedSpy = jest
+        .spyOn(chatsGateway, 'emitDmCreated')
+        .mockImplementation(() => undefined);
+    });
     it('should create a new DM channel if not exists', async () => {
       const [ownerId, peerId] = userIds;
       const result = await service.createDm(ownerId, peerId);
       expect(result).toBeDefined();
       expect(channelStorage.getChannel(result.dmId)).toBeDefined();
       expect(result.isNew).toBeTruthy();
+      expect(dmCreatedSpy).toHaveBeenCalled();
     });
 
     it('should return the existing DM channel if exists', async () => {
