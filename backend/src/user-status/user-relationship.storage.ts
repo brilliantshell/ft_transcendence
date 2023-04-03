@@ -147,6 +147,34 @@ export class UserRelationshipStorage implements OnModuleInit {
     return this.users.get(from).get(to);
   }
 
+  /**
+   * NOTE : TEST ONLY
+   */
+  async getRelationshipFromDb(from: UserId, to: UserId) {
+    const isFriend = await this.friendsRepository.findOneBy([
+      { senderId: from, receiverId: to },
+      { senderId: to, receiverId: from },
+    ]);
+    if (isFriend) {
+      if (isFriend.isAccepted === true) {
+        return 'friend';
+      } else if (isFriend.senderId === from) {
+        return 'pendingSender';
+      } else {
+        return 'pendingReceiver';
+      }
+    }
+    const block = await this.blockedUsersRepository.findBy([
+      { blockerId: from, blockedId: to },
+      { blockerId: to, blockedId: from },
+    ]);
+    if (block.length === 1) {
+      return block[0].blockerId === from ? 'blocker' : 'blocked';
+    } else {
+      return null;
+    }
+  }
+
   /*****************************************************************************
    *                                                                           *
    * SECTION : DM methods                                                      *
@@ -259,6 +287,36 @@ export class UserRelationshipStorage implements OnModuleInit {
           pendingReceivers.push(counterpartId);
           break;
         default:
+      }
+    });
+    return { friends, pendingSenders, pendingReceivers };
+  }
+
+  /**
+   * NOTE : TEST ONLY
+   */
+  async getFriendsFromDb(userId: UserId) {
+    const friends: UserId[] = [];
+    const pendingSenders: UserId[] = [];
+    const pendingReceivers: UserId[] = [];
+
+    const relationships: Friends[] = await this.friendsRepository.findBy([
+      { senderId: userId },
+      { receiverId: userId },
+    ]);
+    relationships.forEach((friendship) => {
+      if (friendship.isAccepted) {
+        friends.push(
+          friendship.senderId === userId
+            ? friendship.receiverId
+            : friendship.senderId,
+        );
+      } else {
+        if (friendship.senderId === userId) {
+          pendingSenders.push(friendship.receiverId);
+        } else {
+          pendingReceivers.push(friendship.senderId);
+        }
       }
     });
     return { friends, pendingSenders, pendingReceivers };

@@ -180,6 +180,23 @@ export class ChannelStorage implements OnModuleInit {
   }
 
   /**
+   * NOTE : TEST ONLY
+   */
+  async getChannelFromDb(channelId: ChannelId) {
+    return this.dataSource
+      .query(`SELECT cm.member_id, cm.channel_id, cm.is_admin,
+                c.owner_id, c.channel_id, c.modified_at,
+                (
+                    SELECT COUNT(*)
+                    FROM channel_members cm2
+                    WHERE cm2.channel_id = cm.channel_id
+                ) AS member_count
+              FROM channel_members cm
+              LEFT JOIN channels c ON c.channel_id=cm.channel_id 
+              WHERE c.channel_id = ${channelId};`);
+  }
+
+  /**
    * @description DM 채널 생성
    *
    * @param owner DM을 생성한 유저의 id
@@ -419,6 +436,29 @@ export class ChannelStorage implements OnModuleInit {
    */
   getUser(userId: UserId) {
     return this.users.get(userId);
+  }
+
+  /**
+   * NOTE : TEST ONLY
+   */
+  async getUserFromDb(userId: UserId) {
+    return this.dataSource.query(`
+              SELECT 
+                cm.channel_id,
+                cm.mute_end_at,
+                (
+                    SELECT COUNT(*)
+                    FROM messages msg
+                    WHERE msg.channel_id = cm.channel_id
+                    AND msg.created_at > (
+                        SELECT viewed_at 
+                        FROM channel_members 
+                        WHERE member_id = ${userId} AND channel_id = cm.channel_id
+                    )
+                ) AS unseen_count
+              FROM channel_members cm
+              LEFT JOIN channels c ON c.channel_id=cm.channel_id
+              WHERE cm.member_id = ${userId};`);
   }
 
   /**
