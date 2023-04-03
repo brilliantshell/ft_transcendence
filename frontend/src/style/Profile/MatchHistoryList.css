@@ -48,8 +48,8 @@
 }
 
 .matchProfileImg {
-  width: 65%;
-  height: 65%;
+  max-width: 65%;
+  max-height: 65%;
   border-radius: 50%;
   justify-self: center;
   align-self: center;
