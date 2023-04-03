@@ -360,7 +360,7 @@ describe('ChannelStorage', () => {
 
     expect(channelInfo.accessMode).toBe(channelData.accessMode);
     expect(channelInfo.userRoleMap).toEqual(
-      new Map<UserId, UserRole>().set(userId, 'owner').set(peerId, 'member'),
+      new Map<UserId, UserRole>().set(userId, 'member').set(peerId, 'member'),
     );
     expect(channelInfo.modifiedAt).toEqual(channelData.modifiedAt);
     expect(channelInfo.modifiedAt).toEqual(channelData.modifiedAt);

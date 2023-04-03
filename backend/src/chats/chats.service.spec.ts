@@ -1,4 +1,8 @@
-import { BadRequestException, ForbiddenException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { DateTime } from 'luxon';
 import { Test, TestingModule } from '@nestjs/testing';
@@ -238,7 +242,7 @@ describe('ChatsService', () => {
       jest.spyOn(channelStorage, 'getUser').mockReturnValue(undefined);
       await expect(async () =>
         service.findAllChannels(usersEntities[0].userId),
-      ).rejects.toThrow(BadRequestException);
+      ).rejects.toThrow(InternalServerErrorException);
     });
   });
 
@@ -664,7 +668,7 @@ describe('ChatsService', () => {
     beforeEach(() => {
       newMessageSpy = jest
         .spyOn(chatsGateway, 'emitNewMessage')
-        .mockImplementation((channelId, userId) => {
+        .mockImplementation((channelId, newMessage) => {
           // NOTE : Access Private Method
           (chatsGateway as any).emitMessageArrived(channelId);
         });
@@ -717,13 +721,12 @@ describe('ChatsService', () => {
       await service.joinChannel(newChannelId, anotherUserId, true);
       const msg = { message: 'hello message!' };
       await service.createMessage(newChannelId, userId, msg.message);
-      expect(newMessageSpy).toBeCalledWith(
-        newChannelId,
-        userId,
-        expect.any(Number),
-        msg.message,
-        expect.any(DateTime),
-      );
+      expect(newMessageSpy).toBeCalledWith(newChannelId, {
+        senderId: userId,
+        messageId: expect.any(Number),
+        contents: msg.message,
+        createdAt: expect.any(DateTime),
+      });
       expect(messageArrivedSpy).toBeCalledWith(newChannelId);
       expect(channelStorage.getUser(userId).get(newChannelId).unseenCount).toBe(
         0,

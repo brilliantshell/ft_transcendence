@@ -8,8 +8,8 @@ import {
 } from '../util/constant/cookie-constant';
 import { AuthService } from './auth.service';
 import { CookieOptions } from 'express';
-import { ChannelStorage } from 'src/user-status/channel.storage';
-import { UserRelationshipStorage } from 'src/user-status/user-relationship.storage';
+import { ChannelStorage } from '../user-status/channel.storage';
+import { UserRelationshipStorage } from '../user-status/user-relationship.storage';
 import { VerifiedWsRequest } from '../util/type';
 
 export class JwtAuthIoAdapter extends IoAdapter {
