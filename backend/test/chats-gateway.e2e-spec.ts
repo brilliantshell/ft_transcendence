@@ -7,6 +7,7 @@ import { AppModule } from '../src/app.module';
 import { ChannelMembers } from './../src/entity/channel-members.entity';
 import { Channels } from './../src/entity/channels.entity';
 import { ChatsGateway } from './../src/chats/chats.gateway';
+import { JwtAuthIoAdapter } from '../src/auth/jwt-auth.io-adapter';
 import {
   LeftMessage,
   MemberJoinedMessage,
@@ -41,6 +42,7 @@ describe('ChatsGateway (e2e)', () => {
       imports: [AppModule],
     }).compile();
     app = moduleFixture.createNestApplication();
+    app.useWebSocketAdapter(new JwtAuthIoAdapter(app));
     await app.init();
     await app.listen(PORT);
 
@@ -236,13 +238,12 @@ describe('ChatsGateway (e2e)', () => {
       contents: 'nice to meet you',
     };
     await new Promise((resolve) => setTimeout(() => resolve('done'), 1000));
-    chatsGateway.emitNewMessage(
-      channel.channelId,
-      sentMsg.senderId,
-      4242,
-      sentMsg.contents,
-      sentMsg.createdAt,
-    );
+    chatsGateway.emitNewMessage(channel.channelId, {
+      senderId: sentMsg.senderId,
+      messageId: 4242,
+      contents: sentMsg.contents,
+      createdAt: sentMsg.createdAt,
+    });
     const recvMsg = await Promise.all([
       new Promise<NewMessage>((resolve) =>
         clientSockets[0].on('newMessage', (msg) => resolve(msg)),

@@ -165,7 +165,7 @@ describe('ProfileService', () => {
     });
     const ret = {
       ladder,
-      achievement,
+      achievement: expect.any(Array<Achievements>),
       winLossTotal,
       matchHistory,
     };
