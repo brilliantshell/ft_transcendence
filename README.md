@@ -42,6 +42,9 @@
 
 2022.12 ~ 2023.03
 
+## Wiki
+- [Notion 링크](https://teal-grill-819.notion.site/ft_transcendence-ea328e156caa41a9b2c0ba766d4784c8)
+
 ## 설치 및 실행
 
 ```Shell
