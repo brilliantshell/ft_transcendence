@@ -326,7 +326,7 @@ describe('ProfileController (e2e)', () => {
         });
     });
 
-    it('should return 415 when success to update profile image (svg)', async () => {
+    it('should return 415 when fail to update profile image (svg)', async () => {
       const user = usersEntities[2];
       const userId = user.userId.toString();
 
