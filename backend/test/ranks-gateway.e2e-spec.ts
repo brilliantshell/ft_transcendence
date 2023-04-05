@@ -8,6 +8,7 @@ import waitForExpect from 'wait-for-expect';
 
 import { ActivityManager } from '../src/user-status/activity.manager';
 import { AppModule } from '../src/app.module';
+import { GameGateway } from '../src/game/game.gateway';
 import { GameInfo, UserId } from '../src/util/type';
 import { GameStorage } from '../src/game/game.storage';
 import { RanksGateway } from '../src/ranks/ranks.gateway';
@@ -37,6 +38,7 @@ describe('RanksGateway (e2e)', () => {
   let activityManager: ActivityManager;
   let gateway: RanksGateway;
   let gameStorage: GameStorage;
+  let gameGateway: GameGateway;
   let usersEntities: Users[];
   let users: Users[];
   let userIds: UserId[];
@@ -65,6 +67,7 @@ describe('RanksGateway (e2e)', () => {
     gateway = app.get(RanksGateway);
     activityManager = app.get(ActivityManager);
     gameStorage = app.get(GameStorage);
+    gameGateway = app.get(GameGateway);
   });
 
   beforeEach(async () => {
@@ -118,7 +121,7 @@ describe('RanksGateway (e2e)', () => {
   });
 
   describe('ladderUpdate', () => {
-    it('should not notify the users in the ranks UI when a player wins a non-ladder game', async () => {
+    it('should not notify the users in the ranks UI when a non-ladder game is ended', async () => {
       const gameId = nanoid();
       await gameStorage.createGame(
         gameId,
@@ -154,7 +157,7 @@ describe('RanksGateway (e2e)', () => {
         timeout(1000, listenPromise(waitingRoom, 'ladderUpdate')),
         timeout(1000, listenPromise(ranksOne, 'ladderUpdate')),
         timeout(1000, listenPromise(ranksTwo, 'ladderUpdate')),
-        playerOne.emit('gameComplete', { id: gameId, scores: [5, 1] }),
+        gameGateway.abortIfPlayerLeave(gameId, userIds[0]),
       ]);
       expect(playerFailOne.status).toBe('rejected');
       expect(playerFailTwo.status).toBe('rejected');
@@ -164,53 +167,7 @@ describe('RanksGateway (e2e)', () => {
       expect(ranksFailTwo.status).toBe('rejected');
     });
 
-    it('should not notify the users in the ranks UI when a player aborts a non-ladder game', async () => {
-      const gameId = nanoid();
-      await gameStorage.createGame(
-        gameId,
-        new GameInfo(userIds[0], userIds[1], 1, false),
-      );
-      const [playerOne, playerTwo, ranksOne, ranksTwo, profile, waitingRoom] =
-        clientSockets;
-      playerOne.emit('currentUi', { ui: `game-${gameId}` });
-      playerTwo.emit('currentUi', { ui: `game-${gameId}` });
-      ranksOne.emit('currentUi', { ui: 'ranks' });
-      ranksTwo.emit('currentUi', { ui: 'ranks' });
-      profile.emit('currentUi', { ui: 'profile' });
-      waitingRoom.emit('currentUi', { ui: 'waitingRoom' });
-      await waitForExpect(() => {
-        expect(activityManager.getActivity(userIds[0])).toBe(`game-${gameId}`);
-        expect(activityManager.getActivity(userIds[1])).toBe(`game-${gameId}`);
-        expect(activityManager.getActivity(userIds[2])).toBe('ranks');
-        expect(activityManager.getActivity(userIds[3])).toBe('ranks');
-        expect(activityManager.getActivity(userIds[4])).toBe('profile');
-        expect(activityManager.getActivity(userIds[5])).toBe('waitingRoom');
-      });
-      const [
-        playerFailOne,
-        playerFailTwo,
-        profileFail,
-        waitingRoomFail,
-        ranksFailOne,
-        ranksFailTwo,
-      ] = await Promise.allSettled([
-        timeout(1000, listenPromise(playerOne, 'ladderUpdate')),
-        timeout(1000, listenPromise(playerTwo, 'ladderUpdate')),
-        timeout(1000, listenPromise(profile, 'ladderUpdate')),
-        timeout(1000, listenPromise(waitingRoom, 'ladderUpdate')),
-        timeout(1000, listenPromise(ranksOne, 'ladderUpdate')),
-        timeout(1000, listenPromise(ranksTwo, 'ladderUpdate')),
-        playerOne.emit('gameComplete', { id: gameId, scores: [5, 1] }),
-      ]);
-      expect(playerFailOne.status).toBe('rejected');
-      expect(playerFailTwo.status).toBe('rejected');
-      expect(profileFail.status).toBe('rejected');
-      expect(waitingRoomFail.status).toBe('rejected');
-      expect(ranksFailOne.status).toBe('rejected');
-      expect(ranksFailTwo.status).toBe('rejected');
-    });
-
-    it('should notify the users in the ranks UI when a player wins a ladder game', async () => {
+    it('should notify the users in the ranks UI when a ladder game is ended', async () => {
       const prevGame = await dataSource.manager.find(Users, {
         select: ['userId', 'winCount', 'lossCount', 'ladder'],
         where: { userId: In([userIds[0], userIds[1]]) },
@@ -251,78 +208,7 @@ describe('RanksGateway (e2e)', () => {
         timeout(1000, listenPromise(waitingRoom, 'ladderUpdate')),
         listenPromise(ranksOne, 'ladderUpdate'),
         listenPromise(ranksTwo, 'ladderUpdate'),
-        playerOne.emit('gameComplete', { id: gameId, scores: [5, 1] }),
-      ]);
-      expect(playerFailOne.status).toBe('rejected');
-      expect(playerFailTwo.status).toBe('rejected');
-      expect(profileFail.status).toBe('rejected');
-      expect(waitingRoomFail.status).toBe('rejected');
-      if (
-        ranksSuccessOne.status === 'rejected' ||
-        ranksSuccessTwo.status === 'rejected'
-      ) {
-        fail();
-      }
-      const [prevWinner, prevLoser] =
-        prevGame[0].userId === userIds[0]
-          ? [prevGame[0], prevGame[1]]
-          : [prevGame[1], prevGame[0]];
-      expect(ranksSuccessOne.value).toEqual({
-        winnerId: userIds[0],
-        ladder:
-          prevWinner.ladder +
-          calculateLadderRise(prevWinner.ladder, prevLoser.ladder, [5, 1]),
-      });
-      expect(ranksSuccessTwo.value).toEqual({
-        winnerId: userIds[0],
-        ladder:
-          prevWinner.ladder +
-          calculateLadderRise(prevWinner.ladder, prevLoser.ladder, [5, 1]),
-      });
-    });
-
-    it('should notify the users in the ranks UI when a player aborts a ladder game', async () => {
-      const prevGame = await dataSource.manager.find(Users, {
-        select: ['userId', 'winCount', 'lossCount', 'ladder'],
-        where: { userId: In([userIds[0], userIds[1]]) },
-      });
-      expect(prevGame.length).toBe(2);
-      const gameId = nanoid();
-      await gameStorage.createGame(
-        gameId,
-        new GameInfo(userIds[0], userIds[1], 1, true),
-      );
-      const [playerOne, playerTwo, ranksOne, ranksTwo, profile, waitingRoom] =
-        clientSockets;
-      playerOne.emit('currentUi', { ui: `game-${gameId}` });
-      playerTwo.emit('currentUi', { ui: `game-${gameId}` });
-      ranksOne.emit('currentUi', { ui: 'ranks' });
-      ranksTwo.emit('currentUi', { ui: 'ranks' });
-      profile.emit('currentUi', { ui: 'profile' });
-      waitingRoom.emit('currentUi', { ui: 'waitingRoom' });
-      await waitForExpect(() => {
-        expect(activityManager.getActivity(userIds[0])).toBe(`game-${gameId}`);
-        expect(activityManager.getActivity(userIds[1])).toBe(`game-${gameId}`);
-        expect(activityManager.getActivity(userIds[2])).toBe('ranks');
-        expect(activityManager.getActivity(userIds[3])).toBe('ranks');
-        expect(activityManager.getActivity(userIds[4])).toBe('profile');
-        expect(activityManager.getActivity(userIds[5])).toBe('waitingRoom');
-      });
-      const [
-        playerFailOne,
-        playerFailTwo,
-        profileFail,
-        waitingRoomFail,
-        ranksSuccessOne,
-        ranksSuccessTwo,
-      ] = await Promise.allSettled([
-        timeout(1000, listenPromise(playerOne, 'ladderUpdate')),
-        timeout(1000, listenPromise(playerTwo, 'ladderUpdate')),
-        timeout(1000, listenPromise(profile, 'ladderUpdate')),
-        timeout(1000, listenPromise(waitingRoom, 'ladderUpdate')),
-        listenPromise(ranksOne, 'ladderUpdate'),
-        listenPromise(ranksTwo, 'ladderUpdate'),
-        playerOne.disconnect(),
+        gameGateway.abortIfPlayerLeave(gameId, userIds[0]),
       ]);
       expect(playerFailOne.status).toBe('rejected');
       expect(playerFailTwo.status).toBe('rejected');
