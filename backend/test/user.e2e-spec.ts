@@ -402,6 +402,10 @@ describe('UserModule - /user (e2e)', () => {
 
   describe('PUT /user/:userId/block', () => {
     it('should block a user (201)', async () => {
+      await Promise.all([
+        userRelationshipStorage.load(userIds[0]),
+        userRelationshipStorage.load(userIds[1]),
+      ]);
       const [wsMessage, response] = await Promise.all([
         listenPromise(clientSockets[1], 'userRelationship'),
         request(app.getHttpServer())
@@ -417,6 +421,10 @@ describe('UserModule - /user (e2e)', () => {
     });
 
     it('should not resend blocked event (200)', async () => {
+      await Promise.all([
+        userRelationshipStorage.load(userIds[0]),
+        userRelationshipStorage.load(userIds[1]),
+      ]);
       const [wsMessage, responseOne] = await Promise.all([
         listenPromise(clientSockets[1], 'userRelationship'),
         request(app.getHttpServer())
@@ -493,6 +501,10 @@ describe('UserModule - /user (e2e)', () => {
     });
 
     it('should create a dm (201)', async () => {
+      await Promise.all([
+        channelStorage.loadUser(userIds[0]),
+        channelStorage.loadUser(userIds[1]),
+      ]);
       const response = await request(app.getHttpServer())
         .put(`/user/${userIds[1]}/dm`)
         .set('x-user-id', userIds[0].toString());
@@ -514,6 +526,10 @@ describe('UserModule - /user (e2e)', () => {
     });
 
     it('should return 200 if the dm already exists', async () => {
+      await Promise.all([
+        channelStorage.loadUser(userIds[0]),
+        channelStorage.loadUser(userIds[1]),
+      ]);
       const response = await request(app.getHttpServer())
         .put(`/user/${userIds[1]}/dm`)
         .set('x-user-id', userIds[0].toString());
@@ -566,7 +582,8 @@ describe('UserModule - /user (e2e)', () => {
    ****************************************************************************/
 
   describe('GET /user/friends', () => {
-    it('no friends', () => {
+    it('no friends', async () => {
+      await userRelationshipStorage.load(userIds[0]);
       return request(app.getHttpServer())
         .get(`/user/friends`)
         .set('x-user-id', userIds[0].toString())
@@ -660,7 +677,9 @@ describe('UserModule - /user (e2e)', () => {
             },
           }),
         ),
-        listenPromise(clientSockets[2], 'friendRequestDiff'),
+        userRelationshipStorage
+          .load(newUsersEntities[0].userId)
+          .then(() => listenPromise(clientSockets[2], 'friendRequestDiff')),
       ]);
       expect(requestDiff).toEqual({ requestDiff: countPending });
     });
@@ -674,6 +693,7 @@ describe('UserModule - /user (e2e)', () => {
 
   describe('PUT /user/:userId/friend', () => {
     it('should send a friend request (201)', async () => {
+      await userRelationshipStorage.load(userIds[0]);
       const [wsRelationship, wsRequestDiff, response] = await Promise.all([
         listenPromise(clientSockets[1], 'userRelationship'),
         listenPromise(clientSockets[1], 'friendRequestDiff'),
@@ -691,6 +711,7 @@ describe('UserModule - /user (e2e)', () => {
     });
 
     it('should not resend the friend request (200)', async () => {
+      await userRelationshipStorage.load(userIds[0]);
       const [wsRelationship, wsRequestDiff, responseOne] = await Promise.all([
         timeout(1000, listenPromise(clientSockets[1], 'userRelationship')),
         timeout(1000, listenPromise(clientSockets[1], 'friendRequestDiff')),
@@ -899,7 +920,7 @@ describe('UserModule - /user (e2e)', () => {
     it('should create a normal game (201)', async () => {
       const [inviterId, invitedId] = userIds;
       const [wsMessage, { headers, status }] = await Promise.all([
-        listenPromise(clientSockets[1], 'newGame'),
+        listenPromise(clientSockets[1], 'newNormalGame'),
         request(app.getHttpServer())
           .post(`/user/${invitedId}/game`)
           .set('x-user-id', inviterId.toString())

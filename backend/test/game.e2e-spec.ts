@@ -165,119 +165,6 @@ describe('GameController (e2e)', () => {
 
   /*****************************************************************************
    *                                                                           *
-   * ANCHOR : GET /game/list/:gameId                                           *
-   *                                                                           *
-   ****************************************************************************/
-
-  describe('GET /game/list/:gameId', () => {
-    it("should return a ladder game's info (200)", async () => {
-      const [playerOne, playerTwo, spectator] = userIds;
-      const gameId = nanoid();
-      await gameStorage.createGame(
-        gameId,
-        new GameInfo(playerOne, playerTwo, 0, true),
-      );
-      const { status, body } = await request(app.getHttpServer())
-        .get(`/game/list/${gameId}`)
-        .set('x-user-id', spectator.toString());
-      expect(status).toBe(200);
-      expect(body).toEqual({
-        isRank: true,
-        leftPlayer: users[0].nickname,
-        rightPlayer: users[1].nickname,
-        mode: 0,
-      });
-      await waitForExpect(() => {
-        expect(
-          (gameGateway as any).server
-            .in(`game-${gameId}`)
-            .fetchSockets()
-            .then((sockets) => sockets.map(({ id }) => id)),
-        ).resolves.toContain(clientSockets[2].id);
-      });
-    });
-
-    it("should return a normal game's info (200)", async () => {
-      const [playerOne, playerTwo, spectator] = userIds;
-      const gameId = nanoid();
-      await gameStorage.createGame(
-        gameId,
-        new GameInfo(playerOne, playerTwo, 0, false),
-      );
-      const { status, body } = await request(app.getHttpServer())
-        .get(`/game/list/${gameId}`)
-        .set('x-user-id', spectator.toString());
-      expect(status).toBe(200);
-      expect(body).toEqual({
-        isRank: false,
-        leftPlayer: users[0].nickname,
-        rightPlayer: users[1].nickname,
-        mode: 0,
-      });
-      await waitForExpect(() => {
-        expect(
-          (gameGateway as any).server
-            .in(`game-${gameId}`)
-            .fetchSockets()
-            .then((sockets) => sockets.map(({ id }) => id)),
-        ).resolves.toContain(clientSockets[2].id);
-      });
-    });
-
-    it('should throw BAD REQUEST if the game id is invalid (400)', async () => {
-      (
-        await Promise.allSettled([
-          request(app.getHttpServer())
-            .get(`/game/list/invalid`)
-            .set('x-user-id', userIds[0].toString())
-            .expect(400),
-          request(app.getHttpServer())
-            .get(`/game/list/${nanoid(22)}`)
-            .set('x-user-id', userIds[0].toString())
-            .expect(400),
-          request(app.getHttpServer())
-            .get(`/game/list/${nanoid(10) + '*' + nanoid(10)}`)
-            .set('x-user-id', userIds[0].toString())
-            .expect(400),
-        ])
-      ).forEach((result) => expect(result.status).toBe('fulfilled'));
-    });
-
-    it('should throw FORBIDDEN if the spectator to a normal game is either a blocker to or blocked by either of the players (403)', async () => {
-      const [playerOne, playerTwo, spectatorOne, spectatorTwo] = userIds;
-      const gameId = nanoid();
-      await Promise.all([
-        gameStorage.createGame(
-          gameId,
-          new GameInfo(playerOne, playerTwo, 1, false),
-        ),
-        userRelationshipStorage.blockUser(userIds[0], userIds[2]),
-        userRelationshipStorage.blockUser(userIds[3], userIds[1]),
-      ]);
-      (
-        await Promise.allSettled([
-          request(app.getHttpServer())
-            .get(`/game/list/${gameId}`)
-            .set('x-user-id', spectatorOne.toString())
-            .expect(403),
-          request(app.getHttpServer())
-            .get(`/game/list/${gameId}`)
-            .set('x-user-id', spectatorTwo.toString())
-            .expect(403),
-        ])
-      ).forEach((result) => expect(result.status).toBe('fulfilled'));
-    });
-
-    it('should throw NOT FOUND if the game does not exist (404)', () => {
-      return request(app.getHttpServer())
-        .get(`/game/list/${nanoid()}`)
-        .set('x-user-id', userIds[0].toString())
-        .expect(404);
-    });
-  });
-
-  /*****************************************************************************
-   *                                                                           *
    * ANCHOR : POST /game/queue                                                 *
    *                                                                           *
    ****************************************************************************/
@@ -413,18 +300,24 @@ describe('GameController (e2e)', () => {
       expect(results[0].body).toEqual({
         isRank: false,
         isLeft: true,
-        playerId: playerOne,
-        playerNickname: users[0].nickname,
-        opponentId: playerTwo,
-        opponentNickname: users[1].nickname,
+        isPlayer: true,
+        isStarted: false,
+        leftId: playerOne,
+        leftNickname: users[0].nickname,
+        rightId: playerTwo,
+        rightNickname: users[1].nickname,
+        mode: 1,
       });
       expect(results[1].body).toEqual({
         isRank: false,
         isLeft: false,
-        playerId: playerTwo,
-        playerNickname: users[1].nickname,
-        opponentId: playerOne,
-        opponentNickname: users[0].nickname,
+        isPlayer: true,
+        isStarted: false,
+        leftId: playerOne,
+        leftNickname: users[0].nickname,
+        rightId: playerTwo,
+        rightNickname: users[1].nickname,
+        mode: 1,
       });
     });
 
@@ -448,28 +341,89 @@ describe('GameController (e2e)', () => {
       expect(results[0].body).toEqual({
         isRank: true,
         isLeft: true,
-        playerId: playerOne,
-        playerNickname: users[0].nickname,
-        opponentId: playerTwo,
-        opponentNickname: users[1].nickname,
+        isPlayer: true,
+        isStarted: false,
+        leftId: playerOne,
+        leftNickname: users[0].nickname,
+        rightId: playerTwo,
+        rightNickname: users[1].nickname,
+        mode: 0,
       });
       expect(results[1].body).toEqual({
         isRank: true,
         isLeft: false,
-        playerId: playerTwo,
-        playerNickname: users[1].nickname,
-        opponentId: playerOne,
-        opponentNickname: users[0].nickname,
+        isPlayer: true,
+        isStarted: false,
+        leftId: playerOne,
+        leftNickname: users[0].nickname,
+        rightId: playerTwo,
+        rightNickname: users[1].nickname,
+        mode: 0,
       });
     });
 
-    it('should throw FORBIDDEN if the user is not a player of the game (403)', async () => {
+    it("should return normal game players' info when requested by a spectator (200)", async () => {
       const [playerOne, playerTwo, spectator] = userIds;
       const gameId = nanoid();
       await gameStorage.createGame(
         gameId,
         new GameInfo(playerOne, playerTwo, 1, false),
       );
+      const { body } = await request(app.getHttpServer())
+        .get(`/game/${gameId}`)
+        .set('x-user-id', spectator.toString())
+        .expect(200);
+      expect(body).toEqual({
+        isRank: false,
+        isLeft: false,
+        isPlayer: false,
+        isStarted: false,
+        leftId: playerOne,
+        leftNickname: users[0].nickname,
+        rightId: playerTwo,
+        rightNickname: users[1].nickname,
+        mode: 1,
+      });
+    });
+
+    it("should return ladder game players' info when requested by a spectator (200)", async () => {
+      const [playerOne, playerTwo, spectator] = userIds;
+      const gameId = nanoid();
+      await gameStorage.createGame(
+        gameId,
+        new GameInfo(playerOne, playerTwo, 0, true),
+      );
+      const { body } = await request(app.getHttpServer())
+        .get(`/game/${gameId}`)
+        .set('x-user-id', spectator.toString())
+        .expect(200);
+      expect(body).toEqual({
+        isRank: true,
+        isLeft: false,
+        isPlayer: false,
+        isStarted: false,
+        leftId: playerOne,
+        leftNickname: users[0].nickname,
+        rightId: playerTwo,
+        rightNickname: users[1].nickname,
+        mode: 0,
+      });
+    });
+
+    it('should throw FORBIDDEN if a blocked user tries to spectate a normal game (403)', async () => {
+      const [playerOne, playerTwo, spectator] = userIds;
+      const gameId = nanoid();
+      await Promise.all([
+        userRelationshipStorage.load(userIds[0]),
+        userRelationshipStorage.load(userIds[2]),
+      ]);
+      await Promise.all([
+        gameStorage.createGame(
+          gameId,
+          new GameInfo(playerOne, playerTwo, 1, false),
+        ),
+        userRelationshipStorage.blockUser(userIds[0], userIds[2]),
+      ]);
       await request(app.getHttpServer())
         .get(`/game/${gameId}`)
         .set('x-user-id', spectator.toString())
@@ -636,7 +590,7 @@ describe('GameController (e2e)', () => {
         new GameInfo(playerOne, playerTwo, 1, false),
       );
       await request(app.getHttpServer())
-        .get(`/game/list/${gameId}/`)
+        .get(`/game/${gameId}/`)
         .set('x-user-id', spectator.toString())
         .expect(200);
       clientSockets[0].emit('currentUi', { ui: `game-${gameId}` });
@@ -666,6 +620,9 @@ describe('GameController (e2e)', () => {
         right: users[1].nickname,
       });
       expect(gameStorage.getGame(gameId).isStarted).toBeTruthy();
+
+      // NOTE : // Unhandled async 를 없애기 위한 게임 강제 삭제
+      await gameGateway.abortIfPlayerLeave(gameId, playerOne);
     });
 
     it('should throw BAD REQUEST when the gameId is invalid (400)', () => {

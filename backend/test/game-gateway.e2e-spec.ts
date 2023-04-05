@@ -454,234 +454,6 @@ describe('GameGateway (e2e)', () => {
 
   /*****************************************************************************
    *                                                                           *
-   * SECTION : gameComplete listener                                           *
-   *                                                                           *
-   ****************************************************************************/
-  /**
-   * NOTE : 게임 엔진이 백엔드로 이동하면서 이 테스트는 더이상 유효하지 않습니다
-   *
-   * 게임이 정상적으로 종료되었을 때, 승자가 이벤트로 서버에 승리를 알리고, 서버는 결과를 저장하고,
-   * 게임방을 삭제한다.
-   */
-
-  describe.skip('gameComplete', () => {
-    it('should throw error when the client sends invalid message', async () => {
-      const [playerOne] = clientSockets;
-      gateway.joinRoom(
-        userSocketStorage.clients.get(userIds[0]),
-        `game-${gameId}`,
-      );
-      gateway.joinRoom(
-        userSocketStorage.clients.get(userIds[1]),
-        `game-${gameId}`,
-      );
-      await gameStorage.createGame(
-        gameId,
-        new GameInfo(userIds[0], userIds[1], 1, true),
-      );
-      playerOne.emit('gameComplete', { id: gameId }); // no scores
-      await new Promise((resolve) => setTimeout(resolve, 300));
-      expect(gameStorage.getGame(gameId)).toBeDefined();
-      expect(gateway.doesRoomExist(`game-${gameId}`)).toBeTruthy();
-      playerOne.emit('gameComplete', { id: '0123456789abcdefghij' }); // invalid gameId (20 bytes)
-      await new Promise((resolve) => setTimeout(resolve, 300));
-      expect(gameStorage.getGame(gameId)).toBeDefined();
-      expect(gateway.doesRoomExist(`game-${gameId}`)).toBeTruthy();
-      playerOne.emit('gameComplete', { id: gameId, scores: [0, 'a'] }); // invalid scores
-      await new Promise((resolve) => setTimeout(resolve, 300));
-      expect(gameStorage.getGame(gameId)).toBeDefined();
-      expect(gateway.doesRoomExist(`game-${gameId}`)).toBeTruthy();
-      playerOne.emit('gameComplete', { id: gameId, scores: [0, 6] }); // invalid scores out of range
-      await new Promise((resolve) => setTimeout(resolve, 300));
-      expect(gameStorage.getGame(gameId)).toBeDefined();
-      expect(gateway.doesRoomExist(`game-${gameId}`)).toBeTruthy();
-      playerOne.emit('gameComplete', { id: gameId, scores: [0, 6], hi: 'hi' }); // non existing property
-      await new Promise((resolve) => setTimeout(resolve, 300));
-      expect(gameStorage.getGame(gameId)).toBeDefined();
-      expect(gateway.doesRoomExist(`game-${gameId}`)).toBeTruthy();
-    });
-
-    it('should destroy room and update match result when a game ends (left wins, ladder)', async () => {
-      const playerOne = clientSockets[0];
-      const prevGame = await dataSource.manager.find(Users, {
-        select: ['userId', 'winCount', 'lossCount', 'ladder'],
-        where: { userId: In(userIds) },
-      });
-      expect(prevGame.length).toBe(2);
-      gateway.joinRoom(
-        userSocketStorage.clients.get(userIds[0]),
-        `game-${gameId}`,
-      );
-      gateway.joinRoom(
-        userSocketStorage.clients.get(userIds[1]),
-        `game-${gameId}`,
-      );
-      await gameStorage.createGame(
-        gameId,
-        new GameInfo(userIds[0], userIds[1], 1, true),
-      );
-      const scores = [5, faker.datatype.number({ min: 0, max: 4 })];
-      playerOne.emit('gameComplete', {
-        id: gameId,
-        scores,
-      });
-      await waitForExpect(async () => {
-        expect(gameStorage.getGame(gameId)).toBeUndefined();
-        expect(gateway.doesRoomExist(`game-${gameId}`)).toBeFalsy();
-        expect(
-          await dataSource.manager.countBy(MatchHistory, {
-            userOneId: userIds[0],
-            userTwoId: userIds[1],
-          }),
-        ).toEqual(1);
-      });
-      const postGame = await dataSource.manager.find(Users, {
-        select: ['userId', 'winCount', 'lossCount', 'ladder'],
-        where: { userId: In(userIds) },
-      });
-      const { prevWinner, prevLoser, postWinner, postLoser } = winnerLoserStats(
-        prevGame,
-        postGame,
-        userIds[0],
-      );
-      const ladderRise = calculateLadderRise(
-        prevWinner.ladder,
-        prevLoser.ladder,
-        scores,
-      );
-      expect(postGame.length).toBe(2);
-      expect(postWinner).toMatchObject({
-        winCount: prevWinner.winCount + 1,
-        lossCount: prevWinner.lossCount,
-        ladder: prevWinner.ladder + ladderRise,
-      });
-      expect(postLoser).toMatchObject({
-        winCount: prevLoser.winCount,
-        lossCount: prevLoser.lossCount + 1,
-        ladder: prevLoser.ladder,
-      });
-    });
-
-    it('should destroy room and update match result when a game ends (right wins, ladder)', async () => {
-      const playerTwo = clientSockets[1];
-      const prevGame = await dataSource.manager.find(Users, {
-        select: ['userId', 'winCount', 'lossCount', 'ladder'],
-        where: { userId: In(userIds) },
-      });
-      expect(prevGame.length).toBe(2);
-      gateway.joinRoom(
-        userSocketStorage.clients.get(userIds[0]),
-        `game-${gameId}`,
-      );
-      gateway.joinRoom(
-        userSocketStorage.clients.get(userIds[1]),
-        `game-${gameId}`,
-      );
-      await gameStorage.createGame(
-        gameId,
-        new GameInfo(userIds[0], userIds[1], 1, true),
-      );
-      const scores = [faker.datatype.number({ min: 0, max: 4 }), 5];
-      playerTwo.emit('gameComplete', {
-        id: gameId,
-        scores,
-      });
-      await waitForExpect(async () => {
-        expect(gameStorage.getGame(gameId)).toBeUndefined();
-        expect(gateway.doesRoomExist(`game-${gameId}`)).toBeFalsy();
-        expect(
-          await dataSource.manager.countBy(MatchHistory, {
-            userOneId: userIds[0],
-            userTwoId: userIds[1],
-          }),
-        ).toEqual(1);
-      });
-      const postGame = await dataSource.manager.find(Users, {
-        select: ['userId', 'winCount', 'lossCount', 'ladder'],
-        where: { userId: In(userIds) },
-      });
-      const { prevWinner, prevLoser, postWinner, postLoser } = winnerLoserStats(
-        prevGame,
-        postGame,
-        userIds[1],
-      );
-      const ladderRise = calculateLadderRise(
-        prevWinner.ladder,
-        prevLoser.ladder,
-        scores,
-      );
-      expect(postGame.length).toBe(2);
-      expect(postWinner).toMatchObject({
-        winCount: prevWinner.winCount + 1,
-        lossCount: prevWinner.lossCount,
-        ladder: prevWinner.ladder + ladderRise,
-      });
-      expect(postLoser).toMatchObject({
-        winCount: prevLoser.winCount,
-        lossCount: prevLoser.lossCount + 1,
-        ladder: prevLoser.ladder,
-      });
-    });
-
-    it('should not update ladder when the normal game ends', async () => {
-      const playerOne = clientSockets[0];
-      const prevGame = await dataSource.manager.find(Users, {
-        select: ['userId', 'winCount', 'lossCount', 'ladder'],
-        where: { userId: In(userIds) },
-      });
-      expect(prevGame.length).toBe(2);
-      gateway.joinRoom(
-        userSocketStorage.clients.get(userIds[0]),
-        `game-${gameId}`,
-      );
-      gateway.joinRoom(
-        userSocketStorage.clients.get(userIds[1]),
-        `game-${gameId}`,
-      );
-      await gameStorage.createGame(
-        gameId,
-        new GameInfo(userIds[0], userIds[1], 1, false),
-      );
-      const scores = [5, faker.datatype.number({ min: 0, max: 4 })];
-      playerOne.emit('gameComplete', {
-        id: gameId,
-        scores,
-      });
-      await waitForExpect(async () => {
-        expect(gameStorage.getGame(gameId)).toBeUndefined();
-        expect(gateway.doesRoomExist(`game-${gameId}`)).toBeFalsy();
-        expect(
-          await dataSource.manager.countBy(MatchHistory, {
-            userOneId: userIds[0],
-            userTwoId: userIds[1],
-          }),
-        ).toEqual(1);
-      });
-      const postGame = await dataSource.manager.find(Users, {
-        select: ['userId', 'winCount', 'lossCount', 'ladder'],
-        where: { userId: In(userIds) },
-      });
-      const { prevWinner, prevLoser, postWinner, postLoser } = winnerLoserStats(
-        prevGame,
-        postGame,
-        userIds[0],
-      );
-      expect(postGame.length).toBe(2);
-      expect(postWinner).toMatchObject({
-        winCount: prevWinner.winCount + 1,
-        lossCount: prevWinner.lossCount,
-        ladder: prevWinner.ladder,
-      });
-      expect(postLoser).toMatchObject({
-        winCount: prevLoser.winCount,
-        lossCount: prevLoser.lossCount + 1,
-        ladder: prevLoser.ladder,
-      });
-    });
-  });
-
-  /*****************************************************************************
-   *                                                                           *
    * SECTION : gameAborted Emiiter                                             *
    *                                                                           *
    ****************************************************************************/
@@ -728,54 +500,6 @@ describe('GameGateway (e2e)', () => {
         select: ['userId', 'winCount', 'lossCount', 'ladder'],
         where: { userId: In([userIds[0], userIds[1]]) },
       });
-    });
-
-    it('should destroy room, update the result, notify the other player and the spectator (a player is disconnected)', async () => {
-      expect(prevGame.length).toBe(2);
-      const [wsOne, wsTwo] = await Promise.all([
-        listenPromise(playerOne, 'gameAborted'),
-        listenPromise(spectator, 'gameAborted'),
-        playerTwo.disconnect(),
-      ]);
-      expect(wsOne).toEqual({ abortedSide: 'right' });
-      expect(wsTwo).toEqual({ abortedSide: 'right' });
-      expect(gateway.doesRoomExist(`game-${gameId}`)).toBeFalsy();
-      const { userOneScore, userTwoScore } = await dataSource.manager.findOneBy(
-        MatchHistory,
-        {
-          userOneId: userIds[0],
-          userTwoId: userIds[1],
-        },
-      );
-      expect(userOneScore).toEqual(5);
-      expect(userTwoScore).toEqual(0);
-      const postGame = await dataSource.manager.find(Users, {
-        select: ['userId', 'winCount', 'lossCount', 'ladder'],
-        where: { userId: In([userIds[0], userIds[1]]) },
-      });
-      expect(postGame.length).toBe(2);
-      const { prevWinner, prevLoser, postWinner, postLoser } = winnerLoserStats(
-        prevGame,
-        postGame,
-        userIds[0],
-      );
-      const ladderRise = calculateLadderRise(
-        prevWinner.ladder,
-        prevLoser.ladder,
-        [5, 0],
-      );
-      expect(postWinner).toMatchObject({
-        winCount: prevWinner.winCount + 1,
-        lossCount: prevWinner.lossCount,
-        ladder: prevWinner.ladder + ladderRise,
-      });
-      expect(postLoser).toMatchObject({
-        winCount: prevLoser.winCount,
-        lossCount: prevLoser.lossCount + 1,
-        ladder: prevLoser.ladder,
-      });
-      expect(gameStorage.getGame(gameId)).toBeUndefined();
-      expect(gateway.doesRoomExist(`game-${gameId}`)).toBeFalsy();
     });
 
     it('should do nothing when the spectator is disconnected', async () => {
@@ -896,7 +620,7 @@ describe('GameGateway (e2e)', () => {
       ]);
     });
 
-    it.skip('should notify the users in waiting-room when the ladder game is ended', async () => {
+    it('should notify the users in waiting-room when the ladder game is ended', async () => {
       const [playerOne, playerTwo, waitingOne, waitingTwo] = clientSockets;
       await gameStorage.createGame(
         gameId,
@@ -924,7 +648,7 @@ describe('GameGateway (e2e)', () => {
         timeout(1000, listenPromise(playerTwo, 'gameEnded')),
         listenPromise(waitingOne, 'gameEnded'),
         listenPromise(waitingTwo, 'gameEnded'),
-        playerOne.emit('gameComplete', { id: gameId, scores: [5, 3] }),
+        gateway.abortIfPlayerLeave(gameId, userIds[0]), // 테스트 위해 게임 강제 종료
       ]);
       expect(gameStorage.getGame(gameId)).toBeUndefined();
       expect(gateway.doesRoomExist(`game-${gameId}`)).toBeFalsy();
@@ -937,48 +661,7 @@ describe('GameGateway (e2e)', () => {
       expect(wsTwo.value).toEqual({ id: gameId });
     });
 
-    it('should notify the users in waiting-room when the ladder game is aborted', async () => {
-      const [playerOne, playerTwo, waitingOne, waitingTwo] = clientSockets;
-      await gameStorage.createGame(
-        gameId,
-        new GameInfo(userIds[0], userIds[1], 1, true),
-      );
-      playerOne.emit('currentUi', { ui: `game-${gameId}` });
-      playerTwo.emit('currentUi', { ui: `game-${gameId}` });
-      waitingOne.emit('currentUi', { ui: 'waitingRoom' });
-      waitingTwo.emit('currentUi', { ui: 'waitingRoom' });
-      await waitForExpect(() => {
-        expect(gateway.doesRoomExist(`game-${gameId}`)).toBeTruthy();
-        expect(gateway.doesRoomExist('waitingRoom')).toBeTruthy();
-        expect(gameStorage.getGame(gameId)).toBeDefined();
-        expect(activityManager.getActivity(userIds[0])).toEqual(
-          `game-${gameId}`,
-        );
-        expect(activityManager.getActivity(userIds[1])).toEqual(
-          `game-${gameId}`,
-        );
-        expect(activityManager.getActivity(userIds[2])).toEqual('waitingRoom');
-        expect(activityManager.getActivity(userIds[3])).toEqual('waitingRoom');
-      });
-      const [wsErrorOne, wsErrorTwo, wsOne, wsTwo] = await Promise.allSettled([
-        timeout(1000, listenPromise(playerOne, 'gameEnded')),
-        timeout(1000, listenPromise(playerTwo, 'gameEnded')),
-        listenPromise(waitingOne, 'gameEnded'),
-        listenPromise(waitingTwo, 'gameEnded'),
-        playerOne.emit('currentUi', { ui: 'profile' }),
-      ]);
-      expect(gameStorage.getGame(gameId)).toBeUndefined();
-      expect(gateway.doesRoomExist(`game-${gameId}`)).toBeFalsy();
-      expect(wsErrorOne.status).toEqual('rejected');
-      expect(wsErrorTwo.status).toEqual('rejected');
-      if (wsOne.status !== 'fulfilled' || wsTwo.status !== 'fulfilled') {
-        fail();
-      }
-      expect(wsOne.value).toEqual({ id: gameId });
-      expect(wsTwo.value).toEqual({ id: gameId });
-    });
-
-    it.skip('should not notify the users in waiting-room when the non-ladder game is ended', async () => {
+    it('should not notify the users in waiting-room when the non-ladder game is ended', async () => {
       const [playerOne, playerTwo, waitingOne, waitingTwo] = clientSockets;
       await gameStorage.createGame(
         gameId,
@@ -1006,43 +689,7 @@ describe('GameGateway (e2e)', () => {
         timeout(1000, listenPromise(playerTwo, 'gameEnded')),
         timeout(1000, listenPromise(waitingOne, 'gameEnded')),
         timeout(1000, listenPromise(waitingTwo, 'gameEnded')),
-        playerOne.emit('gameComplete', { id: gameId, scores: [5, 3] }),
-      ]);
-      expect(wsOne.status).toEqual('rejected');
-      expect(wsTwo.status).toEqual('rejected');
-      expect(wsErrorOne.status).toEqual('rejected');
-      expect(wsErrorTwo.status).toEqual('rejected');
-    });
-
-    it('should not notify the users in waiting-room when the non-ladder game is aborted', async () => {
-      const [playerOne, playerTwo, waitingOne, waitingTwo] = clientSockets;
-      await gameStorage.createGame(
-        gameId,
-        new GameInfo(userIds[0], userIds[1], 1, false),
-      );
-      playerOne.emit('currentUi', { ui: `game-${gameId}` });
-      playerTwo.emit('currentUi', { ui: `game-${gameId}` });
-      waitingOne.emit('currentUi', { ui: 'waitingRoom' });
-      waitingTwo.emit('currentUi', { ui: 'waitingRoom' });
-      await waitForExpect(() => {
-        expect(gateway.doesRoomExist(`game-${gameId}`)).toBeTruthy();
-        expect(gateway.doesRoomExist('waitingRoom')).toBeTruthy();
-        expect(gameStorage.getGame(gameId)).toBeDefined();
-        expect(activityManager.getActivity(userIds[0])).toEqual(
-          `game-${gameId}`,
-        );
-        expect(activityManager.getActivity(userIds[1])).toEqual(
-          `game-${gameId}`,
-        );
-        expect(activityManager.getActivity(userIds[2])).toEqual('waitingRoom');
-        expect(activityManager.getActivity(userIds[3])).toEqual('waitingRoom');
-      });
-      const [wsErrorOne, wsErrorTwo, wsOne, wsTwo] = await Promise.allSettled([
-        timeout(1000, listenPromise(playerOne, 'gameEnded')),
-        timeout(1000, listenPromise(playerTwo, 'gameEnded')),
-        timeout(1000, listenPromise(waitingOne, 'gameEnded')),
-        timeout(1000, listenPromise(waitingTwo, 'gameEnded')),
-        playerOne.disconnect,
+        gateway.abortIfPlayerLeave(gameId, userIds[0]), // 테스트 위해 게임 강제 종료
       ]);
       expect(wsOne.status).toEqual('rejected');
       expect(wsTwo.status).toEqual('rejected');
@@ -1073,30 +720,3 @@ describe('GameGateway (e2e)', () => {
     return { prevWinner, prevLoser, postWinner, postLoser };
   };
 });
-
-// TODO : 추후에 클라이언트에서 라이브로 전달되어야하는 데이터가 파악되면 구현
-// describe('gameStatus', () => {
-//   it('should notify both players of the games current status', async () => {
-//     const [playerOne, playerTwo] = clientSockets;
-//     const gameId = nanoid();
-//     gateway.joinRoom(
-//       userSocketStorage.clients.get(userIds[0]),
-//       `game-${gameId}`,
-//     );
-//     gateway.joinRoom(
-//       userSocketStorage.clients.get(userIds[1]),
-//       `game-${gameId}`,
-//     );
-//     const [wsMessageOne, wsMessageTwo] = await Promise.all([
-//       new Promise((resolve) =>
-//         playerOne.on('gameStatus', (data) => resolve(data)),
-//       ),
-//       new Promise((resolve) =>
-//         playerTwo.on('gameStatus', (data) => resolve(data)),
-//       ),
-//       gateway.emitGameStatus(`game-${gameId}`, 'started'),
-//     ]);
-//     expect(wsMessageOne).toEqual({ status: 'started' });
-//     expect(wsMessageTwo).toEqual({ status: 'started' });
-//   });
-// });

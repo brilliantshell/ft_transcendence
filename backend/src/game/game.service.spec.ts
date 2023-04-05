@@ -174,8 +174,13 @@ describe('GameService', () => {
         service.findGameInfo(spectatorOne.userId, gameId, gameInfo),
       ).toEqual({
         isRank: false,
-        leftPlayer: playerOne.nickname,
-        rightPlayer: playerTwo.nickname,
+        isLeft: false,
+        isPlayer: false,
+        isStarted: false,
+        leftId: playerOne.userId,
+        leftNickname: playerOne.nickname,
+        rightId: playerTwo.userId,
+        rightNickname: playerTwo.nickname,
         mode: 1,
       });
     });
@@ -192,8 +197,13 @@ describe('GameService', () => {
         service.findGameInfo(spectatorOne.userId, gameId, gameInfo),
       ).toEqual({
         isRank: true,
-        leftPlayer: playerOne.nickname,
-        rightPlayer: playerTwo.nickname,
+        isLeft: false,
+        isPlayer: false,
+        isStarted: false,
+        leftId: playerOne.userId,
+        leftNickname: playerOne.nickname,
+        rightId: playerTwo.userId,
+        rightNickname: playerTwo.nickname,
         mode: 0,
       });
     });
@@ -213,7 +223,8 @@ describe('GameService', () => {
       );
     });
 
-    it('should throw FORBIDDEN when the spectator of a normal game is blocked by either of the players', async () => {
+    // NOTE : FORBIDDEN 처리 GUARD 로 이전
+    it.skip('should throw FORBIDDEN when the spectator of a normal game is blocked by either of the players', async () => {
       await userRelationshipStorage.blockUser(
         playerOne.userId,
         spectatorOne.userId,
@@ -344,13 +355,16 @@ describe('GameService', () => {
         false,
       );
       await gameStorage.createGame(gameId, gameInfo);
-      expect(service.findPlayers(playerOne.userId, gameId, gameInfo)).toEqual({
+      expect(service.findGameInfo(playerOne.userId, gameId, gameInfo)).toEqual({
         isRank: false,
+        isPlayer: true,
         isLeft: true,
-        playerId: playerOne.userId,
-        playerNickname: playerOne.nickname,
-        opponentId: playerTwo.userId,
-        opponentNickname: playerTwo.nickname,
+        isStarted: false,
+        leftId: playerOne.userId,
+        leftNickname: playerOne.nickname,
+        rightId: playerTwo.userId,
+        rightNickname: playerTwo.nickname,
+        mode: 1,
       });
     });
 
@@ -362,13 +376,16 @@ describe('GameService', () => {
         true,
       );
       await gameStorage.createGame(gameId, gameInfo);
-      expect(service.findPlayers(playerTwo.userId, gameId, gameInfo)).toEqual({
+      expect(service.findGameInfo(playerTwo.userId, gameId, gameInfo)).toEqual({
         isRank: true,
+        isPlayer: true,
         isLeft: false,
-        playerId: playerTwo.userId,
-        playerNickname: playerTwo.nickname,
-        opponentId: playerOne.userId,
-        opponentNickname: playerOne.nickname,
+        isStarted: false,
+        leftId: playerOne.userId,
+        leftNickname: playerOne.nickname,
+        rightId: playerTwo.userId,
+        rightNickname: playerTwo.nickname,
+        mode: 0,
       });
     });
   });
